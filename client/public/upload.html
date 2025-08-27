@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Video - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/upload.css">
+    <style>
+        /* Additional styles for pending status */
+        .pending-notice {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ffeeba;
+        }
+
+        .pending-notice i {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo"></div>
+                <div class="user-icon-container" id="userDropdownTrigger">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="success-modal">
+            <div class="success-content">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>Upload Successful!</h2>
+                <p>Your video has been uploaded to Soldout.com.</p>
+                <p>It is now pending review by our admin team and will be visible to other users once approved.</p>
+                <div class="action-buttons">
+                    <button id="viewUploadsBtn">View My Uploads</button>
+                    <button id="successBtn">Continue to Home</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Page -->
+        <div class="upload-container">
+            <div class="upload-header">
+                <h2><i class="fas fa-upload"></i> Upload Your Video</h2>
+                <p>Share your content with the Soldout community</p>
+
+                <!-- Pending notice for all users -->
+                <div class="pending-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> All video uploads require admin approval before being published to the
+                    public.
+                    Your video will appear in your profile immediately but won't be visible to others until approved.
+                </div>
+            </div>
+
+            <form id="uploadForm" class="upload-form">
+                <div class="form-group">
+                    <label for="videoTitle">Video Title</label>
+                    <input type="text" id="videoTitle" name="title" placeholder="Enter your video title" required>
+                </div>
+                <div class="form-group">
+                    <label for="videoGenre">Genre</label>
+                    <select id="videoGenre" name="genre" required>
+                        <option value="" selected>Select Genre</option>
+                        <option value="Action">Action</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Drama">Drama</option>
+                        <option value="History">History</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Documentary">Documentary</option>
+                        <option value="Religion">Religion</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Soundtrack">Soundtrack</option>
+                        <option value="Rom-Com">Rom-Com</option>
+                        <option value="Adventure">Adventure</option>
+                        <option value="Animation">Animation</option>
+                        <option value="Musical">Musical</option>
+                        <option value="TV Shows">TV Shows</option>
+                    </select>
+                </div>
+
+                <!-- Release Date -->
+                <div class="form-group">
+                    <label for="releaseDate">Release Date</label>
+                    <div class="date-picker-container">
+                        <select id="releaseDay" required>
+                            <option value="">Day</option>
+                            <!-- JS will populate -->
+                        </select>
+                        <select id="releaseMonth" required>
+                            <option value="">Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <select id="releaseYear" required>
+                            <option value="">Year</option>
+                            <!-- JS will populate -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="videoSynopsis">Synopsis</label>
+                    <textarea id="videoSynopsis" name="description"
+                        placeholder="Enter a detailed description of your video..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Video Thumbnail</label>
+                    <div class="upload-thumbnail" id="thumbnailPreview">
+                        <div class="thumbnail-preview-container">
+                            <i class="fas fa-image"></i>
+                            <span>Click to upload thumbnail</span>
+                        </div>
+                        <input type="file" id="thumbnailUpload" class="upload-video" accept="image/*">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Video File</label>
+                    <div class="upload-thumbnail" id="videoPreview">
+                        <div class="thumbnail-preview-container">
+                            <i class="fas fa-video"></i>
+                            <span>Click to upload video</span>
+                        </div>
+                        <input type="file" id="videoUpload" class="upload-video" accept="video/*,.mkv">
+                    </div>
+                </div>
+
+                <button type="submit" class="upload-btn" id="uploadBtn">Upload Video</button>
+            </form>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
+            <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
+            <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Base API URL
+        const API_BASE_URL = '/api';
+
+        // Function to get current user from localStorage
+        function getCurrentUser() {
+            const userData = localStorage.getItem('currentUser');
+            return userData ? JSON.parse(userData) : null;
+        }
+
+        // Function to set current user in localStorage
+        function setCurrentUser(user) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+        }
+
+        // Function to remove current user from localStorage
+        function removeCurrentUser() {
+            localStorage.removeItem('currentUser');
+        }
+
+        // Function to set authorization token in localStorage
+        function setAuthToken(token) {
+            localStorage.setItem('authToken', token);
+        }
+
+        // Function to get authorization token from localStorage
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        // Function to remove authorization token from localStorage
+        function removeAuthToken() {
+            localStorage.removeItem('authToken');
+        }
+
+        // Function to check if token is expired
+        function isTokenExpired(token) {
+            if (!token) return true;
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return payload.exp * 1000 < Date.now();
+            } catch (e) {
+                return true;
+            }
+        }
+
+        // Function to refresh auth token
+        async function refreshAuthToken() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to refresh token');
+                }
+
+                const data = await response.json();
+                setAuthToken(data.token);
+                return data.token;
+            } catch (error) {
+                console.error('Token refresh failed:', error);
+                // Redirect to login if refresh fails
+                removeCurrentUser();
+                removeAuthToken();
+                window.location.href = 'index.html';
+                throw error;
+            }
+        }
+
+        // Function to show alert
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            document.body.appendChild(alert);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Helper function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is logged in, else redirect to index.html
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Check token expiration on page load
+            const token = getAuthToken();
+            if (isTokenExpired(token)) {
+                try {
+                    await refreshAuthToken();
+                } catch (error) {
+                    // If refresh fails, redirect to login
+                    removeCurrentUser();
+                    removeAuthToken();
+                    window.location.href = 'index.html';
+                    return;
+                }
+            }
+
+            // Update user state in header
+            const userInfo = document.getElementById('userInfo');
+            const userIcon = document.getElementById('userIcon');
+            if (user && userInfo) {
+                userInfo.textContent = `${user.firstName} ${user.lastName}`;
+                userIcon.style.color = '#4ecdc4';
+                userIcon.style.textShadow = '0 0 10px rgba(78, 205, 196, 0.5)';
+            }
+
+            // Populate days in date picker
+            const daySelect = document.getElementById('releaseDay');
+            for (let day = 1; day <= 31; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+
+            // Populate years in date picker (from 1900 to current year)
+            const yearSelect = document.getElementById('releaseYear');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 1900; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+
+            // Setup dropdown toggle
+            document.getElementById('userDropdownTrigger').addEventListener('click', function (e) {
+                e.stopPropagation();
+                document.getElementById('userDropdown').classList.toggle('show');
+            });
+
+            // Close dropdown when clicking elsewhere
+            document.addEventListener('click', function (e) {
+                const dropdown = document.getElementById('userDropdown');
+                if (dropdown.classList.contains('show') &&
+                    !e.target.closest('.user-dropdown') &&
+                    !e.target.closest('#userDropdownTrigger')) {
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                removeCurrentUser();
+                removeAuthToken();
+                window.location.href = 'index.html';
+            });
+
+            // Home navigation
+            document.getElementById('homeLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.href = 'index.html';
+            });
+
+            // Success button
+            document.getElementById('successBtn').addEventListener('click', function () {
+                window.location.href = 'index.html';
+            });
+
+            // View Uploads button
+            document.getElementById('viewUploadsBtn').addEventListener('click', function () {
+                window.location.href = 'profile.html#uploads';
+            });
+
+            // Upload link in dropdown
+            document.getElementById('uploadLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                // Close dropdown
+                document.getElementById('userDropdown').classList.remove('show');
+                // Navigate to upload page
+                window.location.href = 'upload.html';
+            });
+
+            // Thumbnail preview
+            function handleThumbnailChange(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file type
+                if (!file.type.match('image.*')) {
+                    showAlert('Please upload a valid image file (JPG, PNG, etc.)', 'danger');
+                    return;
+                }
+
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert('Thumbnail image too large (max 5MB)', 'danger');
+                    return;
+                }
+
+                const container = document.querySelector('#thumbnailPreview .thumbnail-preview-container');
+                container.innerHTML = '<div class="spinner"></div>';
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    container.innerHTML = `<img src="${event.target.result}" alt="Thumbnail Preview">`;
+                };
+                reader.onerror = function () {
+                    container.innerHTML = '<i class="fas fa-image"></i><span>Click to upload thumbnail</span>';
+                    showAlert('Error reading thumbnail file', 'danger');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Video preview
+            function handleVideoChange(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file type (now includes MKV)
+                const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/ogg'];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+
+                if (!validVideoTypes.includes(file.type) && fileExtension !== 'mkv') {
+                    showAlert('Please upload a valid video file (MP4, MOV, MKV, etc.)', 'danger');
+                    return;
+                }
+
+                // Increased max file size to 2GB (2147483648 bytes)
+                if (file.size > 2147483648) {
+                    showAlert('Video file too large (max 2GB)', 'danger');
+                    return;
+                }
+
+                const container = document.querySelector('#videoPreview .thumbnail-preview-container');
+                container.innerHTML = '<div class="spinner"></div>';
+
+                const videoUrl = URL.createObjectURL(file);
+                container.innerHTML = `
+                    <video controls>
+                        <source src="${videoUrl}" type="${file.type || 'video/x-matroska'}">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div>${file.name} (${formatFileSize(file.size)})</div>
+                `;
+            }
+
+            // Attach event listeners
+            document.getElementById('thumbnailUpload').addEventListener('change', handleThumbnailChange);
+            document.getElementById('videoUpload').addEventListener('change', handleVideoChange);
+
+            // Set up click handlers for preview areas
+            document.querySelector('#thumbnailPreview .thumbnail-preview-container').addEventListener('click', () => {
+                document.getElementById('thumbnailUpload').click();
+            });
+
+            document.querySelector('#videoPreview .thumbnail-preview-container').addEventListener('click', () => {
+                document.getElementById('videoUpload').click();
+            });
+
+            // Upload form submission
+            document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const uploadBtn = document.getElementById('uploadBtn');
+                const originalBtnText = uploadBtn.innerHTML;
+
+                try {
+                    // Validate form data
+                    const title = document.getElementById('videoTitle').value.trim();
+                    const genre = document.getElementById('videoGenre').value;
+                    const day = document.getElementById('releaseDay').value;
+                    const month = document.getElementById('releaseMonth').value;
+                    const year = document.getElementById('releaseYear').value;
+                    const synopsis = document.getElementById('videoSynopsis').value.trim();
+
+                    if (!title) {
+                        showAlert('Please enter a video title', 'danger');
+                        return;
+                    }
+
+                    if (!genre) {
+                        showAlert('Please select a genre', 'danger');
+                        return;
+                    }
+
+                    if (!day || !month || !year) {
+                        showAlert('Please select a complete release date', 'danger');
+                        return;
+                    }
+
+                    const thumbnailInput = document.getElementById('thumbnailUpload');
+                    const videoInput = document.getElementById('videoUpload');
+
+                    const thumbnailFile = thumbnailInput.files[0];
+                    const videoFile = videoInput.files[0];
+
+                    if (!thumbnailFile) {
+                        showAlert('Please upload a thumbnail image', 'danger');
+                        return;
+                    }
+
+                    if (!videoFile) {
+                        showAlert('Please upload a video file', 'danger');
+                        return;
+                    }
+
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('genre', genre);
+                    formData.append('releaseDate', `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                    formData.append('description', synopsis);
+                    formData.append('thumbnail', thumbnailFile);
+                    formData.append('video', videoFile);
+                    formData.append('status', 'pending'); // Set status to pending for approval
+
+                    // Show loading state
+                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+                    uploadBtn.disabled = true;
+
+                    // First attempt with current token
+                    let token = getAuthToken();
+                    let response = await fetch(`${API_BASE_URL}/videos`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    // If token expired, try refreshing it
+                    if (response.status === 401) {
+                        token = await refreshAuthToken();
+                        response = await fetch(`${API_BASE_URL}/videos`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: formData
+                        });
+                    }
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Upload failed');
+                    }
+
+                    const newVideo = await response.json();
+                    document.getElementById('successModal').classList.add('active');
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showAlert(`Upload failed: ${error.message}`, 'danger');
+
+                    // If it's an authentication error, redirect to login
+                    if (error.message.includes('token') || error.message.includes('authenticate')) {
+                        removeCurrentUser();
+                        removeAuthToken();
+                        window.location.href = 'index.html';
+                    }
+                } finally {
+                    uploadBtn.innerHTML = originalBtnText;
+                    uploadBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

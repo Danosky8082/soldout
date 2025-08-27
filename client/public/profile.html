@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/profile.css">
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <style>
+        /* Enhanced styles for profile page */
+        .profile-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .profile-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-picture-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .profile-picture-container:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-picture {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-picture-edit {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-picture-container:hover .profile-picture-edit {
+            opacity: 1;
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            margin: 0 0 0.5rem;
+            color: #333;
+        }
+
+        .profile-email {
+            color: #666;
+            margin: 0 0 1rem;
+        }
+
+        .profile-join-date {
+            color: #888;
+            font-size: 0.9rem;
+            margin: 0 0 1.5rem;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .profile-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background-color: #4ecdc4;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #3ab7ae;
+        }
+
+        .logout-btn {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .logout-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        .profile-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .profile-details {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+            margin: 0 0 1rem;
+            color: #333;
+        }
+
+        .profile-bio {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .profile-videos {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .no-videos {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .no-videos i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .upload-video-btn {
+            padding: 0.5rem 1rem;
+            background-color: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-video-btn:hover {
+            background-color: #3ab7ae;
+        }
+
+        .admin-badge {
+            background-color: #ff6b6b;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .modal-title {
+            padding: 1.5rem 1.5rem 0;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .cancel-btn {
+            padding: 0.5rem 1rem;
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .cancel-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        .save-btn {
+            padding: 0.5rem 1rem;
+            background-color: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .save-btn:hover {
+            background-color: #3ab7ae;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4ecdc4;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .profile-content {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .profile-stats {
+                justify-content: center;
+            }
+
+            .profile-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="#">Movies</a>
+                <a href="#">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="#">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo"></div>
+                <div class="user-icon-container" id="userDropdownTrigger">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="profile-container">
+            <div class="profile-header">
+                <div class="profile-picture-container" id="profilePictureContainer">
+                    <img src="https://via.placeholder.com/150" alt="Profile Picture" class="profile-picture"
+                        id="profilePicture">
+                    <div class="profile-picture-edit">Change Photo</div>
+                    <input type="file" id="profilePictureUpload" accept="image/*" style="display: none;">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-info-text view-mode">
+                        <h1 class="profile-name" id="profileName">Loading...
+                            <span class="admin-badge" id="adminBadge" style="display: none;">ADMIN</span>
+                        </h1>
+                        <p class="profile-email" id="profileEmail">Loading...</p>
+                        <p class="profile-join-date" id="profileJoinDate">Member since Loading...</p>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="videosCount">0</div>
+                                <div class="stat-label">Videos</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="viewsCount">0</div>
+                                <div class="stat-label">Views</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="likesCount">0</div>
+                                <div class="stat-label">Likes</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="subscribersCount">0</div>
+                                <div class="stat-label">Subscribers</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-actions view-mode">
+                        <button class="profile-btn edit-btn" id="editProfileBtn">Edit Profile</button>
+                        <button class="profile-btn logout-btn" id="logoutProfileBtn">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <div class="profile-details">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        About Me
+                    </h2>
+                    <div class="profile-info-text view-mode">
+                        <p class="profile-bio" id="profileBio">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="profile-videos">
+                    <div class="section-title">
+                        <i class="fas fa-video"></i>
+                        My Videos
+                        <button class="upload-video-btn" id="uploadVideoBtn" style="margin-left: auto;">
+                            <i class="fas fa-plus"></i> Upload Video
+                        </button>
+                    </div>
+                    <div class="videos-grid" id="userVideosGrid">
+                        <div class="no-videos" id="noVideosMessage">
+                            <i class="fas fa-video-slash"></i>
+                            <p>You haven't uploaded any videos yet</p>
+                            <button class="upload-video-btn" id="uploadVideoBtn2">
+                                <i class="fas fa-plus"></i> Upload Your First Video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
+            <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
+            <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+        </footer>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" id="closeEditModal"></i>
+            <h2 class="modal-title">Edit Profile</h2>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editFirstName">First Name</label>
+                        <input type="text" id="editFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editLastName">Last Name</label>
+                        <input type="text" id="editLastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editBio">Bio</label>
+                        <textarea id="editBio"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelEditBtn">Cancel</button>
+                <button class="save-btn" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" id="closeDeleteModal"></i>
+            <h2 class="modal-title">Delete Video</h2>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this video? This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
+                <button class="save-btn" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is logged in
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Decode token to get user ID
+            let userId;
+            try {
+                const decoded = jwt_decode(token);
+                userId = decoded.userId || decoded.id;
+                if (!userId) throw new Error('Invalid token');
+            } catch (error) {
+                console.error('Token decode error:', error);
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // DOM elements
+            const profileName = document.getElementById('profileName');
+            const profileEmail = document.getElementById('profileEmail');
+            const profileJoinDate = document.getElementById('profileJoinDate');
+            const profileBio = document.getElementById('profileBio');
+            const profilePicture = document.getElementById('profilePicture');
+            const profilePictureContainer = document.getElementById('profilePictureContainer');
+            const profilePictureUpload = document.getElementById('profilePictureUpload');
+            const videosCount = document.getElementById('videosCount');
+            const viewsCount = document.getElementById('viewsCount');
+            const likesCount = document.getElementById('likesCount');
+            const subscribersCount = document.getElementById('subscribersCount');
+            const adminBadge = document.getElementById('adminBadge');
+            const userVideosGrid = document.getElementById('userVideosGrid');
+            const noVideosMessage = document.getElementById('noVideosMessage');
+            const editProfileBtn = document.getElementById('editProfileBtn');
+            const logoutProfileBtn = document.getElementById('logoutProfileBtn');
+            const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+            const uploadVideoBtn2 = document.getElementById('uploadVideoBtn2');
+            const editProfileModal = document.getElementById('editProfileModal');
+            const closeEditModal = document.getElementById('closeEditModal');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const saveProfileBtn = document.getElementById('saveProfileBtn');
+            const editFirstName = document.getElementById('editFirstName');
+            const editLastName = document.getElementById('editLastName');
+            const editEmail = document.getElementById('editEmail');
+            const editBio = document.getElementById('editBio');
+
+            // Load profile data
+            async function loadProfile() {
+                try {
+                    const response = await fetch(`/api/users/${userId}/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load profile');
+                    }
+
+                    const profileData = await response.json();
+
+                    // Update profile info
+                    profileName.textContent = `${profileData.firstName} ${profileData.lastName}`;
+                    profileEmail.textContent = profileData.email;
+                    profileJoinDate.textContent = `Member since ${new Date(profileData.createdAt).toLocaleDateString()}`;
+                    profileBio.textContent = profileData.bio || 'No bio yet';
+
+                    // Update profile picture
+                    if (profileData.profilePicture) {
+                        profilePicture.src = profileData.profilePicture;
+                    }
+
+                    // Update stats - now using the correct field names
+                    videosCount.textContent = profileData.stats.videos;
+                    viewsCount.textContent = profileData.stats.views;
+                    likesCount.textContent = profileData.stats.likes;
+                    subscribersCount.textContent = profileData.stats.subscribers;  // This now comes from subscriptions count
+
+                    // Show admin badge if user is admin
+                    if (profileData.role && (profileData.role === 'ADMIN' || profileData.role === 'SUPER_ADMIN')) {
+                        adminBadge.style.display = 'inline-block';
+                        if (profileData.role === 'SUPER_ADMIN') {
+                            adminBadge.textContent = 'SUPER ADMIN';
+                            adminBadge.style.backgroundColor = '#ff4757';
+                        }
+                    }
+
+                    // Load user videos
+                    if (profileData.videos && profileData.videos.length > 0) {
+                        noVideosMessage.style.display = 'none';
+                        renderVideos(profileData.videos);
+                    } else {
+                        noVideosMessage.style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    alert('Failed to load profile data');
+                }
+            }
+
+            // Render videos
+            function renderVideos(videos) {
+                userVideosGrid.innerHTML = '';
+                videos.forEach(video => {
+                    const videoElement = document.createElement('div');
+                    videoElement.className = 'video-item';
+                    videoElement.innerHTML = `
+                        <div class="video-thumbnail-container">
+                            <img src="${video.thumbnail}" alt="${video.title}" class="video-thumbnail">
+                            <div class="video-duration">${formatDuration(video.duration)}</div>
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">${video.title}</h3>
+                            <div class="video-meta">
+                                <span class="video-views">${video.views} views</span>
+                                <span class="video-date">${new Date(video.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="video-actions">
+                                <button class="video-action-btn edit-btn" data-id="${video.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="video-action-btn delete-btn" data-id="${video.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    userVideosGrid.appendChild(videoElement);
+                });
+            }
+
+            // Format duration (helper function)
+            function formatDuration(seconds) {
+                if (!seconds) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+
+            // Profile picture upload
+            profilePictureContainer.addEventListener('click', () => {
+                profilePictureUpload.click();
+            });
+
+            profilePictureUpload.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('profilePicture', file);
+
+                    const response = await fetch(`/api/users/${userId}/profile-picture`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to upload profile picture');
+                    }
+
+                    const result = await response.json();
+                    profilePicture.src = result.profilePictureUrl;
+                    alert('Profile picture updated successfully');
+                } catch (error) {
+                    console.error('Error uploading profile picture:', error);
+                    alert('Failed to upload profile picture');
+                }
+            });
+
+            // Edit profile modal
+            editProfileBtn.addEventListener('click', () => {
+                // Fill modal with current data
+                editFirstName.value = profileName.textContent.split(' ')[0];
+                editLastName.value = profileName.textContent.split(' ')[1];
+                editEmail.value = profileEmail.textContent;
+                editBio.value = profileBio.textContent;
+
+                // Show modal
+                editProfileModal.classList.add('active');
+            });
+
+            // Close modal
+            closeEditModal.addEventListener('click', () => {
+                editProfileModal.classList.remove('active');
+            });
+
+            cancelEditBtn.addEventListener('click', () => {
+                editProfileModal.classList.remove('active');
+            });
+
+            // Save profile changes
+            saveProfileBtn.addEventListener('click', async () => {
+                try {
+                    const updatedData = {
+                        firstName: editFirstName.value,
+                        lastName: editLastName.value,
+                        email: editEmail.value,
+                        bio: editBio.value
+                    };
+
+                    const response = await fetch(`/api/users/${userId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(updatedData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update profile');
+                    }
+
+                    const updatedProfile = await response.json();
+
+                    // Update UI with new data
+                    profileName.textContent = `${updatedProfile.firstName} ${updatedProfile.lastName}`;
+                    profileEmail.textContent = updatedProfile.email;
+                    profileBio.textContent = updatedProfile.bio || 'No bio yet';
+
+                    // Close modal
+                    editProfileModal.classList.remove('active');
+
+                    alert('Profile updated successfully');
+                } catch (error) {
+                    console.error('Error updating profile:', error);
+                    alert('Failed to update profile');
+                }
+            });
+
+            // Logout
+            logoutProfileBtn.addEventListener('click', () => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            });
+
+            // Upload video buttons
+            uploadVideoBtn.addEventListener('click', () => {
+                window.location.href = 'upload.html';
+            });
+
+            uploadVideoBtn2.addEventListener('click', () => {
+                window.location.href = 'upload.html';
+            });
+
+            // Initialize
+            loadProfile();
+        });
+    </script>
+</body>
+
+</html>

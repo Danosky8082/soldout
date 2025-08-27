@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soldout.com - the Entertainment Experience</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+                <hr>
+                <br><a href="admin.html">Admin</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo"></div>
+                <div class="user-icon-container" id="userDropdownTrigger">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i>My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Login Overlay -->
+        <div id="loginOverlay" class="login-overlay">
+            <div class="login-modal">
+                <div class="login-header">
+                    <h2>Login to Soldout</h2>
+                    <i class="fas fa-times close-login"></i>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit">Login</button>
+                    <div class="login-footer">
+                        <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Register Overlay -->
+        <div id="registerOverlay" class="login-overlay">
+            <div class="login-modal">
+                <div class="login-header">
+                    <h2>Create Account</h2>
+                    <i class="fas fa-times close-register"></i>
+                </div>
+                <form id="registerForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" name="email" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <input type="password" id="regPassword" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
+                    </div>
+                    <div class="terms">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                                Policy</a></label>
+                    </div>
+                    <button type="submit">Create Account</button>
+                    <div class="login-footer">
+                        <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Home Page Content -->
+        <div class="movie-scroller-container">
+            <h2 class="section-title">
+                <i class="fas fa-fire"></i>
+                Trending Now
+            </h2>
+
+            <div class="movie-scroller" id="movieScroller">
+                <!-- Movie posters will be loaded dynamically -->
+                <div class="spinner" id="movieSpinner"></div>
+            </div>
+
+            <div class="scroller-controls">
+                <button class="scroller-btn" id="scrollLeft">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="scroller-btn" id="scrollRight">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <input type="text" id="videoSearch" placeholder="Search in Premium Selection...">
+
+        <!-- Video Gallery -->
+        <h2 class="section-title">
+            <i class="fas fa-crown"></i>
+            Premium Selection
+        </h2>
+
+        <div class="video-grid" id="videoGallery">
+            <!-- Video items will be loaded dynamically -->
+            <div class="spinner" id="videoSpinner"></div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-links">
+            <a href="#">About Us</a>
+            <a href="#">Contact</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Help Center</a>
+        </div>
+        <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
+        <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+    </footer>
+
+    <script>
+        // Base API URL
+        const API_BASE_URL = '/api';
+        let autoScrollInterval;
+
+        // Function to get current user from localStorage
+        function getCurrentUser() {
+            const userData = localStorage.getItem('currentUser');
+            return userData ? JSON.parse(userData) : null;
+        }
+
+        // Function to set current user in localStorage
+        function setCurrentUser(user) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+        }
+
+        // Function to remove current user from localStorage
+        function removeCurrentUser() {
+            localStorage.removeItem('currentUser');
+        }
+
+        // Function to set authorization token in localStorage
+        function setAuthToken(token) {
+            localStorage.setItem('authToken', token);
+        }
+
+        // Function to get authorization token from localStorage
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        // Function to remove authorization token from localStorage
+        function removeAuthToken() {
+            localStorage.removeItem('authToken');
+        }
+
+        // API Request Helper
+        async function apiRequest(url, method = 'GET', body = null, isFormData = false) {
+            const headers = {};
+            const token = getAuthToken();
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            if (!isFormData && !(body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            const options = {
+                method,
+                headers
+            };
+
+            if (body) {
+                options.body = isFormData ? body : JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${url}`, options);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'API request failed');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API request error:', error);
+                throw error;
+            }
+        }
+
+        // Function to shuffle array (for random display)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Render movies to scroller - Updated version without hover video
+        function renderMovies(movies) {
+            const movieScroller = document.getElementById('movieScroller');
+            movieScroller.innerHTML = '';
+
+            if (!movies || movies.length === 0) {
+                movieScroller.innerHTML = '<div class="alert alert-info">No trending movies found</div>';
+                return;
+            }
+
+            movies.forEach(movie => {
+                const movieEl = document.createElement('div');
+                movieEl.className = 'movie-poster';
+                movieEl.innerHTML = `
+                    <img src="${movie.thumbnail}" alt="${movie.title}">
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="movie-meta">
+                            <div class="movie-year">${movie.year} | ${movie.genre}</div>
+                        </div>
+                       
+                    </div>
+                `;
+
+                // Add click event to play video
+                movieEl.addEventListener('click', () => {
+                    playVideo(movie);
+                });
+
+                movieScroller.appendChild(movieEl);
+            });
+        }
+
+        // Render videos to gallery - Keeps hover effect for Premium Selection
+        function renderVideos(videos) {
+            const videoGallery = document.getElementById('videoGallery');
+            videoGallery.innerHTML = '';
+
+            if (!videos || videos.length === 0) {
+                videoGallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
+                return;
+            }
+
+            videos.forEach(video => {
+                const videoEl = document.createElement('div');
+                videoEl.className = 'video-item';
+                videoEl.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img class="video-thumbnail" src="${video.thumbnail}" alt="${video.title}">
+                        <video class="video-preview" muted loop playsinline>
+                            <source src="${video.videoUrl}" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">${video.title}</h3>
+                        <div class="video-meta">
+                            <span>${video.genre} • ${video.year}</span>
+                            <span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span>
+                        </div>
+                    </div>
+                `;
+
+                // Get the specific video elements for this item
+                const preview = videoEl.querySelector('.video-preview');
+
+                // Add hover effect
+                videoEl.addEventListener('mouseenter', () => {
+                    preview.currentTime = 0;
+                    preview.play().catch(e => console.log("Video play error:", e));
+                });
+
+                videoEl.addEventListener('mouseleave', () => {
+                    preview.pause();
+                });
+
+                // Add click event to play video
+                videoEl.addEventListener('click', () => playVideo(video));
+
+                videoGallery.appendChild(videoEl);
+            });
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load videos from API once
+            try {
+                const videos = await apiRequest('/videos/premium');
+
+                // Render Premium Selection (horizontal scroller)
+                renderMovies(videos);
+
+                // Render Trending Now (smaller grid display) with shuffled videos
+                const shuffledVideos = shuffleArray([...videos]); // Create a copy before shuffling
+                renderVideos(shuffledVideos);
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                document.getElementById('movieScroller').innerHTML = `<div class="alert alert-danger">Error loading videos: ${error.message}</div>`;
+                document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${error.message}</div>`;
+            }
+
+           // Start auto-scroll
+            startAutoScroll();
+
+            // Scroller functionality
+            const scroller = document.getElementById('movieScroller');
+            const scrollLeftBtn = document.getElementById('scrollLeft');
+            const scrollRightBtn = document.getElementById('scrollRight');
+
+            // Variables for smooth scrolling control
+            let isScrolling = false;
+            let scrollTarget = 0;
+            let scrollStart = 0;
+            let scrollDuration = 1000; // Duration of scroll animation in ms
+            let scrollStartTime = null;
+
+            // Improved scroll function using requestAnimationFrame
+            function smoothScroll(timestamp) {
+                if (!scrollStartTime) scrollStartTime = timestamp;
+                const progress = timestamp - scrollStartTime;
+                const progressRatio = Math.min(progress / scrollDuration, 1);
+                const easeProgress = easeInOutQuad(progressRatio);
+
+                const currentScroll = scrollStart + (scrollTarget - scrollStart) * easeProgress;
+                scroller.scrollLeft = currentScroll;
+
+                if (progress < scrollDuration) {
+                    requestAnimationFrame(smoothScroll);
+                } else {
+                    isScrolling = false;
+                    // Restart auto-scroll only if not manually scrolling
+                    if (!manualScrollInProgress) {
+                        startAutoScroll();
+                    }
+                }
+            }
+
+            // Easing function for smooth acceleration/deceleration
+            function easeInOutQuad(t) {
+                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            }
+
+            // Track manual scrolling
+            let manualScrollInProgress = false;
+            let manualScrollTimeout;
+
+            scroller.addEventListener('scroll', () => {
+                manualScrollInProgress = true;
+                clearTimeout(manualScrollTimeout);
+                manualScrollTimeout = setTimeout(() => {
+                    manualScrollInProgress = false;
+                    // Only restart auto-scroll if not already scrolling
+                    if (!isScrolling) {
+                        startAutoScroll();
+                    }
+                }, 1000);
+            });
+
+            scrollLeftBtn.addEventListener('click', () => {
+                clearInterval(autoScrollInterval);
+                manualScrollInProgress = true;
+                scrollToPosition(scroller.scrollLeft - scroller.clientWidth * 0.8);
+                setTimeout(() => { manualScrollInProgress = false; }, 1000);
+            });
+
+            scrollRightBtn.addEventListener('click', () => {
+                clearInterval(autoScrollInterval);
+                manualScrollInProgress = true;
+                scrollToPosition(scroller.scrollLeft + scroller.clientWidth * 0.8);
+                setTimeout(() => { manualScrollInProgress = false; }, 1000);
+            });
+
+            function scrollToPosition(target) {
+                if (isScrolling) return;
+
+                isScrolling = true;
+                scrollStart = scroller.scrollLeft;
+                scrollTarget = Math.max(0, Math.min(target, scroller.scrollWidth - scroller.clientWidth));
+                scrollStartTime = null;
+
+                requestAnimationFrame(smoothScroll);
+            }
+
+            // Improved auto-scroll function
+            function startAutoScroll() {
+                clearInterval(autoScrollInterval);
+
+                autoScrollInterval = setInterval(() => {
+                    if (isScrolling || manualScrollInProgress) return;
+
+                    if (scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 10) {
+                        scrollToPosition(0);
+                    } else {
+                        scrollToPosition(scroller.scrollLeft + scroller.clientWidth * 0.8);
+                    }
+                }, 5000);
+            }
+
+            // Initialize
+            startAutoScroll();
+
+            // Login Modal Functionality
+            const loginOverlay = document.getElementById('loginOverlay');
+            const closeLogin = document.querySelector('.close-login');
+            const registerOverlay = document.getElementById('registerOverlay');
+            const closeRegister = document.querySelector('.close-register');
+            const showRegister = document.getElementById('showRegister');
+            const showLogin = document.getElementById('showLogin');
+
+            // Open login modal when clicking user icon without being logged in
+            document.getElementById('userDropdownTrigger').addEventListener('click', function (e) {
+                const user = getCurrentUser();
+                if (!user) {
+                    loginOverlay.classList.add('active');
+                }
+            });
+
+            closeLogin.addEventListener('click', () => {
+                loginOverlay.classList.remove('active');
+            });
+
+            closeRegister.addEventListener('click', () => {
+                registerOverlay.classList.remove('active');
+            });
+
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginOverlay.classList.remove('active');
+                registerOverlay.classList.add('active');
+            });
+
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerOverlay.classList.remove('active');
+                loginOverlay.classList.add('active');
+            });
+
+            // Close modal when clicking outside
+            loginOverlay.addEventListener('click', (e) => {
+                if (e.target === loginOverlay) {
+                    loginOverlay.classList.remove('active');
+                }
+            });
+
+            registerOverlay.addEventListener('click', (e) => {
+                if (e.target === registerOverlay) {
+                    registerOverlay.classList.remove('active');
+                }
+            });
+
+            // Check if user is already logged in
+            const user = getCurrentUser();
+            if (user) {
+                updateUserState(user);
+            }
+
+            // Login Form Submission
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Login failed');
+                    }
+
+                    const data = await response.json();
+
+                    // Store user and token
+                    setCurrentUser(data.user);
+                    setAuthToken(data.token);
+
+                    // Show success message
+                    showAlert(`Welcome back ${data.user.firstName}! Login successfully.`, 'success');
+
+                    // Update UI and close modal
+                    updateUserState(data.user);
+                    loginOverlay.classList.remove('active');
+                } catch (error) {
+                    showAlert(error.message || 'Login failed. Please try again.', 'danger');
+                }
+            });
+
+            // Registration Form Submission
+            const registerForm = document.getElementById('registerForm');
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                // Password match validation
+                if (password !== confirmPassword) {
+                    showAlert('Passwords do not match!', 'danger');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            firstName,
+                            lastName,
+                            email,
+                            password
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Registration failed');
+                    }
+
+                    const data = await response.json();
+
+                    // Store user and token
+                    setCurrentUser(data.user);
+                    setAuthToken(data.token);
+
+                    // Show success message
+                    showAlert(`Congratulations ${firstName}! Registration successfully.`, 'success');
+
+                    // Close modal
+                    registerOverlay.classList.remove('active');
+
+                    // Update UI
+                    updateUserState(data.user);
+                } catch (error) {
+                    showAlert(error.message || 'Registration failed. Please try again.', 'danger');
+                }
+            });
+
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+
+                // Clear user data
+                removeCurrentUser();
+                removeAuthToken();
+
+                // Update UI
+                updateUserState();
+
+                // Close dropdown
+                document.getElementById('userDropdown').classList.remove('show');
+
+                // Show logout message
+                showAlert('You have been logged out successfully.', 'success');
+            });
+
+            // Home navigation
+            document.getElementById('homeLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.href = 'index.html';
+            });
+            document.querySelector('.home-link').addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.href = 'index.html';
+            });
+        });
+
+        function playVideo(video) {
+            // Store video data for the player page
+            sessionStorage.setItem('currentVideo', JSON.stringify(video));
+            // Open player page
+            window.location.href = 'video-player.html';
+        }
+
+        // Update UI with user info
+        function updateUserState(user) {
+            const userInfo = document.getElementById('userInfo');
+            const userIcon = document.getElementById('userIcon');
+            const userDropdownTrigger = document.getElementById('userDropdownTrigger');
+
+            if (user && userInfo) {
+                userInfo.textContent = `${user.firstName} ${user.lastName}`;
+                userIcon.style.color = '#4ecdc4';
+                userIcon.style.textShadow = '0 0 10px rgba(78, 205, 196, 0.5)';
+
+                // Add dropdown toggle
+                userDropdownTrigger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.getElementById('userDropdown').classList.toggle('show');
+                });
+
+                // Close dropdown when clicking elsewhere
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest('.user-dropdown') &&
+                        !e.target.closest('#userDropdownTrigger')) {
+                        document.getElementById('userDropdown').classList.remove('show');
+                    }
+                });
+            } else {
+                if (userInfo) userInfo.textContent = '';
+                if (userIcon) {
+                    userIcon.style.color = '#fff';
+                    userIcon.style.textShadow = 'none';
+                }
+            }
+        }
+
+        // Function to show alert
+        function showAlert(message, type) {
+            const alertsContainer = document.createElement('div');
+            alertsContainer.className = 'alerts-container';
+            alertsContainer.style.position = 'fixed';
+            alertsContainer.style.top = '20px';
+            alertsContainer.style.left = '50%';
+            alertsContainer.style.transform = 'translateX(-50%)';
+            alertsContainer.style.zIndex = '2000';
+            alertsContainer.style.width = '80%';
+            alertsContainer.style.maxWidth = '500px';
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-temporary`;
+            alert.textContent = message;
+            alertsContainer.appendChild(alert);
+
+            document.body.appendChild(alertsContainer);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alertsContainer.remove();
+            }, 5000);
+        }
+
+        // Updated search functionality - now only searches Premium Selection
+        document.getElementById('videoSearch').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const videos = document.querySelectorAll('.video-item');
+
+            videos.forEach(video => {
+                const title = video.querySelector('.video-title').textContent.toLowerCase();
+                video.style.display = title.includes(query) ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>

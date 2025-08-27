@@ -1,0 +1,275 @@
+<!-- header.html -->
+<header>
+    <div class="logo" id="homeLink">
+        <i class="fas fa-ticket-alt"></i>
+        <span>Soldout.com</span>
+    </div>
+    <div class="nav-links">
+        <a href="index.html" class="active home-link">Home</a>
+        <a href="gallery.html">Movies</a>
+        <a href="series.html">TV Shows</a>
+        <a href="#">New Releases</a>
+        <a href="soundtracks.html">Soundtracks</a>
+    </div>
+    <!-- <div class="user-actions">
+        <i class="fas fa-search search-icon"></i>
+        <i class="fas fa-bell"></i>
+        <div class="user-info" id="userInfo">
+            <div class="user-avatar-container" id="userAvatar">
+                <i class="fas fa-user-circle user-icon"></i>
+            </div>
+            <span class="user-name" id="userName"></span>
+        </div>
+        <div class="user-dropdown-container" id="userDropdownTrigger">
+            <div class="user-dropdown" id="userDropdown">
+                <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                <a href="#"><i class="fas fa-tv"></i>My Watchlist</a>
+                <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </div> -->
+</header>
+
+<style>
+    /* Header Styles */
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: #1a1a1a;
+        color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .logo i {
+        color: #4ecdc4;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .nav-links a:hover {
+        color: #4ecdc4;
+    }
+
+    .nav-links a.active {
+        color: #4ecdc4;
+        border-bottom: 2px solid #4ecdc4;
+    }
+
+    .user-actions {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+    }
+
+    .search-icon,
+    .fa-bell {
+        font-size: 1.2rem;
+        color: white;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    .search-icon:hover,
+    .fa-bell:hover {
+        color: #4ecdc4;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+    }
+
+    .user-avatar-container {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .user-avatar-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-icon {
+        font-size: 36px;
+        color: #4ecdc4;
+    }
+
+    .user-name {
+        font-weight: 500;
+        color: white;
+    }
+
+    .user-dropdown-container {
+        position: relative;
+    }
+
+    .user-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 0.5rem 0;
+        min-width: 200px;
+        display: none;
+        z-index: 101;
+    }
+
+    .user-dropdown.show {
+        display: block;
+    }
+
+    .user-dropdown a {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .user-dropdown a:hover {
+        background-color: #f5f5f5;
+    }
+
+    .user-dropdown i {
+        width: 20px;
+        text-align: center;
+    }
+</style>
+
+<script>
+    // Auth functionality that can be used across pages
+    function getCurrentUser() {
+        const userData = localStorage.getItem('currentUser');
+        return userData ? JSON.parse(userData) : null;
+    }
+
+    function setCurrentUser(user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        updateUserState(user); // Update UI immediately after setting user
+    }
+
+    function removeCurrentUser() {
+        localStorage.removeItem('currentUser');
+        updateUserState(null); // Update UI immediately after removing user
+    }
+
+    function setAuthToken(token) {
+        localStorage.setItem('authToken', token);
+    }
+
+    function getAuthToken() {
+        return localStorage.getItem('authToken');
+    }
+
+    function removeAuthToken() {
+        localStorage.removeItem('authToken');
+    }
+
+    function updateUserState(user) {
+        const userInfo = document.getElementById('userInfo');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userDropdownTrigger = document.getElementById('userDropdownTrigger');
+
+        if (user && userInfo) {
+            // Update user name
+            if (userName) {
+                userName.textContent = `${user.firstName} ${user.lastName}`;
+            }
+
+            // Update avatar (use profile picture if available, otherwise use default icon)
+            if (user.profilePicture) {
+                userAvatar.innerHTML = `<img src="${user.profilePicture}" alt="${user.firstName}">`;
+            } else {
+                userAvatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+            }
+
+            // Add dropdown toggle
+            if (userDropdownTrigger) {
+                userInfo.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.getElementById('userDropdown').classList.toggle('show');
+                });
+
+                // Close dropdown when clicking elsewhere
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest('.user-dropdown') &&
+                        !e.target.closest('#userInfo')) {
+                        document.getElementById('userDropdown').classList.remove('show');
+                    }
+                });
+            }
+        } else {
+            if (userInfo) {
+                if (userName) {
+                    userName.textContent = '';
+                }
+                userAvatar.innerHTML = '<i class="fas fa-user-circle user-icon"></i>';
+            }
+            if (document.getElementById('userDropdown')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check if user is already logged in
+        const user = getCurrentUser();
+        updateUserState(user);
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Clear user data
+            removeCurrentUser();
+            removeAuthToken();
+
+            // Redirect to home page
+            window.location.href = 'index.html';
+        });
+
+        // Make updateUserState available globally so other pages can call it
+        window.updateUserState = updateUserState;
+    });
+</script>

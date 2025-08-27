@@ -1,0 +1,230 @@
+<!-- header.html -->
+<header>
+    <div class="logo" id="homeLink">
+        <i class="fas fa-ticket-alt"></i>
+        <span>Soldout.com</span>
+    </div>
+    <div class="nav-links">
+        <a href="index.html" class="active home-link">Home</a>
+        <a href="gallery.html">Movies</a>
+        <a href="series.html">TV Shows</a>
+        <a href="#">New Releases</a>
+        <a href="soundtracks.html">Soundtracks</a>
+    </div>
+    <div class="user-actions">
+        <i class="fas fa-search search-icon"></i>
+        <i class="fas fa-bell"></i>
+        <div class="user-info" id="userInfo"></div>
+        <div class="user-icon-container" id="userDropdownTrigger">
+            <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+            <div class="user-dropdown" id="userDropdown">
+                <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                <a href="#"><i class="fas fa-tv"></i>My Watchlist</a>
+                <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-modal">
+        <div class="login-header">
+            <h2>Login to Soldout</h2>
+            <i class="fas fa-times close-login"></i>
+        </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+            <div class="login-footer">
+                <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Register Overlay -->
+<div id="registerOverlay" class="login-overlay">
+    <div class="login-modal">
+        <div class="login-header">
+            <h2>Create Account</h2>
+            <i class="fas fa-times close-register"></i>
+        </div>
+        <form id="registerForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" name="email" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+            </div>
+            <div class="terms">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                        Policy</a></label>
+            </div>
+            <button type="submit">Create Account</button>
+            <div class="login-footer">
+                <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Auth functionality that can be used across pages
+    function getCurrentUser() {
+        const userData = localStorage.getItem('currentUser');
+        return userData ? JSON.parse(userData) : null;
+    }
+
+    function setCurrentUser(user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+
+    function removeCurrentUser() {
+        localStorage.removeItem('currentUser');
+    }
+
+    function setAuthToken(token) {
+        localStorage.setItem('authToken', token);
+    }
+
+    function getAuthToken() {
+        return localStorage.getItem('authToken');
+    }
+
+    function removeAuthToken() {
+        localStorage.removeItem('authToken');
+    }
+
+    function updateUserState(user) {
+        const userInfo = document.getElementById('userInfo');
+        const userIcon = document.getElementById('userIcon');
+        const userDropdownTrigger = document.getElementById('userDropdownTrigger');
+
+        if (user && userInfo) {
+            userInfo.textContent = `${user.firstName} ${user.lastName}`;
+            userIcon.style.color = '#4ecdc4';
+            userIcon.style.textShadow = '0 0 10px rgba(78, 205, 196, 0.5)';
+
+            // Add dropdown toggle
+            userDropdownTrigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                document.getElementById('userDropdown').classList.toggle('show');
+            });
+
+            // Close dropdown when clicking elsewhere
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.user-dropdown') &&
+                    !e.target.closest('#userDropdownTrigger')) {
+                    document.getElementById('userDropdown').classList.remove('show');
+                }
+            });
+        } else {
+            if (userInfo) userInfo.textContent = '';
+            if (userIcon) {
+                userIcon.style.color = '#fff';
+                userIcon.style.textShadow = 'none';
+            }
+        }
+    }
+
+    // Initialize auth when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check if user is already logged in
+        const user = getCurrentUser();
+        if (user) {
+            updateUserState(user);
+        }
+
+        // Login Modal Functionality
+        const loginOverlay = document.getElementById('loginOverlay');
+        const closeLogin = document.querySelector('.close-login');
+        const registerOverlay = document.getElementById('registerOverlay');
+        const closeRegister = document.querySelector('.close-register');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+
+        // Open login modal when clicking user icon without being logged in
+        document.getElementById('userDropdownTrigger')?.addEventListener('click', function (e) {
+            const user = getCurrentUser();
+            if (!user) {
+                loginOverlay.classList.add('active');
+            }
+        });
+
+        closeLogin?.addEventListener('click', () => {
+            loginOverlay.classList.remove('active');
+        });
+
+        closeRegister?.addEventListener('click', () => {
+            registerOverlay.classList.remove('active');
+        });
+
+        showRegister?.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginOverlay.classList.remove('active');
+            registerOverlay.classList.add('active');
+        });
+
+        showLogin?.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerOverlay.classList.remove('active');
+            loginOverlay.classList.add('active');
+        });
+
+        // Close modal when clicking outside
+        loginOverlay?.addEventListener('click', (e) => {
+            if (e.target === loginOverlay) {
+                loginOverlay.classList.remove('active');
+            }
+        });
+
+        registerOverlay?.addEventListener('click', (e) => {
+            if (e.target === registerOverlay) {
+                registerOverlay.classList.remove('active');
+            }
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn')?.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Clear user data
+            removeCurrentUser();
+            removeAuthToken();
+
+            // Update UI
+            updateUserState();
+
+            // Close dropdown
+            document.getElementById('userDropdown')?.classList.remove('show');
+        });
+    });
+</script>

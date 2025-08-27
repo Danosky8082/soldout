@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soldout.com - TV Series Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Include header -->
+        <div id="header-container"></div>
+        <!-- Search Bar -->
+        <input type="text" id="videoSearch" placeholder="Search in TV Series by Title ...">
+        <!-- Page specific content -->
+        <h2 class="section-title">
+            <i class="fas fa-video"></i>
+            TV Series Gallery
+        </h2>
+
+        <div class="video-grid" id="videoGallery">
+            <div class="spinner" id="videoSpinner"></div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-links">
+            <a href="admin.html">
+                <font color="green">Admin</font>
+            </a> |
+            <a href="#">About Us</a> |
+            <a href="#">Contact</a> |
+            <a href="#">Privacy Policy</a> |
+            <a href="#">Terms of Service</a> |
+            <a href="#">Help Center</a>
+        </div>
+        <p>&copy; 2025 Soldout.com. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Load header
+        fetch('header.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('header-container').innerHTML = html;
+                initializeGallery();
+            });
+        // Updated API configuration
+        const API_BASE_URL = 'http://localhost:5000/api'; // Update to match your server
+
+        // Function to filter out musical and series videos
+        function filterVideos(videos) {
+            if (!videos || !Array.isArray(videos)) return [];
+
+            return videos.filter(video => {
+                if (!video || !video.genre) return true;
+                const genre = video.genre.toLowerCase();
+                return (genre.includes('series') );
+            });
+        }
+
+        // Improved video loading function
+        async function loadVideos() {
+            const videoGallery = document.getElementById('videoGallery');
+            videoGallery.innerHTML = '<div class="spinner" id="videoSpinner"></div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/videos/premium`);
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+
+                const videos = await response.json();
+
+                if (!Array.isArray(videos)) {
+                    throw new Error('Invalid data format received from server');
+                }
+
+                // Filter out musical and series videos
+                const filteredVideos = filterVideos(videos);
+                renderVideos(filteredVideos);
+            } catch (error) {
+                console.error('Failed to fetch videos:', error);
+                videoGallery.innerHTML = `
+                        <div class="alert alert-danger">
+                            Error loading videos: ${error.message}<br>
+                            Check console for details
+                        </div>
+                    `;
+            }
+        }
+
+        // Enhanced video rendering with better error handling
+        function renderVideos(videos) {
+            const videoGallery = document.getElementById('videoGallery');
+            videoGallery.innerHTML = '';
+
+            if (!videos || videos.length === 0) {
+                videoGallery.innerHTML = '<div class="alert alert-info">No videos found</div>';
+                return;
+            }
+
+            videos.forEach(video => {
+                // Skip invalid video entries
+                if (!video || !video.id || !video.title) {
+                    console.warn('Skipping invalid video entry:', video);
+                    return;
+                }
+
+                const videoEl = document.createElement('div');
+                videoEl.className = 'video-item';
+                videoEl.dataset.videoId = video.id;
+
+                // Construct thumbnail URL properly
+                const thumbnailUrl = video.thumbnail
+                    ? (video.thumbnail.startsWith('http') ? video.thumbnail : `http://localhost:5000${video.thumbnail}`)
+                    : 'https://via.placeholder.com/300x169?text=No+Thumbnail';
+
+                // Construct video URL properly
+                const videoUrl = video.videoUrl
+                    ? (video.videoUrl.startsWith('http') ? video.videoUrl : `http://localhost:5000${video.videoUrl}`)
+                    : '#';
+
+                videoEl.innerHTML = `
+                        <div class="thumbnail-container">
+                            <img class="video-thumbnail" 
+                                 src="${thumbnailUrl}" 
+                                 alt="${video.title}"
+                                 onerror="this.src='https://via.placeholder.com/300x169?text=Thumbnail+Error'">
+                            <video class="video-preview" muted loop playsinline>
+                                <source src="${videoUrl}" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="video-info">
+                            <div class="channel-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="video-details">
+                                <h3 class="video-title">${video.title}</h3>
+                                <div class="video-meta">
+                                    <span class="channel-name">${video.user?.firstName || 'Unknown'}</span>
+                                    <div class="views-age">
+                                        <span>${video.views || 0} views</span>
+                                        <span>•</span>
+                                        <span>${video.year || 'Unknown year'}</span>
+                                    </div>
+                                    <span class="genre">${video.genre || 'Unknown genre'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                // Add hover effects
+                const preview = videoEl.querySelector('.video-preview');
+                videoEl.addEventListener('mouseenter', () => {
+                    if (preview) {
+                        preview.currentTime = 0;
+                        preview.play().catch(e => console.log("Video preview error:", e));
+                    }
+                });
+                videoEl.addEventListener('mouseleave', () => {
+                    if (preview) preview.pause();
+                });
+
+                // Add click handler
+                videoEl.addEventListener('click', () => {
+                    if (videoUrl && videoUrl !== '#') {
+                        playVideo(video);
+                    } else {
+                        alert('Video URL not available');
+                    }
+                });
+
+                videoGallery.appendChild(videoEl);
+            });
+        }
+
+        function playVideo(video) {
+            // Store video data for the player page
+            sessionStorage.setItem('currentVideo', JSON.stringify(video));
+            // Open player page - make sure this path is correct
+            window.location.href = 'video-player.html';
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVideos();
+
+            // Search functionality
+            document.getElementById('videoSearch').addEventListener('input', function () {
+                const query = this.value.toLowerCase().trim();
+                const videoItems = document.querySelectorAll('.video-item');
+
+                let hasResults = false;
+                videoItems.forEach(item => {
+                    const title = item.querySelector('.video-title').textContent.toLowerCase();
+                    const genre = item.querySelector('.genre').textContent.toLowerCase();
+
+                    if (title.includes(query) || genre.includes(query)) {
+                        item.style.display = 'block';
+                        hasResults = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                if (!hasResults && query) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'alert alert-info';
+                    noResults.textContent = 'No videos match your search';
+                    document.getElementById('videoGallery').appendChild(noResults);
+                }
+            });
+        });
+
+        // Updated search functionality - now only searches Video Gallery
+        document.getElementById('videoSearch').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const videos = document.querySelectorAll('.video-item');
+
+            videos.forEach(video => {
+                const title = video.querySelector('.video-title').textContent.toLowerCase();
+                const title_genre = video.querySelector('.video-genre').textContent.toLowerCase();
+                video.style.display = title.includes(query) ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>

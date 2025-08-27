@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/profile.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="#">Movies</a>
+                <a href="#">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="#">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo"></div>
+                <div class="user-icon-container" id="userDropdownTrigger">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="profile-container">
+            <div class="profile-header">
+                <div class="profile-picture-container" id="profilePictureContainer">
+                    <img src="https://via.placeholder.com/150" alt="Profile Picture" class="profile-picture"
+                        id="profilePicture">
+                    <div class="profile-picture-edit">Change Photo</div>
+                    <input type="file" id="profilePictureUpload" accept="image/*" style="display: none;">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-info-text view-mode">
+                        <h1 class="profile-name" id="profileName">Loading...</h1>
+                        <p class="profile-email" id="profileEmail">Loading...</p>
+                        <p class="profile-join-date" id="profileJoinDate">Member since Loading...</p>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="videosCount">0</div>
+                                <div class="stat-label">Videos</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="viewsCount">0</div>
+                                <div class="stat-label">Views</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="likesCount">0</div>
+                                <div class="stat-label">Likes</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="subscribersCount">0</div>
+                                <div class="stat-label">Subscribers</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-actions view-mode">
+                        <button class="profile-btn edit-btn" id="editProfileBtn">Edit Profile</button>
+                        <button class="profile-btn logout-btn" id="logoutProfileBtn">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-content">
+                <div class="profile-details">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        About Me
+                    </h2>
+                    <div class="profile-info-text view-mode">
+                        <p class="profile-bio" id="profileBio">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="profile-videos">
+                    <div class="section-title">
+                        <i class="fas fa-video"></i>
+                        My Videos
+                        <button class="upload-video-btn" id="uploadVideoBtn" style="margin-left: auto;">
+                            <i class="fas fa-plus"></i> Upload Video
+                        </button>
+                    </div>
+                    <div class="videos-grid" id="userVideosGrid">
+                        <div class="no-videos" id="noVideosMessage">
+                            <i class="fas fa-video-slash"></i>
+                            <p>You haven't uploaded any videos yet</p>
+                            <button class="upload-video-btn" id="uploadVideoBtn2">
+                                <i class="fas fa-plus"></i> Upload Your First Video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="#">About Us</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Help Center</a>
+            </div>
+            <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
+            <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+        </footer>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" id="closeEditModal"></i>
+            <h2 class="modal-title">Edit Profile</h2>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editFirstName">First Name</label>
+                        <input type="text" id="editFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editLastName">Last Name</label>
+                        <input type="text" id="editLastName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editBio">Bio</label>
+                        <textarea id="editBio"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelEditBtn">Cancel</button>
+                <button class="save-btn" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" id="closeDeleteModal"></i>
+            <h2 class="modal-title">Delete Video</h2>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this video? This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
+                <button class="save-btn" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/scripts/profile.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <style>
+        :root {
+            --primary-color: #4ecdc4;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --danger-color: #e63946;
+            --warning-color: #ffbe0b;
+            --success-color: #2a9d8f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .admin-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .admin-sidebar {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-logo i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .admin-logo span {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .admin-menu {
+            margin-top: 20px;
+        }
+
+        .admin-menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-menu-item.active {
+            background-color: var(--primary-color);
+        }
+
+        .admin-menu-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .admin-main {
+            padding: 20px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .admin-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+        }
+
+        .admin-user img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .admin-user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-user-name {
+            font-weight: 600;
+        }
+
+        .admin-user-role {
+            font-size: 12px;
+            color: #777;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: #777;
+            margin-bottom: 10px;
+        }
+
+        .card-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .card-icon {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .card-icon i {
+            font-size: 40px;
+            opacity: 0.2;
+        }
+
+        /* Table Styles */
+        .admin-table-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        table.dataTable {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid #ddd !important;
+            padding: 5px 10px !important;
+            border-radius: 4px !important;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            border: 1px solid #ddd !important;
+            padding: 5px !important;
+            border-radius: 4px !important;
+        }
+
+        .video-thumbnail {
+            width: 80px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background-color: var(--warning-color);
+            color: #000;
+        }
+
+        .badge-approved {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge-rejected {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .action-btn i {
+            margin-right: 5px;
+        }
+
+        .btn-approve {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-reject {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-edit {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-view {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .video-preview-container {
+            margin-bottom: 20px;
+        }
+
+        .video-preview {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .video-info-item {
+            margin-bottom: 15px;
+        }
+
+        .video-info-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .video-info-value {
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .login-modal {
+            background-color: white;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #3ab7ae;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .register-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1200px) {
+            .dashboard-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+            }
+
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Login Overlay (shown first) -->
+    <div id="adminLoginOverlay" class="login-overlay">
+        <div class="login-modal">
+            <div class="login-header">
+                <h2>Admin Login</h2>
+                <p>Enter your credentials to access the admin dashboard</p>
+            </div>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label for="adminEmail">Admin Email</label>
+                    <input type="email" id="adminEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+            <div class="register-link">
+                <p>Need an admin account? <a href="#" id="showRegisterForm">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Registration Overlay (hidden by default) -->
+    <div id="adminRegisterOverlay" class="login-overlay" style="display: none;">
+        <div class="login-modal">
+            <div class="login-header">
+                <h2>Admin Registration</h2>
+                <p>Register a new admin personnel</p>
+            </div>
+            <form id="adminRegisterForm">
+                <div class="form-group">
+                    <label for="regFirstName">First Name</label>
+                    <input type="text" id="regFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="regLastName">Last Name</label>
+                    <input type="text" id="regLastName" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" required>
+                </div>
+                <button type="submit" class="login-btn">Register</button>
+            </form>
+            <div class="register-link">
+                <p>Already have an account? <a href="#" id="showLoginForm">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (hidden until login) -->
+    <div class="admin-container" id="adminDashboard" style="display: none;">
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <div class="admin-logo">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout Admin</span>
+            </div>
+            <div class="admin-menu">
+                <div class="admin-menu-item active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="admin-menu-item" data-section="pending-videos">
+                    <i class="fas fa-clock"></i>
+                    <span>Pending Videos</span>
+                </div>
+                <div class="admin-menu-item" data-section="approved-videos">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Approved Videos</span>
+                </div>
+                <div class="admin-menu-item" data-section="rejected-videos">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Rejected Videos</span>
+                </div>
+                <div class="admin-menu-item" data-section="users">
+                    <i class="fas fa-users"></i>
+                    <span>User Management</span>
+                </div>
+                <div class="admin-menu-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="admin-main">
+            <div class="admin-header">
+                <div class="admin-title">Admin Dashboard</div>
+                <div class="admin-user">
+                    <img src="https://via.placeholder.com/40" alt="Admin User">
+                    <div class="admin-user-info">
+                        <div class="admin-user-name" id="adminUserName">Super Admin</div>
+                        <div class="admin-user-role">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Cards -->
+            <div class="dashboard-cards">
+                <div class="dashboard-card">
+                    <div class="card-title">Pending Videos</div>
+                    <div class="card-value" id="pendingCount">0</div>
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-title">Approved Videos</div>
+                    <div class="card-value" id="approvedCount">0</div>
+                    <div class="card-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-title">Rejected Videos</div>
+                    <div class="card-value" id="rejectedCount">0</div>
+                    <div class="card-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="card-title">Total Users</div>
+                    <div class="card-value" id="usersCount">0</div>
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Videos Table -->
+            <div class="admin-table-container" id="pending-videos-section">
+                <h3>Pending Videos for Review</h3>
+                <table id="pendingVideosTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Thumbnail</th>
+                            <th>Title</th>
+                            <th>Uploader</th>
+                            <th>Genre</th>
+                            <th>Date Uploaded</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Approved Videos Table -->
+            <div class="admin-table-container" id="approved-videos-section" style="display: none;">
+                <h3>Approved Videos</h3>
+                <table id="approvedVideosTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Thumbnail</th>
+                            <th>Title</th>
+                            <th>Uploader</th>
+                            <th>Genre</th>
+                            <th>Date Approved</th>
+                            <th>Views</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Rejected Videos Table -->
+            <div class="admin-table-container" id="rejected-videos-section" style="display: none;">
+                <h3>Rejected Videos</h3>
+                <table id="rejectedVideosTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Thumbnail</th>
+                            <th>Title</th>
+                            <th>Uploader</th>
+                            <th>Genre</th>
+                            <th>Date Rejected</th>
+                            <th>Reason</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Users Table -->
+            <div class="admin-table-container" id="users-section" style="display: none;">
+                <h3>User Management</h3>
+                <table id="usersTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Join Date</th>
+                            <th>Uploads</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="admin-table-container" id="settings-section" style="display: none;">
+                <h3>Admin Settings</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>Admin Password Change</label>
+                        <input type="password" id="currentPassword" placeholder="Current Password">
+                        <input type="password" id="newPassword" placeholder="New Password" style="margin-top: 10px;">
+                        <input type="password" id="confirmNewPassword" placeholder="Confirm New Password"
+                            style="margin-top: 10px;">
+                        <button class="login-btn" style="margin-top: 15px;" id="changePasswordBtn">Change
+                            Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Review Modal -->
+    <div id="videoReviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Video Review</div>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="video-preview-container">
+                <video id="reviewVideoPlayer" controls class="video-preview">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Title</div>
+                <div class="video-info-value" id="reviewVideoTitle"></div>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Uploader</div>
+                <div class="video-info-value" id="reviewVideoUploader"></div>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Genre</div>
+                <div class="video-info-value" id="reviewVideoGenre"></div>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Release Date</div>
+                <div class="video-info-value" id="reviewVideoDate"></div>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Description</div>
+                <div class="video-info-value" id="reviewVideoDescription"></div>
+            </div>
+            <div class="video-info-item" id="rejectionReasonContainer" style="display: none;">
+                <div class="video-info-label">Rejection Reason</div>
+                <textarea id="rejectionReason" class="video-info-value"
+                    style="width: 100%; min-height: 80px;"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn btn-approve" id="approveVideoBtn">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="action-btn btn-reject" id="rejectVideoBtn">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+                <button class="action-btn btn-edit" id="editVideoBtn">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="action-btn btn-delete" id="deleteVideoBtn">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="userEditModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit User</div>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">User ID</div>
+                <div class="video-info-value" id="editUserId"></div>
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Name</div>
+                <input type="text" id="editUserName" class="video-info-value" style="width: 100%;">
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Email</div>
+                <input type="email" id="editUserEmail" class="video-info-value" style="width: 100%;">
+            </div>
+            <div class="video-info-item">
+                <div class="video-info-label">Role</div>
+                <select id="editUserRole" class="video-info-value" style="width: 100%; padding: 8px;">
+                    <option value="user">User</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="action-btn btn-approve" id="saveUserBtn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button class="action-btn btn-delete" id="banUserBtn">
+                    <i class="fas fa-ban"></i> Ban User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script>
+        // Base API URL
+        const API_BASE_URL = '/api';
+        let currentAdmin = null;
+        let currentVideoBeingReviewed = null;
+        let currentUserBeingEdited = null;
+
+        // Function to check if user is admin
+        function isAdmin() {
+            return currentAdmin && currentAdmin.role === 'admin';
+        }
+
+        // Function to show alert
+        function showAlert(message, type = 'success') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            document.body.appendChild(alert);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Toggle between login and register forms
+        document.getElementById('showRegisterForm').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('adminLoginOverlay').style.display = 'none';
+            document.getElementById('adminRegisterOverlay').style.display = 'flex';
+        });
+
+        document.getElementById('showLoginForm').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('adminRegisterOverlay').style.display = 'none';
+            document.getElementById('adminLoginOverlay').style.display = 'flex';
+        });
+
+        // Admin registration functionality
+        document.getElementById('adminRegisterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const firstName = document.getElementById('regFirstName').value.trim();
+            const lastName = document.getElementById('regLastName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match', 'danger');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/admin/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        firstName, 
+                        lastName, 
+                        email, 
+                        password 
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Registration failed');
+                }
+
+                const data = await response.json();
+                showAlert('Admin registration successful! Please login.', 'success');
+                
+                // Switch back to login form
+                document.getElementById('adminRegisterOverlay').style.display = 'none';
+                document.getElementById('adminLoginOverlay').style.display = 'flex';
+                
+                // Clear form
+                document.getElementById('adminRegisterForm').reset();
+
+            } catch (error) {
+                showAlert(error.message || 'Admin registration failed', 'danger');
+            }
+        });
+
+        // Admin login functionality
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Login failed');
+                }
+
+                const data = await response.json();
+                currentAdmin = data.user;
+
+                // Store admin token
+                localStorage.setItem('adminToken', data.token);
+
+                // Hide login and show dashboard
+                document.getElementById('adminLoginOverlay').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'grid';
+
+                // Update admin info
+                document.getElementById('adminUserName').textContent = 
+                    `${currentAdmin.firstName} ${currentAdmin.lastName}`;
+
+                // Load dashboard data
+                loadDashboardData();
+                initDataTables();
+
+            } catch (error) {
+                showAlert(error.message || 'Admin login failed', 'danger');
+            }
+        });
+
+        // Check for existing admin session
+        async function checkAdminSession() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return false;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/admin/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    currentAdmin = await response.json();
+                    document.getElementById('adminLoginOverlay').style.display = 'none';
+                    document.getElementById('adminDashboard').style.display = 'grid';
+                    document.getElementById('adminUserName').textContent = 
+                        `${currentAdmin.firstName} ${currentAdmin.lastName}`;
+                    loadDashboardData();
+                    initDataTables();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+            }
+            return false;
+        }
+
+        // Load dashboard summary data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pendingCount').textContent = data.pendingVideos;
+                    document.getElementById('approvedCount').textContent = data.approvedVideos;
+                    document.getElementById('rejectedCount').textContent = data.rejectedVideos;
+                    document.getElementById('usersCount').textContent = data.totalUsers;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Initialize DataTables
+        function initDataTables() {
+            // Pending Videos Table
+            $('#pendingVideosTable').DataTable({
+                ajax: {
+                    url: `${API_BASE_URL}/admin/videos/pending`,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: ''
+                },
+                columns: [
+                    { 
+                        data: 'thumbnail',
+                        render: function(data) {
+                            return `<img src="${data}" class="video-thumbnail">`;
+                        }
+                    },
+                    { data: 'title' },
+                    { 
+                        data: 'user',
+                        render: function(data) {
+                            return `${data.firstName} ${data.lastName}`;
+                        }
+                    },
+                    { data: 'genre' },
+                    { 
+                        data: 'createdAt',
+                        render: function(data) {
+                            return new Date(data).toLocaleString();
+                        }
+                    },
+                    {
+                        data: 'status',
+                        render: function(data) {
+                            return `<span class="badge badge-pending">Pending</span>`;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        render: function(data, type, row) {
+                            return `
+                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                    <i class="fas fa-eye"></i> Review
+                                </button>
+                                <button class="action-btn btn-edit" data-id="${data}" onclick="editVideo('${data}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            `;
+                        }
+                    }
+                ]
+            });
+
+            // Approved Videos Table
+            $('#approvedVideosTable').DataTable({
+                ajax: {
+                    url: `${API_BASE_URL}/admin/videos/approved`,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: ''
+                },
+                columns: [
+                    { 
+                        data: 'thumbnail',
+                        render: function(data) {
+                            return `<img src="${data}" class="video-thumbnail">`;
+                        }
+                    },
+                    { data: 'title' },
+                    { 
+                        data: 'user',
+                        render: function(data) {
+                            return `${data.firstName} ${data.lastName}`;
+                        }
+                    },
+                    { data: 'genre' },
+                    { 
+                        data: 'approvedAt',
+                        render: function(data) {
+                            return data ? new Date(data).toLocaleString() : 'N/A';
+                        }
+                    },
+                    { data: 'views' },
+                    {
+                        data: 'id',
+                        render: function(data, type, row) {
+                            return `
+                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="action-btn btn-edit" data-id="${data}" onclick="editVideo('${data}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="action-btn btn-delete" data-id="${data}" onclick="unpublishVideo('${data}')">
+                                    <i class="fas fa-times"></i> Unpublish
+                                </button>
+                            `;
+                        }
+                    }
+                ]
+            });
+
+            // Rejected Videos Table
+            $('#rejectedVideosTable').DataTable({
+                ajax: {
+                    url: `${API_BASE_URL}/admin/videos/rejected`,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: ''
+                },
+                columns: [
+                    { 
+                        data: 'thumbnail',
+                        render: function(data) {
+                            return `<img src="${data}" class="video-thumbnail">`;
+                        }
+                    },
+                    { data: 'title' },
+                    { 
+                        data: 'user',
+                        render: function(data) {
+                            return `${data.firstName} ${data.lastName}`;
+                        }
+                    },
+                    { data: 'genre' },
+                    { 
+                        data: 'rejectedAt',
+                        render: function(data) {
+                            return data ? new Date(data).toLocaleString() : 'N/A';
+                        }
+                    },
+                    { data: 'rejectionReason' },
+                    {
+                        data: 'id',
+                        render: function(data, type, row) {
+                            return `
+                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="action-btn btn-approve" data-id="${data}" onclick="approveRejectedVideo('${data}')">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="action-btn btn-delete" data-id="${data}" onclick="deleteVideo('${data}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            `;
+                        }
+                    }
+                ]
+            });
+
+            // Users Table
+            $('#usersTable').DataTable({
+                ajax: {
+                    url: `${API_BASE_URL}/admin/users`,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: ''
+                },
+                columns: [
+                    { 
+                        data: 'avatar',
+                        render: function(data) {
+                            return `<img src="${data || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                        }
+                    },
+                    { 
+                        data: null,
+                        render: function(data) {
+                            return `${data.firstName} ${data.lastName}`;
+                        }
+                    },
+                    { data: 'email' },
+                    { 
+                        data: 'role',
+                        render: function(data) {
+                            return data.charAt(0).toUpperCase() + data.slice(1);
+                        }
+                    },
+                    { 
+                        data: 'createdAt',
+                        render: function(data) {
+                            return new Date(data).toLocaleDateString();
+                        }
+                    },
+                    { 
+                        data: '_count.videos',
+                        render: function(data) {
+                            return data || 0;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        render: function(data, type, row) {
+                            return `
+                                <button class="action-btn btn-edit" data-id="${data}" onclick="editUser('${data}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                ${row.role !== 'admin' ? `
+                                <button class="action-btn btn-delete" data-id="${data}" onclick="toggleBanUser('${data}', ${row.isBanned})">
+                                    <i class="fas fa-${row.isBanned ? 'undo' : 'ban'}"></i> ${row.isBanned ? 'Unban' : 'Ban'}
+                                </button>
+                                ` : ''}
+                            `;
+                        }
+                    }
+                ]
+            });
+        }
+
+        // Menu navigation
+        document.querySelectorAll('.admin-menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Update active menu item
+                document.querySelectorAll('.admin-menu-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                // Show the corresponding section
+                const section = this.dataset.section;
+                document.querySelectorAll('.admin-table-container').forEach(container => {
+                    container.style.display = 'none';
+                });
+                document.getElementById(`${section}-section`).style.display = 'block';
+            });
+        });
+
+        // Video review functionality
+        async function reviewVideo(videoId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch video details');
+                }
+
+                const video = await response.json();
+                currentVideoBeingReviewed = video;
+
+                // Populate modal with video data
+                document.getElementById('reviewVideoTitle').textContent = video.title;
+                document.getElementById('reviewVideoUploader').textContent = 
+                    `${video.user.firstName} ${video.user.lastName}`;
+                document.getElementById('reviewVideoGenre').textContent = video.genre;
+                document.getElementById('reviewVideoDate').textContent = 
+                    new Date(video.releaseDate).toLocaleDateString();
+                document.getElementById('reviewVideoDescription').textContent = video.description;
+
+                // Set video source
+                const videoPlayer = document.getElementById('reviewVideoPlayer');
+                videoPlayer.src = video.videoUrl;
+                videoPlayer.load();
+
+                // Show appropriate buttons based on video status
+                if (video.status === 'PENDING') {
+                    document.getElementById('approveVideoBtn').style.display = 'inline-block';
+                    document.getElementById('rejectVideoBtn').style.display = 'inline-block';
+                    document.getElementById('rejectionReasonContainer').style.display = 'none';
+                } else if (video.status === 'REJECTED') {
+                    document.getElementById('approveVideoBtn').style.display = 'inline-block';
+                    document.getElementById('rejectVideoBtn').style.display = 'none';
+                    document.getElementById('rejectionReasonContainer').style.display = 'block';
+                    document.getElementById('rejectionReason').value = video.rejectionReason || '';
+                } else {
+                    document.getElementById('approveVideoBtn').style.display = 'none';
+                    document.getElementById('rejectVideoBtn').style.display = 'none';
+                    document.getElementById('rejectionReasonContainer').style.display = 'none';
+                }
+
+                // Show modal
+                document.getElementById('videoReviewModal').style.display = 'flex';
+            } catch (error) {
+                showAlert(error.message || 'Failed to load video details', 'danger');
+            }
+        }
+
+        // Approve video
+        document.getElementById('approveVideoBtn').addEventListener('click', async function() {
+            if (!currentVideoBeingReviewed) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/videos/${currentVideoBeingReviewed.id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to approve video');
+                }
+
+                showAlert('Video approved successfully!');
+                closeModal();
+                refreshTables();
+                loadDashboardData();
+            } catch (error) {
+                showAlert(error.message || 'Failed to approve video', 'danger');
+            }
+        });
+
+        // Reject video
+        document.getElementById('rejectVideoBtn').addEventListener('click', async function() {
+            if (!currentVideoBeingReviewed) return;
+
+            const reason = document.getElementById('rejectionReason').value.trim();
+            if (!reason) {
+                showAlert('Please provide a rejection reason', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/videos/${currentVideoBeingReviewed.id}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to reject video');
+                }
+
+                showAlert('Video rejected successfully!');
+                closeModal();
+                refreshTables();
+                loadDashboardData();
+            } catch (error) {
+                showAlert(error.message || 'Failed to reject video', 'danger');
+            }
+        });
+
+        // Edit video
+        function editVideo(videoId) {
+            // In a real implementation, this would open an edit form
+            alert(`Edit video ${videoId} functionality would be implemented here`);
+        }
+
+        // Unpublish video
+        async function unpublishVideo(videoId) {
+            if (confirm('Are you sure you want to unpublish this video?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}/unpublish`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to unpublish video');
+                    }
+
+                    showAlert('Video unpublished successfully!');
+                    refreshTables();
+                    loadDashboardData();
+                } catch (error) {
+                    showAlert(error.message || 'Failed to unpublish video', 'danger');
+                }
+            }
+        }
+
+        // Delete video
+        async function deleteVideo(videoId) {
+            if (confirm('Are you sure you want to permanently delete this video?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to delete video');
+                    }
+
+                    showAlert('Video deleted successfully!');
+                    refreshTables();
+                    loadDashboardData();
+                } catch (error) {
+                    showAlert(error.message || 'Failed to delete video', 'danger');
+                }
+            }
+        }
+
+        // Approve rejected video
+        async function approveRejectedVideo(videoId) {
+            if (confirm('Are you sure you want to approve this previously rejected video?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to approve video');
+                    }
+
+                    showAlert('Video approved successfully!');
+                    refreshTables();
+                    loadDashboardData();
+                } catch (error) {
+                    showAlert(error.message || 'Failed to approve video', 'danger');
+                }
+            }
+        }
+
+        // User management functions
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user details');
+                }
+
+                const user = await response.json();
+                currentUserBeingEdited = user;
+
+                // Populate modal with user data
+                document.getElementById('editUserId').textContent = user.id;
+                document.getElementById('editUserName').value = `${user.firstName} ${user.lastName}`;
+                document.getElementById('editUserEmail').value = user.email;
+                document.getElementById('editUserRole').value = user.role;
+
+                // Show modal
+                document.getElementById('userEditModal').style.display = 'flex';
+            } catch (error) {
+                showAlert(error.message || 'Failed to load user details', 'danger');
+            }
+        }
+
+        // Save user changes
+        document.getElementById('saveUserBtn').addEventListener('click', async function() {
+            if (!currentUserBeingEdited) return;
+
+            const name = document.getElementById('editUserName').value.trim();
+            const email = document.getElementById('editUserEmail').value.trim();
+            const role = document.getElementById('editUserRole').value;
+
+            if (!name || !email) {
+                showAlert('Please fill in all fields', 'warning');
+                return;
+            }
+
+            // Split name into first and last
+            const nameParts = name.split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${currentUserBeingEdited.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        firstName,
+                        lastName,
+                        email,
+                        role
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update user');
+                }
+
+                showAlert('User updated successfully!');
+                closeModal();
+                refreshTables();
+            } catch (error) {
+                showAlert(error.message || 'Failed to update user', 'danger');
+            }
+        });
+
+        // Ban/Unban user
+        async function toggleBanUser(userId, isCurrentlyBanned) {
+            const action = isCurrentlyBanned ? 'unban' : 'ban';
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/${action}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to ${action} user`);
+                    }
+
+                    showAlert(`User ${action}ned successfully!`);
+                    refreshTables();
+                } catch (error) {
+                    showAlert(error.message || `Failed to ${action} user`, 'danger');
+                }
+            }
+        }
+
+        // Change admin password
+        document.getElementById('changePasswordBtn').addEventListener('click', async function() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                showAlert('Please fill in all password fields', 'warning');
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                showAlert('New passwords do not match', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to change password');
+                }
+
+                showAlert('Password changed successfully!');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+            } catch (error) {
+                showAlert(error.message || 'Failed to change password', 'danger');
+            }
+        });
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('videoReviewModal').style.display = 'none';
+            document.getElementById('userEditModal').style.display = 'none';
+            currentVideoBeingReviewed = null;
+            currentUserBeingEdited = null;
+        }
+
+        // Refresh all DataTables
+        function refreshTables() {
+            $('#pendingVideosTable').DataTable().ajax.reload();
+            $('#approvedVideosTable').DataTable().ajax.reload();
+            $('#rejectedVideosTable').DataTable().ajax.reload();
+            $('#usersTable').DataTable().ajax.reload();
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Close modals with close buttons
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', closeModal);
+        });
+
+        // Initialize admin session check when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isLoggedIn = await checkAdminSession();
+            if (!isLoggedIn) {
+                document.getElementById('adminLoginOverlay').style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player - Soldout.com </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/video.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo"></div>
+                <div class="user-icon-container" id="userDropdownTrigger">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="video-container">
+                <div class="video-player">
+                    <!-- Star Rating Container -->
+                    <div class="rating-container" id="ratingContainer">
+                        <div class="rating-stars" id="ratingStars">
+                            <input type="radio" id="star10" name="rating" value="10">
+                            <label for="star10" title="10 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star9" name="rating" value="9">
+                            <label for="star9" title="9 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star8" name="rating" value="8">
+                            <label for="star8" title="8 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star7" name="rating" value="7">
+                            <label for="star7" title="7 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star6" name="rating" value="6">
+                            <label for="star6" title="6 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star5" name="rating" value="5">
+                            <label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star4" name="rating" value="4">
+                            <label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star3" name="rating" value="3">
+                            <label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star2" name="rating" value="2">
+                            <label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star1" name="rating" value="1">
+                            <label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                        </div>
+                        <div class="rating-average" id="ratingAverage">
+                            <span class="average-value">0.0</span>
+                            <span class="rating-count">(0 ratings)</span>
+                        </div>
+                    </div>
+                    <button class="quality-toggle" id="qualityToggle">
+                        <i class="fas fa-cog"></i> Quality
+                    </button>
+                    <div class="quality-selector" id="qualitySelector">
+                        <div class="quality-option" data-quality="360">360p</div>
+                        <div class="quality-option" data-quality="480">480p</div>
+                        <div class="quality-option active" data-quality="720">720p</div>
+                        <div class="quality-option" data-quality="1080">1080p</div>
+                    </div>
+                    <video id="mainPlayer" controls autoplay>
+                        <source src="" type="video/mp4" data-quality="720">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <div class="video-info">
+                    <h1 id="playerTitle" class="video-title"></h1>
+                    <div class="video-meta">
+                        <div id="playerMeta" class="video-stats"></div>
+                        <div class="video-actions">
+                            <button class="action-button" id="likeButton">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span id="likeCount">0</span>
+                            </button>
+                            <button class="action-button" id="dislikeButton">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span id="dislikeCount">0</span>
+                            </button>
+                            <button class="action-button" id="shareButton">
+                                <i class="fas fa-share"></i>
+                                <span>Share</span>
+                            </button>
+                            <button class="action-button" id="saveButton">
+                                <i class="fas fa-plus"></i>
+                                <span>Save</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="video-description">
+                        <div id="playerDescription"></div>
+                    </div>
+
+                    <div class="uploader-info">
+                        <div class="uploader-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="uploader-details">
+                            <div class="uploader-name" id="uploaderName"></div>
+                            <div class="subscribers-count" id="subscribersCount">1.2M subscribers</div>
+                        </div>
+                        <button class="subscribe-button" id="subscribeButton">SUBSCRIBE</button>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h3 class="comments-title">Comments <span id="commentsCount">(0)</span></h3>
+
+                    <form class="comment-form" id="commentForm">
+                        <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..."
+                            required>
+                        <button type="submit" class="comment-submit">Comment</button>
+                    </form>
+
+                    <div class="comment-list" id="commentList">
+                        <!-- Comments will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="section-title">Similar Videos</div>
+                <div class="related-videos" id="relatedVideos">
+                    <!-- Related videos will be populated by JavaScript -->
+                </div>
+
+                <div class="trivia-container">
+                    <div class="trivia-header">
+                        <div class="trivia-title">Trivia</div>
+                        <button class="trivia-add-btn" id="triviaAddBtn">
+                            <i class="fas fa-plus"></i> Add Trivia
+                        </button>
+                    </div>
+                    <div class="trivia-content" id="triviaContent">
+                        <!-- Trivia items will be added here dynamically -->
+                        <p class="no-trivia" id="noTrivia">No trivia added yet.</p>
+                    </div>
+
+                    <!-- Trivia Form (hidden by default) -->
+                    <div class="trivia-form-container" id="triviaFormContainer" style="display: none;">
+                        <textarea class="trivia-textarea" id="triviaTextarea"
+                            placeholder="Enter trivia text..."></textarea>
+                        <div class="trivia-actions">
+                            <button class="trivia-save-btn" id="triviaSaveBtn">Save</button>
+                            <button class="trivia-cancel-btn" id="triviaCancelBtn">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="share-modal" id="shareModal">
+            <div class="share-modal-content">
+                <div class="share-modal-header">
+                    <h3>Share Video</h3>
+                    <span class="share-modal-close" id="shareModalClose">&times;</span>
+                </div>
+                <div class="share-options">
+                    <div class="share-option" id="shareFacebook">
+                        <i class="fab fa-facebook"></i>
+                        <span>Facebook</span>
+                    </div>
+                    <div class="share-option" id="shareTwitter">
+                        <i class="fab fa-twitter"></i>
+                        <span>Twitter</span>
+                    </div>
+                    <div class="share-option" id="shareWhatsApp">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>WhatsApp</span>
+                    </div>
+                    <div class="share-option" id="shareLinkedIn">
+                        <i class="fab fa-linkedin"></i>
+                        <span>LinkedIn</span>
+                    </div>
+                </div>
+                <div class="share-link-container">
+                    <input type="text" class="share-link" id="shareLink" readonly>
+                    <button class="copy-link" id="copyLinkBtn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
+            <p class="copyright">&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by
+                copyright.</p>
+        </footer>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                // API base URL
+                const API_BASE_URL = 'http://localhost:5000';
+
+                // Get logged in user from localStorage
+                const loggedInUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (loggedInUser) {
+                    document.getElementById('userInfo').textContent =
+                        `${loggedInUser.firstName} ${loggedInUser.lastName}`;
+                }
+
+                // Get current video data from session storage
+                const videoData = JSON.parse(sessionStorage.getItem('currentVideo'));
+
+                if (!videoData) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Fetch video details from API
+                let video;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/videos/${videoData.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`);
+                    if (!response.ok) throw new Error('Failed to fetch video');
+                    video = await response.json();
+
+                    // Initialize default values if they don't exist
+                    if (!video._count) video._count = { likes: 0, subscribers: 0 };
+                    if (!video.comments) video.comments = [];
+
+                } catch (error) {
+                    console.error('Error loading video:', error);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Set current video data
+                const videoPlayer = document.getElementById('mainPlayer');
+                videoPlayer.src = video.videoUrl;
+                document.getElementById('playerTitle').textContent = video.title;
+                document.getElementById('uploaderName').textContent = video.user?.firstName + ' ' + video.user?.lastName || 'Unknown';
+
+                const metaHtml = `
+                    <span>${video.views?.toLocaleString() || '0'} views</span> • 
+                    <span>${new Date(video.createdAt).toLocaleDateString()}</span>
+                `;
+                document.getElementById('playerMeta').innerHTML = metaHtml;
+
+                if (video.description) {
+                    document.getElementById('playerDescription').textContent = video.description;
+                }
+
+                // Update UI elements
+                updateVideoUI(video);
+
+                // Initialize star rating
+                initStarRating(video);
+
+                // Like button functionality
+                document.getElementById('likeButton').addEventListener('click', async () => {
+                    if (!loggedInUser) {
+                        alert('Please log in to like videos');
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: 'VIDEO',
+                                userId: loggedInUser.id,
+                                videoId: video.id
+                            })
+                        });
+
+                        if (response.ok) {
+                            // Refresh video data
+                            const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`);
+                            video = await videoResponse.json();
+                            updateVideoUI(video);
+                        }
+                    } catch (error) {
+                        console.error('Error toggling like:', error);
+                    }
+                });
+
+                // Dislike button functionality
+                document.getElementById('dislikeButton').addEventListener('click', async () => {
+                    if (!loggedInUser) {
+                        alert('Please log in to dislike videos');
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: 'VIDEO',
+                                userId: loggedInUser.id,
+                                videoId: video.id,
+                                isDislike: true
+                            })
+                        });
+
+                        if (response.ok) {
+                            // Refresh video data
+                            const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`);
+                            video = await videoResponse.json();
+                            updateVideoUI(video);
+                        }
+                    } catch (error) {
+                        console.error('Error toggling dislike:', error);
+                    }
+                });
+
+                // Subscribe button functionality
+                document.getElementById('subscribeButton').addEventListener('click', async () => {
+                    if (!loggedInUser) {
+                        alert('Please log in to subscribe');
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/subscribe`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                userId: loggedInUser.id,
+                                videoId: video.id
+                            })
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            // Update UI based on subscription state
+                            const subscribeButton = document.getElementById('subscribeButton');
+                            if (result.subscribed) {
+                                subscribeButton.classList.add('subscribed');
+                                subscribeButton.textContent = 'SUBSCRIBED';
+                                // Update subscriber count display
+                                const subCountElement = document.getElementById('subscribersCount');
+                                const currentCount = parseInt(subCountElement.textContent) || 0;
+                                subCountElement.textContent = (currentCount + 1) + ' subscribers';
+                            } else {
+                                subscribeButton.classList.remove('subscribed');
+                                subscribeButton.textContent = 'SUBSCRIBE';
+                                // Update subscriber count display
+                                const subCountElement = document.getElementById('subscribersCount');
+                                const currentCount = parseInt(subCountElement.textContent) || 0;
+                                subCountElement.textContent = Math.max(0, currentCount - 1) + ' subscribers';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error toggling subscription:', error);
+                    }
+                });
+
+                // Update video UI function
+                function updateVideoUI(video) {
+                    // Update like count
+                    document.getElementById('likeCount').textContent = video.likeCount || 0;
+
+                    // Update dislike count
+                    document.getElementById('dislikeCount').textContent = video.dislikeCount || 0;
+
+                    // Update subscription status
+                    const subscribeButton = document.getElementById('subscribeButton');
+                    if (video.isSubscribed) {
+                        subscribeButton.classList.add('subscribed');
+                        subscribeButton.textContent = 'SUBSCRIBED';
+                    } else {
+                        subscribeButton.classList.remove('subscribed');
+                        subscribeButton.textContent = 'SUBSCRIBE';
+                    }
+
+                    // Update subscriber count with proper formatting
+                    const subCount = video.user?.subscriberCount || 0;
+                    let displayCount;
+                    if (subCount >= 1000000) {
+                        displayCount = (subCount / 1000000).toFixed(1) + 'M';
+                    } else if (subCount >= 1000) {
+                        displayCount = (subCount / 1000).toFixed(1) + 'K';
+                    } else {
+                        displayCount = subCount;
+                    }
+                    document.getElementById('subscribersCount').textContent = displayCount + ' subscribers';
+                }
+
+                function initStarRating(video) {
+                    const ratingStars = document.getElementById('ratingStars');
+                    const averageValue = document.querySelector('.average-value');
+                    const ratingCount = document.querySelector('.rating-count');
+
+                    // Set initial rating
+                    if (video.averageRating) {
+                        averageValue.textContent = video.averageRating;
+                        ratingCount.textContent = `(${video._count?.ratings || 0} ratings)`;
+
+                        // Check if user has rated
+                        if (video.userRating) {
+                            const starId = `star${video.userRating}`;
+                            document.getElementById(starId).checked = true;
+                        }
+                    }
+
+                    // Add event listeners for rating stars
+                    ratingStars.addEventListener('change', async (e) => {
+                        if (!loggedInUser) {
+                            alert('Please log in to rate videos');
+                            return;
+                        }
+
+                        const ratingValue = e.target.value;
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/api/interactions/rate`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    userId: loggedInUser.id,
+                                    videoId: video.id,
+                                    value: ratingValue
+                                })
+                            });
+
+                            if (response.ok) {
+                                const result = await response.json();
+                                averageValue.textContent = result.average;
+                                ratingCount.textContent = `(${result.count} ratings)`;
+                            }
+                        } catch (error) {
+                            console.error('Error submitting rating:', error);
+                        }
+                    });
+                }
+
+                // Updated comment and reply functionality
+                const commentForm = document.getElementById('commentForm');
+                const commentInput = document.getElementById('commentInput');
+                const commentList = document.getElementById('commentList');
+
+                // Load existing comments
+               renderComments(video.comments || []);
+
+                commentForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await handleCommentSubmit();
+                });
+
+                async function handleCommentSubmit() {
+                    if (!loggedInUser) {
+                        alert('Please log in to comment');
+                        return;
+                    }
+
+                    const commentText = commentInput.value.trim();
+                    if (!commentText) return;
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/comment`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: commentText,
+                                userId: loggedInUser.id,
+                                videoId: video.id
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to post comment');
+                        }
+
+                        // Refresh comments after successful post
+                        const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`);
+                        video = await videoResponse.json();
+                        renderComments(video.comments || []);
+                        commentInput.value = '';
+                        document.getElementById('commentsCount').textContent = `(${video.comments.length})`;
+                    } catch (error) {
+                        console.error('Error posting comment:', error);
+                        alert('Failed to post comment. Please try again.');
+                    }
+                }
+
+                // Improved renderComments function with better reply handling
+                function renderComments(comments, parentElement = null, depth = 0) {
+                    const container = parentElement || document.getElementById('commentList');
+                    const maxDepth = 5; // Prevent infinite nesting
+
+                    if (!parentElement) {
+                        container.innerHTML = comments.length ? '' : '<p>No comments yet. Be the first to comment!</p>';
+                        document.getElementById('commentsCount').textContent = `(${comments.length})`;
+                    }
+
+                    // Sort by date (newest first) - this is the key change
+                    comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                    comments.forEach(comment => {
+                        const isReply = depth > 0;
+                        const commentElement = document.createElement('div');
+                        commentElement.className = isReply ? 'comment reply' : 'comment';
+                        commentElement.dataset.id = comment.id;
+                        commentElement.style.marginLeft = `${depth * 20}px`;
+
+                        const isLiked = comment.likes?.some(like => like.userId === loggedInUser?.id);
+                        const likeCount = comment._count?.likes || 0;
+
+                        commentElement.innerHTML = `
+            <div class="comment-avatar">
+                ${comment.user?.profilePicture ?
+                                `<img src="${comment.user.profilePicture}" alt="${comment.user.firstName}">` :
+                                `<i class="fas fa-user"></i>`}
+            </div>
+            <div class="comment-content">
+                <div class="comment-author">${comment.user?.firstName} ${comment.user?.lastName}</div>
+                <div class="comment-text">${comment.text}</div>
+                <div class="comment-actions">
+                    <span class="comment-action like-comment ${isLiked ? 'liked' : ''}" 
+                          data-id="${comment.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span class="like-count">${likeCount}</span>
+                    </span>
+                    <span class="comment-action reply-comment" data-id="${comment.id}">
+                        <i class="fas fa-reply"></i>
+                        <span>Reply</span>
+                    </span>
+                    <span class="comment-timestamp">${formatDate(comment.createdAt)}</span>
+                </div>
+                <div class="replies" id="replies-${comment.id}"></div>
+            </div>
+        `;
+
+                        // Append new comments/replies to the top of the container
+                        if (container.firstChild) {
+                            container.insertBefore(commentElement, container.firstChild);
+                        } else {
+                            container.appendChild(commentElement);
+                        }
+
+                        // Setup like button
+                        setupLikeButton(commentElement, isReply ? 'REPLY' : 'COMMENT');
+
+                        // Setup reply button
+                        setupReplyButton(commentElement, comment.id, isReply);
+
+                        // Render replies if any and we haven't hit max depth
+                        if (comment.replies?.length > 0 && depth < maxDepth) {
+                            const repliesContainer = document.getElementById(`replies-${comment.id}`);
+                            renderComments(comment.replies, repliesContainer, depth + 1);
+                        }
+                    });
+                }
+
+                // Setup like button functionality
+                function setupLikeButton(commentElement, type) {
+                    const likeButton = commentElement.querySelector('.like-comment');
+                    if (!likeButton) return;
+
+                    likeButton.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+
+                        if (!loggedInUser) {
+                            alert('Please log in to like comments');
+                            return;
+                        }
+
+                        const commentId = likeButton.dataset.id;
+                        const isLiked = likeButton.classList.contains('liked');
+                        const likeCountEl = likeButton.querySelector('.like-count');
+                        let likeCount = parseInt(likeCountEl.textContent);
+
+                        // Optimistic UI update
+                        if (isLiked) {
+                            likeButton.classList.remove('liked');
+                            likeCountEl.textContent = Math.max(0, likeCount - 1);
+                        } else {
+                            likeButton.classList.add('liked');
+                            likeCountEl.textContent = likeCount + 1;
+                        }
+
+                        try {
+                            // Determine if this is a comment or reply like
+                            const isReply = type === 'REPLY';
+                            const requestBody = {
+                                userId: loggedInUser.id,
+                                type: 'LIKE',
+                                isLiked: !isLiked
+                            };
+
+                            // Add the appropriate ID field based on type
+                            if (isReply) {
+                                requestBody.replyId = commentId;
+                            } else {
+                                requestBody.commentId = commentId;
+                            }
+
+                            const response = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.message || 'Failed to update like');
+                            }
+
+                            const result = await response.json();
+
+                            // Update with actual count from server
+                            if (result.likeCount !== undefined) {
+                                likeCountEl.textContent = result.likeCount;
+                            }
+
+                        } catch (error) {
+                            console.error('Error updating like:', error);
+                            // Revert optimistic update
+                            if (isLiked) {
+                                likeButton.classList.add('liked');
+                                likeCountEl.textContent = likeCount;
+                            } else {
+                                likeButton.classList.remove('liked');
+                                likeCountEl.textContent = Math.max(0, likeCount - 1);
+                            }
+
+                            if (error.message.includes('Foreign key constraint') || error.message.includes('P2003') ||
+                                error.message.includes('TARGET_NOT_FOUND') || error.message.includes('COMMENT_NOT_FOUND')) {
+                                alert('This comment/reply no longer exists. Refreshing comments...');
+                                // Refresh comments to get current state
+                                const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`);
+                                video = await videoResponse.json();
+                                renderComments(video.comments || []);
+                            } else {
+                                alert('Failed to update like. Please try again.');
+                            }
+                        }
+                    });
+                }
+
+                function setupReplyButton(commentElement, commentId, isReply = false) {
+                    const replyButton = commentElement.querySelector('.reply-comment');
+                    if (!replyButton) return;
+
+                    // Create reply form container if it doesn't exist
+                    let replyFormContainer = document.getElementById(`reply-form-${commentId}`);
+                    if (!replyFormContainer) {
+                        replyFormContainer = document.createElement('div');
+                        replyFormContainer.className = 'reply-form-container';
+                        replyFormContainer.id = `reply-form-${commentId}`;
+                        replyFormContainer.style.display = 'none';
+                        replyFormContainer.innerHTML = `
+            <form class="reply-form" data-commentid="${commentId}" data-isreply="${isReply}">
+                <input type="text" class="reply-input" placeholder="Write a reply..." required>
+                <button type="submit" class="reply-submit">Reply</button>
+                <button type="button" class="cancel-reply">Cancel</button>
+            </form>
+        `;
+                        commentElement.appendChild(replyFormContainer);
+                    }
+
+                    const replyForm = replyFormContainer.querySelector('.reply-form');
+                    const replyInput = replyForm.querySelector('.reply-input');
+                    const cancelButton = replyForm.querySelector('.cancel-reply');
+
+                    replyButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Hide all other reply forms
+                        document.querySelectorAll('.reply-form-container').forEach(form => {
+                            if (form.id !== `reply-form-${commentId}`) {
+                                form.style.display = 'none';
+                            }
+                        });
+                        // Toggle current form
+                        replyFormContainer.style.display = replyFormContainer.style.display === 'block' ? 'none' : 'block';
+                        if (replyFormContainer.style.display === 'block') {
+                            replyInput.focus();
+                        }
+                    });
+
+                    replyForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const isReply = replyForm.dataset.isreply === 'true';
+                        await handleReplySubmit(
+                            isReply ? commentId : commentId, // Original comment ID
+                            replyInput,
+                            replyFormContainer,
+                            isReply ? commentId : null // Parent reply ID if this is a nested reply
+                        );
+                    });
+
+                    cancelButton.addEventListener('click', () => {
+                        replyFormContainer.style.display = 'none';
+                    });
+                }
+
+                async function handleReplySubmit(commentId, replyInput, replyFormContainer, parentReplyId = null) {
+                    if (!loggedInUser) {
+                        alert('Please log in to reply');
+                        return;
+                    }
+
+                    const replyText = replyInput.value.trim();
+                    if (!replyText) return;
+
+                    // Create optimistic reply
+                    const optimisticReply = {
+                        id: 'temp-' + Date.now(),
+                        text: replyText,
+                        createdAt: new Date().toISOString(),
+                        user: {
+                            id: loggedInUser.id,
+                            firstName: loggedInUser.firstName,
+                            lastName: loggedInUser.lastName,
+                            profilePicture: loggedInUser.profilePicture
+                        },
+                        _count: { likes: 0 },
+                        parentReplyId: parentReplyId
+                    };
+
+                    // Add to UI immediately
+                    const containerId = parentReplyId ? `replies-${parentReplyId}` : `replies-${commentId}`;
+                    const repliesContainer = document.getElementById(containerId);
+
+                    if (repliesContainer) {
+                        const tempCommentElement = document.createElement('div');
+                        tempCommentElement.className = 'comment reply optimistic';
+                        tempCommentElement.dataset.id = optimisticReply.id;
+                        if (parentReplyId) {
+                            tempCommentElement.style.marginLeft = '40px';
+                        }
+                        tempCommentElement.innerHTML = `
+            <div class="comment-avatar">
+                ${optimisticReply.user.profilePicture ?
+                                `<img src="${optimisticReply.user.profilePicture}" alt="${optimisticReply.user.firstName}">` :
+                                `<i class="fas fa-user"></i>`}
+            </div>
+            <div class="comment-content">
+                <div class="comment-author">${optimisticReply.user.firstName} ${optimisticReply.user.lastName}</div>
+                <div class="comment-text">${optimisticReply.text}</div>
+                <div class="comment-actions">
+                    <span class="comment-action like-comment" data-id="${optimisticReply.id}" data-type="REPLY">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span class="like-count">0</span>
+                    </span>
+                    <span class="comment-action reply-comment" data-id="${optimisticReply.id}">
+                        <i class="fas fa-reply"></i>
+                        <span>Reply</span>
+                    </span>
+                    <span class="comment-timestamp">Just now</span>
+                </div>
+                <div class="replies" id="replies-${optimisticReply.id}"></div>
+            </div>
+        `;
+                        repliesContainer.prepend(tempCommentElement);
+
+                        // Setup like button for the new optimistic reply
+                        setupLikeButton(tempCommentElement, 'REPLY');
+
+                        // Setup reply button for the new optimistic reply
+                        setupReplyButton(tempCommentElement, optimisticReply.id, true);
+                    }
+
+                    // Reset form
+                    replyInput.value = '';
+                    if (replyFormContainer) {
+                        replyFormContainer.style.display = 'none';
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/reply`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: replyText,
+                                userId: loggedInUser.id,
+                                commentId: commentId,
+                                videoId: video.id,
+                                parentReplyId: parentReplyId
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Failed to post reply');
+                        }
+
+                        // Refresh comments to get the actual reply from server
+                        const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`);
+                        video = await videoResponse.json();
+                        renderComments(video.comments || []);
+
+                    } catch (error) {
+                        console.error('Error posting reply:', error);
+                        // Remove optimistic reply if error occurs
+                        const optimisticElement = document.querySelector(`.comment[data-id="${optimisticReply.id}"]`);
+                        if (optimisticElement) {
+                            optimisticElement.remove();
+                        }
+
+                        if (error.message.includes('COMMENT_NOT_FOUND') || error.message.includes('PARENT_REPLY_NOT_FOUND') || error.message.includes('Foreign key constraint') || error.message.includes('P2003')) {
+                            alert('The comment you\'re replying to no longer exists. Refreshing comments...');
+                            const videoResponse = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`);
+                            video = await videoResponse.json();
+                            renderComments(video.comments || []);
+                        } else {
+                            alert(`Failed to post reply: ${error.message}`);
+                        }
+                    }
+                }
+
+                // Helper function to format dates
+                function formatDate(dateString) {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+
+                // Load related videos
+                const relatedVideosContainer = document.getElementById('relatedVideos');
+                relatedVideosContainer.innerHTML = '<p class="loading">Loading similar videos...</p>';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/videos/premium`);
+                    if (!response.ok) throw new Error('Failed to fetch videos');
+
+                    let allVideos = await response.json();
+
+                    // Filter related videos (same genre, excluding current video)
+                    const relatedVideos = allVideos.filter(v =>
+                        v.genre === video.genre && v.id !== video.id
+                    ).slice(0, 6); // Show 6 videos to trigger scrollbar
+
+                    // Display related videos
+                    relatedVideosContainer.innerHTML = '';
+                    if (relatedVideos.length === 0) {
+                        relatedVideosContainer.innerHTML = '<p>No similar videos found</p>';
+                        return;
+                    }
+
+                    relatedVideos.forEach(video => {
+                        const videoElement = document.createElement('div');
+                        videoElement.className = 'related-video';
+                        videoElement.innerHTML = `
+                            <div class="related-thumbnail">
+                                <img src="${video.thumbnail}" alt="${video.title}">
+                                ${video.duration ? `<span class="related-duration">${video.duration}</span>` : ''}
+                            </div>
+                            <div class="related-info">
+                                <div class="related-title">${video.title}</div>
+                                <div class="related-uploader">${video.user?.firstName} ${video.user?.lastName || 'Unknown'}</div>
+                                <div class="related-stats">
+                                    ${video.views ? video.views.toLocaleString() + ' views' : ''} 
+                                    ${video.year ? '• ' + video.year : ''}
+                                </div>
+                            </div>
+                        `;
+
+                        videoElement.addEventListener('click', () => {
+                            sessionStorage.setItem('currentVideo', JSON.stringify({
+                                id: video.id,
+                                title: video.title,
+                                description: video.description,
+                                genre: video.genre,
+                                year: video.year,
+                                thumbnail: video.thumbnail,
+                                videoUrl: video.videoUrl,
+                                uploaderName: `${video.user?.firstName} ${video.user?.lastName}`
+                            }));
+                            window.location.reload();
+                        });
+
+                        relatedVideosContainer.appendChild(videoElement);
+                    });
+
+                } catch (error) {
+                    console.error('Error loading videos:', error);
+                    relatedVideosContainer.innerHTML = `
+                        <p class="error-message">
+                            Error loading similar videos. 
+                            <button onclick="location.reload()">Try Again</button>
+                        </p>
+                    `;
+                }
+
+                // Share button functionality
+                const shareButton = document.getElementById('shareButton');
+                const shareModal = document.getElementById('shareModal');
+                const shareModalClose = document.getElementById('shareModalClose');
+                const copyLinkBtn = document.getElementById('copyLinkBtn');
+                const shareLink = document.getElementById('shareLink');
+
+                shareButton.addEventListener('click', () => {
+                    shareLink.value = window.location.href;
+                    shareModal.style.display = 'flex';
+                });
+
+                shareModalClose.addEventListener('click', () => {
+                    shareModal.style.display = 'none';
+                });
+
+                copyLinkBtn.addEventListener('click', () => {
+                    shareLink.select();
+                    document.execCommand('copy');
+                    copyLinkBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyLinkBtn.textContent = 'Copy';
+                    }, 2000);
+                });
+
+                // Close modal when clicking outside
+                window.addEventListener('click', (e) => {
+                    if (e.target === shareModal) {
+                        shareModal.style.display = 'none';
+                    }
+                });
+
+                // Social share buttons
+                document.getElementById('shareFacebook').addEventListener('click', () => {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
+                });
+
+                document.getElementById('shareTwitter').addEventListener('click', () => {
+                    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`, '_blank');
+                });
+
+                document.getElementById('shareWhatsApp').addEventListener('click', () => {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(window.location.href)}`, '_blank');
+                });
+
+                document.getElementById('shareLinkedIn').addEventListener('click', () => {
+                    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank');
+                });
+
+                // Save button functionality
+                const saveButton = document.getElementById('saveButton');
+                saveButton.addEventListener('click', async () => {
+                    if (!loggedInUser) {
+                        alert('Please log in to save videos');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/save`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                userId: loggedInUser.id,
+                                videoId: video.id
+                            })
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.action === 'saved') {
+                                saveButton.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
+                                saveButton.classList.add('saved');
+                            } else {
+                                saveButton.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
+                                saveButton.classList.remove('saved');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error saving video:', error);
+                    }
+                });
+
+                // Check if video is already saved
+                if (loggedInUser) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/saved/${loggedInUser.id}/${video.id}`);
+                        if (response.ok) {
+                            const isSaved = await response.json();
+                            if (isSaved) {
+                                saveButton.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
+                                saveButton.classList.add('saved');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error checking saved status:', error);
+                    }
+                }
+
+                // Trivia functionality
+                const triviaAddBtn = document.getElementById('triviaAddBtn');
+                const triviaFormContainer = document.getElementById('triviaFormContainer');
+                const triviaSaveBtn = document.getElementById('triviaSaveBtn');
+                const triviaCancelBtn = document.getElementById('triviaCancelBtn');
+                const triviaTextarea = document.getElementById('triviaTextarea');
+                const triviaContent = document.getElementById('triviaContent');
+                const noTrivia = document.getElementById('noTrivia');
+
+                // Load existing trivia
+                async function loadTrivia() {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/videos/${video.id}/trivia`);
+                        if (!response.ok) throw new Error('Failed to fetch trivia');
+                        const trivia = await response.json();
+
+                        triviaContent.innerHTML = '';
+                        if (trivia.length === 0) {
+                            triviaContent.appendChild(noTrivia);
+                            return;
+                        }
+
+                        trivia.forEach(item => {
+                            const triviaItem = document.createElement('div');
+                            triviaItem.className = 'trivia-item';
+                            triviaItem.dataset.id = item.id;
+                            triviaItem.innerHTML = `
+                <p>${item.text}</p>
+                <div class="trivia-meta">
+                    <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
+                    ${item.user.id === loggedInUser?.id ? `
+                    <div class="trivia-actions">
+                        <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                        <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+                            triviaContent.appendChild(triviaItem);
+
+                            // Add edit and delete functionality if user is owner
+                            if (item.user.id === loggedInUser?.id) {
+                                const editBtn = triviaItem.querySelector('.edit-trivia');
+                                const deleteBtn = triviaItem.querySelector('.delete-trivia');
+
+                                editBtn.addEventListener('click', () => {
+                                    triviaTextarea.value = item.text;
+                                    triviaFormContainer.style.display = 'block';
+                                    triviaItem.remove();
+                                });
+
+                                deleteBtn.addEventListener('click', async () => {
+                                    if (confirm('Are you sure you want to delete this trivia?')) {
+                                        try {
+                                            const response = await fetch(`${API_BASE_URL}/api/interactions/trivia/${item.id}`, {
+                                                method: 'DELETE'
+                                            });
+
+                                            if (response.ok) {
+                                                triviaItem.remove();
+                                                if (triviaContent.children.length === 0) {
+                                                    triviaContent.appendChild(noTrivia);
+                                                }
+                                            }
+                                        } catch (error) {
+                                            console.error('Error deleting trivia:', error);
+                                            alert('Failed to delete trivia');
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error loading trivia:', error);
+                    }
+                }
+
+                // Initial load
+                loadTrivia();
+
+                triviaAddBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (!loggedInUser) {
+                        alert('Please log in to add trivia');
+                        return;
+                    }
+                    triviaFormContainer.style.display = 'block';
+                });
+
+                triviaCancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    triviaFormContainer.style.display = 'none';
+                    triviaTextarea.value = '';
+                });
+
+                triviaSaveBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const triviaText = triviaTextarea.value.trim();
+
+                    if (!triviaText) {
+                        alert('Please enter trivia text');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/interactions/trivia`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: triviaText,
+                                userId: loggedInUser.id,
+                                videoId: video.id
+                            })
+                        });
+
+                        if (response.ok) {
+                            const newTrivia = await response.json();
+                            triviaFormContainer.style.display = 'none';
+                            triviaTextarea.value = '';
+                            loadTrivia(); // Reload trivia to show the new one
+                        } else {
+                            throw new Error('Failed to save trivia');
+                        }
+                    } catch (error) {
+                        console.error('Error saving trivia:', error);
+                        alert('Failed to save trivia');
+                    }
+                });
+
+                // Quality selector functionality
+                const qualityToggle = document.getElementById('qualityToggle');
+                const qualitySelector = document.getElementById('qualitySelector');
+                const qualityOptions = document.querySelectorAll('.quality-option');
+
+                qualityToggle.addEventListener('click', () => {
+                    qualitySelector.style.display = qualitySelector.style.display === 'block' ? 'none' : 'block';
+                });
+
+                qualityOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        const quality = option.dataset.quality;
+                        const videoSources = document.querySelectorAll('#mainPlayer source');
+
+                        // Update active state
+                        qualityOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+
+                        // Change video source
+                        videoSources.forEach(source => {
+                            if (source.dataset.quality === quality) {
+                                videoPlayer.src = source.src;
+                                videoPlayer.load();
+                            }
+                        });
+
+                        qualitySelector.style.display = 'none';
+                    });
+                });
+            });
+
+            // Logout functionality
+            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('authToken');
+                window.location.href = 'index.html';
+            });
+        </script>
+</body>
+
+</html>

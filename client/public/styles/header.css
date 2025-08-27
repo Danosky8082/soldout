@@ -1,0 +1,192 @@
+/* Add these styles to your CSS */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 15px;
+    cursor: pointer;
+}
+
+.user-avatar-container {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.user-avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #fff;
+}
+
+.user-icon {
+    font-size: 32px;
+    color: #fff;
+}
+
+/* Update dropdown positioning */
+.user-dropdown {
+    top: 100%;
+    right: 0;
+}
+
+/* Enhanced Header Styles */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #1a1a1a;
+    color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.logo i {
+    color: #4ecdc4;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #4ecdc4;
+}
+
+.nav-links a.active {
+    color: #4ecdc4;
+    border-bottom: 2px solid #4ecdc4;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+}
+
+.search-icon,
+.fa-bell {
+    font-size: 1.2rem;
+    color: white;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.search-icon:hover,
+.fa-bell:hover {
+    color: #4ecdc4;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.user-avatar-container {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-icon {
+    font-size: 36px;
+    color: #4ecdc4;
+}
+
+.user-name {
+    font-weight: 500;
+    color: white;
+}
+
+.user-dropdown-container {
+    position: relative;
+}
+
+.user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0.5rem 0;
+    min-width: 200px;
+    display: none;
+    z-index: 101;
+}
+
+.user-dropdown.show {
+    display: block;
+}
+
+.user-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    color: #d6d1d1;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.user-dropdown a:hover {
+    background-color: #f5f5f5;
+}
+
+.user-dropdown i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Admin badge style */
+.admin-badge {
+    background-color: #ff6b6b;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    display: inline-block;
+}
+
+
