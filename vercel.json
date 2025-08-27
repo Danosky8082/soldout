@@ -1,32 +1,23 @@
-<<<<<<< HEAD
 {
   "version": 2,
   "builds": [
     {
       "src": "client/public/**/*",
       "use": "@vercel/static"
+    },
+    {
+      "src": "server/**/*.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/api/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/client/public/$1"
     }
   ]
-=======
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "client/public/**/*",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/client/public/$1"
-    }
-  ]
->>>>>>> 9bf16f31a6d3e8e7181457d90ce162ac560b501e
 }
