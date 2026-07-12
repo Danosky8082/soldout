@@ -6,8 +6,10 @@ const fs = require('fs');
 const uploadVideo = async (req, res) => {
   try {
     console.log('Upload request received');
-    console.log('Files:', req.files);
-    console.log('Body:', req.body);
+console.log('Headers:', req.headers);
+console.log('User:', req.user);
+console.log('Files:', req.files);
+console.log('Body:', req.body);
     
     // Validate required files
     if (!req.files || !req.files.thumbnail || !req.files.video) {
