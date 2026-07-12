@@ -69,11 +69,15 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Middleware with increased payload limits
+// ============================================================
+//  MIDDLEWARE – MUST BE BEFORE ANY ROUTE HANDLERS
+// ============================================================
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// CORS – allow all origins for production, or set specific
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: '*', // For production, consider using process.env.CLIENT_URL
   credentials: true
 }));
 
@@ -83,29 +87,25 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   console.log('Created uploads directory:', UPLOADS_DIR);
 }
 
-// Serve uploaded files statically
+// Serve uploaded files statically (BEFORE API routes? no, this is static, but it's fine)
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Root route
+// ============================================================
+//  API ROUTES – ALL DEFINED BEFORE STATIC FILE SERVING
+// ============================================================
+
+// Root route – just a welcome message
 app.get('/', (req, res) => {
-  const indexFile = path.join(CLIENT_PUBLIC_DIR, 'index.html');
-  
-  if (fs.existsSync(indexFile)) {
-    return res.sendFile(indexFile);
-  }
-  
-  res.status(404).send('Welcome to the API - index.html not found');
+  res.json({ message: 'Welcome to Soldout API' });
 });
 
-// Admin dashboard route
+// Admin dashboard route (this is a static HTML, but we handle it separately)
 app.get('/admin', (req, res) => {
   const adminFile = path.join(CLIENT_PUBLIC_DIR, 'admin.html');
-  
   if (!fs.existsSync(adminFile)) {
     console.error('Admin file not found at:', adminFile);
     return res.status(404).send('Admin dashboard not found');
   }
-  
   res.sendFile(adminFile);
 });
 
@@ -113,22 +113,17 @@ app.get('/admin', (req, res) => {
 const adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
     if (!token) {
       return res.status(401).json({ error: 'Authorization required' });
     }
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     const admin = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { isAdmin: true, role: true }
     });
-
     if (!admin || !admin.isAdmin) {
       return res.status(403).json({ error: 'Admin access required' });
     }
-
     req.admin = decoded;
     next();
   } catch (error) {
@@ -143,27 +138,19 @@ app.post('/promote-to-super', adminAuth, async (req, res) => {
     if (req.admin.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Only Super Admins can promote users' });
     }
-
     const { userId } = req.body;
-
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
-
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) }
     });
-
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
     const updatedUser = await prisma.user.update({
       where: { id: parseInt(userId) },
-      data: { 
-        role: 'SUPER_ADMIN',
-        isAdmin: true
-      },
+      data: { role: 'SUPER_ADMIN', isAdmin: true },
       select: {
         id: true,
         email: true,
@@ -173,7 +160,6 @@ app.post('/promote-to-super', adminAuth, async (req, res) => {
         isAdmin: true
       }
     });
-
     await prisma.auditLog.create({
       data: {
         action: 'PROMOTE_TO_SUPER_ADMIN',
@@ -182,13 +168,11 @@ app.post('/promote-to-super', adminAuth, async (req, res) => {
         details: `Promoted user ${updatedUser.email} to Super Admin`
       }
     });
-
     res.json({
       success: true,
       message: 'User promoted to Super Admin successfully',
       user: updatedUser
     });
-
   } catch (error) {
     console.error('Promotion error:', error);
     res.status(500).json({ error: 'Failed to promote user' });
@@ -199,30 +183,23 @@ app.post('/promote-to-super', adminAuth, async (req, res) => {
 app.post('/api/admin/register', adminAuth, async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
-
     if (!firstName || !lastName || !email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-
     const requestingAdmin = await prisma.user.findUnique({
       where: { id: req.admin.id },
       select: { role: true }
     });
-
     if (requestingAdmin.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Only super admins can register new admins' });
     }
-
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
-
     if (existingUser) {
       return res.status(400).json({ message: 'Email already exists' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const newAdmin = await prisma.user.create({
       data: {
         firstName,
@@ -233,10 +210,8 @@ app.post('/api/admin/register', adminAuth, async (req, res) => {
         isAdmin: true
       }
     });
-
     const { password: _, ...userWithoutPassword } = newAdmin;
     res.status(201).json(userWithoutPassword);
-
   } catch (error) {
     console.error('Admin registration error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -294,18 +269,14 @@ app.get('/api', (req, res) => {
 app.post('/api/auth/register', upload.single('profilePicture'), async (req, res) => {
   try {
     const { firstName, lastName, email, password, isAdmin, role } = req.body;
-    
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
-
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already in use' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = await prisma.user.create({
       data: {
         firstName,
@@ -317,7 +288,6 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
         profilePicture: req.file ? `/uploads/${req.file.filename}` : null
       }
     });
-
     const token = jwt.sign(
       { 
         id: newUser.id,
@@ -328,7 +298,6 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
-
     res.status(201).json({ 
       user: {
         id: newUser.id,
@@ -347,7 +316,7 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
   }
 });
 
-// Routes
+// Mount auth and video routes from separate files
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/videos', require('./routes/videoRoutes'));
 
@@ -355,11 +324,9 @@ app.use('/api/videos', require('./routes/videoRoutes'));
 app.post('/api/auth/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
     const admin = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -373,16 +340,13 @@ app.post('/api/auth/admin/login', async (req, res) => {
         profilePicture: true
       }
     });
-
     if (!admin || !admin.isAdmin) {
       return res.status(401).json({ error: 'Invalid admin credentials' });
     }
-
     const validPassword = await bcrypt.compare(password, admin.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid admin credentials' });
     }
-
     const token = jwt.sign(
       { 
         id: admin.id,
@@ -393,7 +357,6 @@ app.post('/api/auth/admin/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
-
     const adminData = {
       id: admin.id,
       firstName: admin.firstName,
@@ -404,7 +367,6 @@ app.post('/api/auth/admin/login', async (req, res) => {
       profilePicture: admin.profilePicture,
       token
     };
-
     res.json(adminData);
   } catch (error) {
     console.error('Admin login error:', error);
@@ -421,7 +383,6 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
       prisma.video.count({ where: { status: 'REJECTED' } }),
       prisma.user.count()
     ]);
-
     res.json({
       pendingVideos,
       approvedVideos,
@@ -504,7 +465,6 @@ app.get('/api/admin/videos/rejected', adminAuth, async (req, res) => {
 app.get('/api/admin/videos/:id', adminAuth, async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
-    
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       include: {
@@ -516,11 +476,9 @@ app.get('/api/admin/videos/:id', adminAuth, async (req, res) => {
         }
       }
     });
-
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
-
     res.json(video);
   } catch (error) {
     console.error('Video by ID error:', error);
@@ -532,7 +490,6 @@ app.get('/api/admin/videos/:id', adminAuth, async (req, res) => {
 app.post('/api/admin/videos/:id/approve', adminAuth, async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
-    
     const video = await prisma.video.update({
       where: { id: videoId },
       data: { 
@@ -540,7 +497,6 @@ app.post('/api/admin/videos/:id/approve', adminAuth, async (req, res) => {
         approvedAt: new Date() 
       }
     });
-
     res.json(video);
   } catch (error) {
     console.error('Approve video error:', error);
@@ -553,7 +509,6 @@ app.post('/api/admin/videos/:id/reject', adminAuth, async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
     const { reason } = req.body;
-
     const video = await prisma.video.update({
       where: { id: videoId },
       data: { 
@@ -562,7 +517,6 @@ app.post('/api/admin/videos/:id/reject', adminAuth, async (req, res) => {
         rejectionReason: reason 
       }
     });
-
     res.json(video);
   } catch (error) {
     console.error('Reject video error:', error);
@@ -574,7 +528,6 @@ app.post('/api/admin/videos/:id/reject', adminAuth, async (req, res) => {
 app.post('/api/admin/videos/:id/unpublish', adminAuth, async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
-
     const video = await prisma.video.update({
       where: { id: videoId },
       data: { 
@@ -582,7 +535,6 @@ app.post('/api/admin/videos/:id/unpublish', adminAuth, async (req, res) => {
         approvedAt: null
       }
     });
-
     res.json(video);
   } catch (error) {
     console.error('Unpublish video error:', error);
@@ -608,7 +560,6 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-
     res.json(users);
   } catch (error) {
     console.error('Admin users error:', error);
@@ -633,7 +584,6 @@ app.get('/api/admin/admins', adminAuth, async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-
     res.json(admins);
   } catch (error) {
     console.error('Admin list error:', error);
@@ -646,11 +596,9 @@ app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const { firstName, lastName, email, role } = req.body;
-
     if (!firstName || !lastName || !email || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -660,7 +608,6 @@ app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
         role
       }
     });
-
     res.json(updatedUser);
   } catch (error) {
     console.error('Update user error:', error);
@@ -673,23 +620,19 @@ app.post('/api/admin/users/:id/ban', adminAuth, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const { isBanned } = req.body;
-
     if (isBanned) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { role: true }
       });
-      
       if (user.role === 'ADMIN' && req.admin.role !== 'SUPER_ADMIN') {
         return res.status(403).json({ error: 'Only super admins can ban other admins' });
       }
     }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { isBanned }
     });
-
     res.json(updatedUser);
   } catch (error) {
     console.error('Ban user error:', error);
@@ -701,12 +644,10 @@ app.post('/api/admin/users/:id/ban', adminAuth, async (req, res) => {
 app.post('/api/admin/users/:id/unban', adminAuth, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { isBanned: false }
     });
-
     res.json(updatedUser);
   } catch (error) {
     console.error('Unban user error:', error);
@@ -718,33 +659,26 @@ app.post('/api/admin/users/:id/unban', adminAuth, async (req, res) => {
 app.delete('/api/admin/admins/:id', adminAuth, async (req, res) => {
   try {
     const adminId = parseInt(req.params.id);
-    
     const requestingAdmin = await prisma.user.findUnique({
       where: { id: req.admin.id },
       select: { role: true }
     });
-
     if (requestingAdmin.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Only super admins can delete other admins' });
     }
-
     const targetAdmin = await prisma.user.findUnique({
       where: { id: adminId },
       select: { role: true }
     });
-
     if (!targetAdmin) {
       return res.status(404).json({ error: 'Admin not found' });
     }
-
     if (targetAdmin.role === 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Cannot delete super admin' });
     }
-
     await prisma.user.delete({
       where: { id: adminId }
     });
-
     res.json({ message: 'Admin deleted successfully' });
   } catch (error) {
     console.error('Delete admin error:', error);
@@ -757,32 +691,25 @@ app.post('/api/admin/change-password', adminAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const adminId = req.admin.id;
-
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Current and new password are required' });
     }
-
     const admin = await prisma.user.findUnique({
       where: { id: adminId },
       select: { password: true }
     });
-
     if (!admin) {
       return res.status(404).json({ error: 'Admin not found' });
     }
-
     const validPassword = await bcrypt.compare(currentPassword, admin.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     await prisma.user.update({
       where: { id: adminId },
       data: { password: hashedPassword }
     });
-
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
@@ -794,7 +721,6 @@ app.post('/api/admin/change-password', adminAuth, async (req, res) => {
 app.get('/api/users/:id/profile', async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
-    
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -832,20 +758,16 @@ app.get('/api/users/:id/profile', async (req, res) => {
         }
       }
     });
-
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
     const totalViews = user.videos.reduce((sum, video) => sum + video.views, 0);
     const totalLikes = user.videos.reduce((sum, video) => sum + video._count.likes, 0);
-    
     const totalSubscribers = await prisma.subscription.count({
       where: {
         creatorId: userId
       }
     });
-
     const response = {
       ...user,
       stats: {
@@ -855,7 +777,6 @@ app.get('/api/users/:id/profile', async (req, res) => {
         subscribers: totalSubscribers
       }
     };
-
     res.json(response);
   } catch (error) {
     console.error('Error fetching user profile:', error);
@@ -868,22 +789,17 @@ app.put('/api/users/:id', async (req, res) => {
     const userId = parseInt(req.params.id);
     const { firstName, lastName, email, bio } = req.body;
     const authHeader = req.headers.authorization;
-
     if (!authHeader) {
       return res.status(401).json({ error: 'Authorization required' });
     }
-
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     if (decoded.id !== userId) {
       return res.status(403).json({ error: 'Unauthorized to update this profile' });
     }
-
     if (!firstName || !lastName || !email) {
       return res.status(400).json({ error: 'First name, last name and email are required' });
     }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -902,7 +818,6 @@ app.put('/api/users/:id', async (req, res) => {
         createdAt: true
       }
     });
-
     res.json(updatedUser);
   } catch (error) {
     console.error('Error updating user profile:', error);
@@ -914,24 +829,18 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
   try {
     const userId = parseInt(req.params.id);
     const authHeader = req.headers.authorization;
-
     if (!authHeader) {
       return res.status(401).json({ error: 'Authorization required' });
     }
-
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
     if (decoded.id !== userId) {
       return res.status(403).json({ error: 'Unauthorized to update this profile' });
     }
-
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-
     const profilePictureUrl = `/uploads/${req.file.filename}`;
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { profilePicture: profilePictureUrl },
@@ -940,7 +849,6 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
         profilePicture: true
       }
     });
-
     res.json({ 
       profilePictureUrl: updatedUser.profilePicture,
       message: 'Profile picture updated successfully'
@@ -956,7 +864,6 @@ app.get('/api/videos/premium', async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const videos = await prisma.video.findMany({
       where: {
         updatedAt: {
@@ -985,7 +892,6 @@ app.get('/api/videos/premium', async (req, res) => {
       },
       take: 20
     });
-
     res.json(videos);
   } catch (error) {
     console.error('Error fetching premium videos:', error);
@@ -998,10 +904,8 @@ app.get('/api/videos/:id', async (req, res) => {
     if (!req.params.id || isNaN(req.params.id)) {
       return res.status(400).json({ error: 'Invalid video ID' });
     }
-
     const videoId = parseInt(req.params.id);
     const userId = req.query.userId ? parseInt(req.query.userId) : undefined;
-    
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       select: {
@@ -1132,11 +1036,9 @@ app.get('/api/videos/:id', async (req, res) => {
         }
       }
     });
-
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
-
     const [ratings, likes, dislikes, subscriberCount, isSubscribed] = await Promise.all([
       prisma.rating.findMany({
         where: { videoId: videoId }
@@ -1167,10 +1069,8 @@ app.get('/api/videos/:id', async (req, res) => {
         }
       }).then(count => count > 0) : Promise.resolve(false)
     ]);
-
     const averageRating = ratings.length > 0 ? 
       ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length : 0;
-
     const userRating = userId ? await prisma.rating.findUnique({
       where: {
         userId_videoId: {
@@ -1179,12 +1079,10 @@ app.get('/api/videos/:id', async (req, res) => {
         }
       }
     }) : null;
-
     await prisma.video.update({
       where: { id: videoId },
       data: { views: { increment: 1 } }
     });
-
     const response = {
       ...video,
       averageRating: averageRating.toFixed(1),
@@ -1197,7 +1095,6 @@ app.get('/api/videos/:id', async (req, res) => {
         subscriberCount: subscriberCount
       }
     };
-    
     res.json(response);
   } catch (error) {
     console.error('Video by ID error:', error);
@@ -1206,19 +1103,14 @@ app.get('/api/videos/:id', async (req, res) => {
 });
 
 // Interaction Routes
-// Updated Like Handler with proper reply support
 app.post('/api/interactions/like', async (req, res) => {
   try {
     const { userId, videoId, commentId, replyId, isLiked, type } = req.body;
-    
     if (!userId || (!videoId && !commentId && !replyId)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
-    // Validate that the target exists before creating a like
     let targetExists = false;
     let targetType = '';
-    
     if (commentId) {
       const comment = await prisma.comment.findUnique({
         where: { id: parseInt(commentId) }
@@ -1238,15 +1130,12 @@ app.post('/api/interactions/like', async (req, res) => {
       targetExists = !!video;
       targetType = 'VIDEO';
     }
-
     if (!targetExists) {
       return res.status(404).json({ 
         error: 'TARGET_NOT_FOUND',
         message: 'The item you\'re trying to like no longer exists' 
       });
     }
-
-    // Check if like already exists
     const existingLike = await prisma.like.findFirst({
       where: {
         userId: parseInt(userId),
@@ -1255,14 +1144,10 @@ app.post('/api/interactions/like', async (req, res) => {
         replyId: replyId ? parseInt(replyId) : null,
       }
     });
-
     if (existingLike) {
-      // Unlike if already liked
       await prisma.like.delete({
         where: { id: existingLike.id }
       });
-      
-      // Get updated like count
       const likeCount = await prisma.like.count({
         where: {
           videoId: videoId ? parseInt(videoId) : null,
@@ -1270,7 +1155,6 @@ app.post('/api/interactions/like', async (req, res) => {
           replyId: replyId ? parseInt(replyId) : null,
         }
       });
-      
       return res.json({ 
         action: 'removed',
         liked: false,
@@ -1278,7 +1162,6 @@ app.post('/api/interactions/like', async (req, res) => {
         type: targetType
       });
     } else {
-      // Create new like
       await prisma.like.create({
         data: {
           type: type || 'LIKE',
@@ -1288,8 +1171,6 @@ app.post('/api/interactions/like', async (req, res) => {
           replyId: replyId ? parseInt(replyId) : null
         }
       });
-
-      // Get updated like count
       const likeCount = await prisma.like.count({
         where: {
           videoId: videoId ? parseInt(videoId) : null,
@@ -1297,7 +1178,6 @@ app.post('/api/interactions/like', async (req, res) => {
           replyId: replyId ? parseInt(replyId) : null,
         }
       });
-
       return res.json({ 
         action: 'created',
         liked: true,
@@ -1305,17 +1185,14 @@ app.post('/api/interactions/like', async (req, res) => {
         type: targetType
       });
     }
-
   } catch (error) {
     console.error('Like interaction error:', error);
-    
     if (error.code === 'P2003') {
       return res.status(404).json({ 
         error: 'TARGET_NOT_FOUND',
         message: 'The item you\'re trying to like no longer exists'
       });
     }
-    
     res.status(500).json({ 
       error: 'LIKE_ERROR',
       message: 'Failed to process like interaction'
@@ -1326,11 +1203,9 @@ app.post('/api/interactions/like', async (req, res) => {
 app.post('/api/interactions/comment', async (req, res) => {
   try {
     const { text, userId, videoId } = req.body;
-
     if (!text || !userId || !videoId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
     const comment = await prisma.comment.create({
       data: {
         text,
@@ -1347,7 +1222,6 @@ app.post('/api/interactions/comment', async (req, res) => {
         }
       }
     });
-
     res.json(comment);
   } catch (error) {
     console.error('Comment error:', error);
@@ -1355,91 +1229,70 @@ app.post('/api/interactions/comment', async (req, res) => {
   }
 });
 
-// Updated Reply Endpoint with Nested Replies Support
 app.post('/api/interactions/reply', async (req, res) => {
   try {
     const { text, userId, commentId, videoId, parentReplyId } = req.body;
-
-    // Validate required fields
     if (!text || !userId || !videoId || (!commentId && !parentReplyId)) {
       return res.status(400).json({ 
         error: 'MISSING_REQUIRED_FIELDS',
         message: 'Missing required fields: text, userId, and either commentId or parentReplyId'
       });
     }
-
-    // Convert IDs to numbers
     const numericUserId = parseInt(userId);
     const numericVideoId = parseInt(videoId);
     const numericCommentId = commentId ? parseInt(commentId) : null;
     const numericParentReplyId = parentReplyId ? parseInt(parentReplyId) : null;
-
-    // Validate user exists
     const user = await prisma.user.findUnique({
       where: { id: numericUserId },
       select: { id: true }
     });
-
     if (!user) {
       return res.status(404).json({ 
         error: 'USER_NOT_FOUND',
         message: 'The user does not exist'
       });
     }
-
-    // Validate video exists
     const videoExists = await prisma.video.findUnique({
       where: { id: numericVideoId },
       select: { id: true }
     });
-
     if (!videoExists) {
       return res.status(404).json({ 
         error: 'VIDEO_NOT_FOUND',
         message: 'The video does not exist'
       });
     }
-
     let resolvedCommentId = numericCommentId;
-
-    // If this is a reply to another reply, find the root comment
     if (numericParentReplyId) {
       const parentReply = await prisma.reply.findUnique({
         where: { id: numericParentReplyId },
         select: { commentId: true, videoId: true }
       });
-
       if (!parentReply) {
         return res.status(404).json({ 
           error: 'PARENT_REPLY_NOT_FOUND',
           message: 'The reply you are responding to does not exist'
         });
       }
-
       if (parentReply.videoId !== numericVideoId) {
         return res.status(400).json({ 
           error: 'VIDEO_MISMATCH',
           message: 'The parent reply does not belong to this video'
         });
       }
-
       resolvedCommentId = parentReply.commentId;
     }
-
-    // Validate comment exists (if this is a direct comment reply)
     if (resolvedCommentId) {
       const comment = await prisma.comment.findUnique({
         where: { id: resolvedCommentId },
         select: { id: true, videoId: true }
       });
-
       if (!comment) {
         return res.status(404).json({ 
           error: 'COMMENT_NOT_FOUND',
           message: 'The comment you are replying to does not exist'
         });
       }
-
       if (comment.videoId !== numericVideoId) {
         return res.status(400).json({ 
           error: 'VIDEO_MISMATCH',
@@ -1447,8 +1300,6 @@ app.post('/api/interactions/reply', async (req, res) => {
         });
       }
     }
-
-    // Create the reply
     const reply = await prisma.reply.create({
       data: {
         text,
@@ -1478,7 +1329,6 @@ app.post('/api/interactions/reply', async (req, res) => {
         }
       }
     });
-
     res.status(201).json({
       ...reply,
       id: reply.id.toString(),
@@ -1487,17 +1337,14 @@ app.post('/api/interactions/reply', async (req, res) => {
       videoId: reply.videoId.toString(),
       parentReplyId: reply.parentReplyId?.toString() || null
     });
-
   } catch (error) {
     console.error('Reply creation error:', error);
-    
     if (error.code === 'P2003') {
       return res.status(400).json({ 
         error: 'FOREIGN_KEY_CONSTRAINT',
         message: 'Invalid reference to comment, reply, or video'
       });
     }
-
     res.status(500).json({ 
       error: 'SERVER_ERROR',
       message: 'Failed to create reply',
@@ -1506,38 +1353,28 @@ app.post('/api/interactions/reply', async (req, res) => {
   }
 });
 
-// Fixed Subscription Endpoint
 app.post('/api/interactions/subscribe', async (req, res) => {
   try {
     const { userId, videoId } = req.body;
-
     if (!userId || !videoId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
-    // Get the video to find the creator (uploader)
     const video = await prisma.video.findUnique({
       where: { id: parseInt(videoId) },
       select: { userId: true }
     });
-
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
-
     const creatorId = video.userId;
     const numericUserId = parseInt(userId);
-
-    // First check if subscription exists
     const existingSubscription = await prisma.subscription.findFirst({
       where: {
         userId: numericUserId,
         creatorId: creatorId
       }
     });
-
     if (existingSubscription) {
-      // If exists, unsubscribe (delete the subscription)
       await prisma.subscription.delete({
         where: { id: existingSubscription.id }
       });
@@ -1547,7 +1384,6 @@ app.post('/api/interactions/subscribe', async (req, res) => {
         uploaderId: creatorId
       });
     } else {
-      // If doesn't exist, create new subscription
       await prisma.subscription.create({
         data: {
           userId: numericUserId,
@@ -1579,18 +1415,14 @@ app.post('/api/interactions/subscribe', async (req, res) => {
 app.post('/api/interactions/rate', async (req, res) => {
     try {
         const { userId, videoId, value } = req.body;
-
-        // Validate rating value (1-10)
         if (value < 1 || value > 10) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Rating must be between 1 and 10' 
             });
         }
-
         const numericUserId = parseInt(userId);
         const numericVideoId = parseInt(videoId);
-
         const videoExists = await prisma.video.findUnique({
             where: { id: numericVideoId }
         });
@@ -1600,7 +1432,6 @@ app.post('/api/interactions/rate', async (req, res) => {
                 error: 'Video not found' 
             });
         }
-
         const rating = await prisma.rating.upsert({
             where: {
                 userId_videoId: {
@@ -1627,16 +1458,12 @@ app.post('/api/interactions/rate', async (req, res) => {
                 }
             }
         });
-
-        // Calculate new average rating
         const ratings = await prisma.rating.findMany({
             where: { videoId: numericVideoId }
         });
-        
         const totalSum = ratings.reduce((sum, r) => sum + r.value, 0);
         const average = totalSum / ratings.length;
-        const roundedAverage = Math.round(average * 10) / 10; // Round to 1 decimal place
-
+        const roundedAverage = Math.round(average * 10) / 10;
         res.status(200).json({ 
             success: true,
             rating,
@@ -1656,11 +1483,9 @@ app.post('/api/interactions/rate', async (req, res) => {
 app.post('/api/interactions/trivia', async (req, res) => {
   try {
     const { text, userId, videoId } = req.body;
-
     if (!text || !userId || !videoId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
     const trivia = await prisma.trivia.create({
       data: {
         text,
@@ -1677,7 +1502,6 @@ app.post('/api/interactions/trivia', async (req, res) => {
         }
       }
     });
-
     res.status(201).json(trivia);
   } catch (error) {
     console.error('Trivia error:', error);
@@ -1688,7 +1512,6 @@ app.post('/api/interactions/trivia', async (req, res) => {
 app.get('/api/videos/:id/trivia', async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
-    
     const trivia = await prisma.trivia.findMany({
       where: { videoId },
       include: {
@@ -1704,7 +1527,6 @@ app.get('/api/videos/:id/trivia', async (req, res) => {
         createdAt: 'desc'
       }
     });
-
     res.json(trivia);
   } catch (error) {
     console.error('Error fetching trivia:', error);
@@ -1712,7 +1534,6 @@ app.get('/api/videos/:id/trivia', async (req, res) => {
   }
 });
 
-// Public approved videos endpoint
 app.get('/api/videos/approved', async (req, res) => {
   try {
     const videos = await prisma.video.findMany({
@@ -1739,24 +1560,19 @@ app.post('/api/videos/:id/synopsis', async (req, res) => {
     const videoId = parseInt(req.params.id);
     const { synopsis } = req.body;
     const authHeader = req.headers.authorization;
-
     if (!authHeader) {
       return res.status(401).json({ error: 'Authorization required' });
     }
-
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
-
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       select: { userId: true }
     });
-
     if (!video || video.userId !== userId) {
       return res.status(403).json({ error: 'Unauthorized to edit this video' });
     }
-
     const updatedVideo = await prisma.video.update({
       where: { id: videoId },
       data: { synopsis },
@@ -1766,7 +1582,6 @@ app.post('/api/videos/:id/synopsis', async (req, res) => {
         synopsis: true
       }
     });
-
     res.json(updatedVideo);
   } catch (error) {
     console.error('Synopsis update error:', error);
@@ -1777,20 +1592,34 @@ app.post('/api/videos/:id/synopsis', async (req, res) => {
   }
 });
 
-// Error handling middleware
+// ============================================================
+//  STATIC FILE SERVING – AFTER ALL API ROUTES
+// ============================================================
+app.use(express.static(CLIENT_PUBLIC_DIR));
+
+// ============================================================
+//  CATCH-ALL – ONLY FOR NON-API ROUTES (SPA routing)
+// ============================================================
+app.get('*', (req, res) => {
+  // If the request is for /api/*, return 404 JSON instead of HTML
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  // Otherwise, serve index.html for client-side routing
+  res.sendFile(path.join(CLIENT_PUBLIC_DIR, 'index.html'));
+});
+
+// ============================================================
+//  ERROR HANDLING MIDDLEWARE
+// ============================================================
 app.use((err, req, res, next) => {
   console.error('Server error:', err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// Serve client static files
-app.use(express.static(CLIENT_PUBLIC_DIR));
-
-// Client-side routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(CLIENT_PUBLIC_DIR, 'index.html'));
-});
-
+// ============================================================
+//  START SERVER
+// ============================================================
 const PORT = process.env.PORT || 5000;
 
 checkSuperAdmin().then(() => {
