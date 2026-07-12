@@ -7,11 +7,67 @@
     <title>Upload Video - Soldout.com</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
+    <style>
+        /* ---- Fix upload preview containers ---- */
+        .upload-thumbnail {
+            height: 200px;
+            max-height: 200px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 10px;
+            cursor: pointer;
+            transition: border var(--transition);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-thumbnail:hover {
+            border-color: var(--accent-indigo);
+        }
+
+        .upload-thumbnail img,
+        .upload-thumbnail video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .thumbnail-preview-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .upload-btn {
+            margin-top: 20px;
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: var(--gradient-main);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+
+        .upload-btn:hover {
+            background: var(--accent-indigo);
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- ======== HEADER (hardcoded, but with the new structure) ======== -->
+        <!-- ======== HEADER ======== -->
         <header>
             <div class="logo" id="homeLink">
                 <i class="fas fa-ticket-alt"></i>
@@ -27,7 +83,6 @@
             <div class="user-actions">
                 <i class="fas fa-search search-icon"></i>
                 <i class="fas fa-bell"></i>
-                <!-- FIX: user-info now contains the dropdown -->
                 <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
                     <div class="user-avatar-container" id="userAvatar">
                         <i class="fas fa-user-circle user-icon"></i>
@@ -175,6 +230,9 @@
     </div>
 
     <script>
+        // ======== CRITICAL: Set API_BASE_URL to Render backend ========
+        const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
+
         // ======== SHARED AUTH FUNCTIONS ========
         function getCurrentUser() {
             const userData = localStorage.getItem('currentUser');
@@ -211,28 +269,6 @@
             }
         }
 
-        async function refreshAuthToken() {
-            try {
-                const response = await fetch('/api/auth/refresh', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    }
-                });
-                if (!response.ok) throw new Error('Failed to refresh token');
-                const data = await response.json();
-                setAuthToken(data.token);
-                return data.token;
-            } catch (error) {
-                console.error('Token refresh failed:', error);
-                removeCurrentUser();
-                removeAuthToken();
-                window.location.href = 'index.html';
-                throw error;
-            }
-        }
-
         function showAlert(message, type) {
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
@@ -249,7 +285,6 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // ======== USER STATE UPDATE ========
         function updateUserState(user) {
             const avatarContainer = document.getElementById('userAvatar');
             const userNameSpan = document.getElementById('userNameDisplay');
@@ -276,19 +311,15 @@
 
             const token = getAuthToken();
             if (isTokenExpired(token)) {
-                try {
-                    await refreshAuthToken();
-                } catch (error) {
-                    removeCurrentUser();
-                    removeAuthToken();
-                    window.location.href = 'index.html';
-                    return;
-                }
+                removeCurrentUser();
+                removeAuthToken();
+                window.location.href = 'index.html';
+                return;
             }
 
             updateUserState(user);
 
-            // ====== DROPDOWN FIX ======
+            // ====== DROPDOWN ======
             const userInfo = document.getElementById('userInfo');
             const dropdown = document.getElementById('userDropdown');
 
@@ -320,7 +351,7 @@
                 window.location.href = 'index.html';
             });
 
-            // ====== SUCCESS MODAL BUTTONS ======
+            // ====== SUCCESS MODAL ======
             document.getElementById('successBtn').addEventListener('click', function () {
                 window.location.href = 'index.html';
             });
@@ -444,21 +475,13 @@
                     uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
                     uploadBtn.disabled = true;
 
-                    let token = getAuthToken();
-                    let response = await fetch('/api/videos', {
+                    const token = getAuthToken();
+                    // Use the full Render URL
+                    const response = await fetch(`${API_BASE_URL}/videos`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` },
                         body: formData
                     });
-
-                    if (response.status === 401) {
-                        token = await refreshAuthToken();
-                        response = await fetch('/api/videos', {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            body: formData
-                        });
-                    }
 
                     if (!response.ok) {
                         const errorData = await response.json();
