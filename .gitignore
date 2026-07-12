@@ -1,0 +1,14 @@
+﻿node_modules/
+server/node_modules/
+client/node_modules/
+server-backup/
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.zip
+*.rar
+*.7z
+.env
+*.log
+.DS_Store

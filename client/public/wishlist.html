@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wishlist - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 5%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo i {
+            color: #3ea6ff;
+            font-size: 28px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+
+        .nav-links a {
+            color: #e6e6e6;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+            background: rgba(62, 166, 255, 0.1);
+        }
+
+        .nav-links a.active {
+            color: #3ea6ff;
+            background: rgba(62, 166, 255, 0.15);
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-actions i {
+            font-size: 18px;
+            color: #e6e6e6;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .user-actions i:hover {
+            color: #3ea6ff;
+            background: rgba(62, 166, 255, 0.1);
+        }
+
+        .user-info {
+            color: #e6e6e6;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+
+        .user-icon-container {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(62, 166, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            border-color: #3ea6ff;
+            transform: scale(1.05);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-icon {
+            width: 100%;
+            height: 100%;
+            font-size: 40px;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2c2c54, #40407a);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 0;
+            min-width: 180px;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            margin-top: 10px;
+        }
+
+        .user-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid rgba(26, 26, 46, 0.95);
+        }
+
+        .user-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            color: #e6e6e6;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .user-dropdown a:hover {
+            background: rgba(62, 166, 255, 0.1);
+            color: #3ea6ff;
+        }
+
+        .user-dropdown a i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .user-icon-container:hover .user-dropdown {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin: 40px 0 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #3ea6ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .page-header p {
+            color: #a0a0d0;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Wishlist Content */
+        .wishlist-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .wishlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .wishlist-item {
+            background: rgba(30, 30, 60, 0.7);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .wishlist-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px extreme-25px rgba(0, 0, 0, 0.3);
+        }
+
+        .thumbnail-container {
+            position: relative;
+            width: 100%;
+            height: 160px;
+            overflow: hidden;
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .wishlist-item:hover .video-thumbnail {
+            transform: scale(1.05);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: rgba(231, 76, 60, 0.9);
+            transform: scale(1.1);
+        }
+
+        .remove-btn i {
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .wishlist-item:hover .play-overlay {
+            opacity: 1;
+        }
+
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(62, 166, 255, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn:hover {
+            background: rgba(62, 166, 255, 1);
+            transform: scale(1.1);
+        }
+
+        .video-info {
+            padding: 15px;
+        }
+
+        .video-title {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #fff;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .video-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            color: #a0a0d0;
+            font-size: 0.9rem;
+        }
+
+        .uploader-name {
+            color: #3ea6ff;
+        }
+
+        .expiry-info {
+            font-size: 0.8rem;
+            color: #ffa500;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(30, 30, 60, 0.5);
+            border-radius: 12px;
+            margin: 40px 0;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #3ea6ff;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .empty-state p {
+            color: #a0a0d0;
+            margin-bottom: 25px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .browse-btn {
+            background: #3ea6ff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .browse-btn:hover {
+            background: #2b8ad6;
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+            background: rgba(10, 10, 20, 0.7);
+            border-top: 1px extreme solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-links {
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: #a0a0d0;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #3ea6ff;
+        }
+
+        footer p {
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        /* Toast notification */
+        .wishlist-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 26, 46, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .wishlist-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .wishlist-toast i {
+            color: #3ea6ff;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .wishlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 20px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-links {
+                gap: 15px;
+            }
+
+            .nav-links a {
+                font-size: 14px;
+                padding: 6px 10px;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .user-actions {
+                gap: 15px;
+            }
+
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .wishlist-grid {
+                grid-template-columns: 1fr;
+            }
+
+           .page-header h1 {
+    font-size: 1.8rem;
+}
+
+
+            .logo span {
+                display: none;
+            }
+
+            .nav-links {
+                gap: 10px;
+            }
+
+            .nav-links a {
+                font-size: 12px;
+                padding: 5px 8px;
+            }
+
+            .user-actions i {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo" id="homeLink">
+            <i class="fas fa-ticket-alt"></i>
+            <span>Soldout.com</span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="gallery.html">Movies</a>
+            <a href="series.html">TV Shows</a>
+            <a href="#">New Releases</a>
+            <a href="soundtracks.html">Soundtracks</a>
+        </div>
+        <div class="user-actions">
+            <i class="fas fa-search search-icon"></i>
+            <i class="fas fa-bell"></i>
+            <div class="user-info" id="userInfo"></div>
+            <div class="user-icon-container" id="userDropdownTrigger">
+                <div class="user-avatar" id="userAvatar">
+                    <i class="fas fa-user-circle user-icon" id="userIcon"></i>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                    <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                    <a href="wishlist.html"><i class="fas fa-heart"></i> My Wishlist</a>
+                    <a href="#" id="logoutBtn"><i class="fas extreme-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-heart"></i> My Wishlist</h1>
+            <p>Your personalized collection of movies and shows you want to watch later. Items automatically expire
+                after 7 days.</p>
+        </div>
+
+        <div class="wishlist-content">
+            <div class="wishlist-grid" id="wishlistGrid">
+                <!-- Wishlist items will be loaded here -->
+            </div>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i class="fas fa-heart-broken"></i>
+                <h2>Your wishlist is empty</h2>
+                <p>Start building your collection by adding movies and TV shows you'd like to watch later.</p>
+                <button class="browse-btn" onclick="window.location.href='index.html'">Browse Content</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-links">
+            <a href="admin.html">
+                <font color="green">Admin</font>
+            </a> |
+            <a href="#">About Us</a> |
+            <a href="#">Contact</a> |
+            <a href="#">Privacy Policy</a> |
+            <a href="#">Terms of Service</a> |
+            <a href="#">Help Center</a>
+        </div>
+        <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
+        <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+    </footer>
+
+    <!-- Toast notification -->
+    <div class="wishlist-toast" id="wishlistToast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Item removed from wishlist</span>
+    </div>
+
+    <script>
+        // Database functions
+        function initDatabase() {
+            if (!localStorage.getItem('wishlistDB')) {
+                localStorage.setItem('wishlistDB', JSON.stringify({
+                    users: {},
+                    items: {}
+                }));
+            }
+            return JSON.parse(localStorage.getItem('wishlistDB'));
+        }
+
+        // Function to add item to wishlist
+        function addToWishlist(userId, video) {
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            const userWishlist = db.users[userId] || [];
+
+            // Check if item already exists in user's wishlist
+            if (!userWishlist.includes(video.id)) {
+                userWishlist.push(video.id);
+                db.users[userId] = userWishlist;
+
+                // Store video details if not already stored
+                if (!db.items[video.id]) {
+                    db.items[video.id] = {
+                        ...video,
+                        addedDate: new Date().toISOString()
+                    };
+                }
+
+                localStorage.setItem('wishlistDB', JSON.stringify(db));
+                return true;
+            }
+            return false;
+        }
+
+        function getUserWishlist(userId) {
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            const userWishlist = db.users[userId] || [];
+
+            // Filter out expired items (older than 7 days)
+            const now = new Date().getTime();
+            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+            return userWishlist
+                .map(id => db.items[id])
+                .filter(item => item && (now - new Date(item.addedDate).getTime()) < oneWeekMs);
+        }
+
+        function removeFromWishlist(userId, videoId) {
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+
+            if (db.users[userId]) {
+                db.users[userId] = db.users[userId].filter(id => id !== videoId);
+                localStorage.setItem('wishlistDB', JSON.stringify(db));
+                return true;
+            }
+            return false;
+        }
+
+        function cleanupExpiredItems() {
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            const now = new Date().getTime();
+            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+            let itemsRemoved = false;
+
+            // Clean up expired items from the items collection
+            Object.keys(db.items).forEach(id => {
+                const addedDate = new Date(db.items[id].addedDate).getTime();
+                if (now - addedDate >= oneWeekMs) {
+                    delete db.items[id];
+                    itemsRemoved = true;
+                }
+            });
+
+            // Clean up references from user wishlists
+            Object.keys(db.users).forEach(userId => {
+                const originalLength = db.users[userId].length;
+                db.users[userId] = db.users[userId].filter(id => db.items[id] !== undefined);
+
+                if (db.users[userId].length !== originalLength) {
+                    itemsRemoved = true;
+                }
+            });
+
+            if (itemsRemoved) {
+                localStorage.setItem('wishlistDB', JSON.stringify(db));
+            }
+
+            return itemsRemoved;
+        }
+
+        // Function to get current user ID
+        function getCurrentUserId() {
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                const user = JSON.parse(userData);
+                return user.id || user.email; // Use ID or email as user identifier
+            }
+            return null;
+        }
+
+        // Function to calculate days remaining until expiration
+        function getDaysRemaining(addedDate) {
+            const now = new Date().getTime();
+            const added = new Date(addedDate).getTime();
+            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+            const remainingMs = oneWeekMs - (now - added);
+            return Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        }
+
+        // Function to show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('wishlistToast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Function to play video - redirects to video player page
+        function playVideo(video) {
+            // Store the video data in sessionStorage for the player page
+            sessionStorage.setItem('currentVideo', JSON.stringify(video));
+
+            // Redirect to the video player page
+            window.location.href = 'video-player.html';
+        }
+
+        // Function to load and display wishlist items
+        function loadWishlist() {
+            const wishlistGrid = document.getElementById('wishlistGrid');
+            const emptyState = document.getElementById('emptyState');
+            const userId = getCurrentUserId();
+
+            if (!userId) {
+                emptyState.style.display = 'block';
+                emptyState.innerHTML = `
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h2>Please log in to view your wishlist</h2>
+                    <p>You need to be logged in to access your saved items.</p>
+                    <button class="browse-btn" onclick="window.location.href='index.html'">Go to Login</button>
+                `;
+                return;
+            }
+
+            // Clean up expired items first
+            const itemsRemoved = cleanupExpiredItems();
+            if (itemsRemoved) {
+                showToast('Expired items have been removed from your wishlist');
+            }
+
+            const wishlist = getUserWishlist(userId);
+
+            // Clear the grid
+            wishlistGrid.innerHTML = '';
+
+            if (wishlist.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // Add each wishlist item to the grid
+            wishlist.forEach(video => {
+                const daysRemaining = getDaysRemaining(video.addedDate);
+                const expiryText = daysRemaining > 0
+                    ? `Expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`
+                    : 'Expires today';
+
+                const wishlistItem = document.createElement('div');
+                wishlistItem.className = 'wishlist-item';
+                wishlistItem.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img class="video-thumbnail" src="${video.thumbnail}" alt="${video.title}">
+                        <button class="remove-btn" onclick="removeFromWishlistHandler('${video.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="play-overlay">
+                            <div class="play-btn" onclick="playVideo(${JSON.stringify(video).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">${video.title}</h3>
+                        <div class="video-meta">
+                            <span>${video.genre} • ${video.year}</span>
+                            <span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span>
+                            <div class="expiry-info">
+                                <i class="fas fa-clock"></i>
+                                <span>${expiryText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                wishlistGrid.appendChild(wishlistItem);
+            });
+        }
+
+        // Handler for remove button
+        function removeFromWishlistHandler(videoId) {
+            const userId = getCurrentUserId();
+            if (userId && removeFromWishlist(userId, videoId)) {
+                showToast('Removed from wishlist');
+                loadWishlist();
+            }
+        }
+
+        // Load wishlist when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            loadWishlist();
+
+            // Set user info if available
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                const user = JSON.parse(userData);
+                document.getElementById('userInfo').textContent = `${user.firstName} ${user.lastName}`;
+
+                // Add dropdown toggle functionality
+                document.getElementById('userDropdownTrigger').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.getElementById('userDropdown').classList.toggle('show');
+                });
+
+                // Close dropdown when clicking elsewhere
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest('.user-dropdown') &&
+                        !e.target.closest('#userDropdownTrigger')) {
+                        document.getElementById('userDropdown').classList.remove('show');
+                    }
+                });
+            }
+
+            // Set up home link
+            document.getElementById('homeLink').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('authToken');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+
+</html>

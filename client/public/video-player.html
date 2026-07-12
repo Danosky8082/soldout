@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/global.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo" id="homeLink">
+                <i class="fab fa-youtube"></i>
+                <span>Soldout</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="active home-link">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
+                    <div class="user-avatar-container" id="userAvatar">
+                        <i class="fas fa-user-circle user-icon"></i>
+                    </div>
+                    <span class="user-name" id="userNameDisplay"></span>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ========== MAIN CONTENT ========== -->
+        <div class="main-content">
+            <div class="video-container">
+                <!-- Video Player -->
+                <div class="video-player">
+                    <div class="rating-container" id="ratingContainer">
+                        <div class="rating-stars" id="ratingStars">
+                            <input type="radio" id="star10" name="rating" value="10"><label for="star10"
+                                title="10 stars"><i class="fas fa-star"></i></label>
+                            <input type="radio" id="star9" name="rating" value="9"><label for="star9" title="9 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star8" name="rating" value="8"><label for="star8" title="8 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star7" name="rating" value="7"><label for="star7" title="7 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star6" name="rating" value="6"><label for="star6" title="6 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star5" name="rating" value="5"><label for="star5" title="5 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars"><i
+                                    class="fas fa-star"></i></label>
+                            <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star"><i
+                                    class="fas fa-star"></i></label>
+                        </div>
+                        <div class="rating-average" id="ratingAverage">
+                            <span class="average-value">0.0</span>
+                            <span class="rating-count">(0 ratings)</span>
+                        </div>
+                    </div>
+                    <button class="quality-toggle" id="qualityToggle"><i class="fas fa-cog"></i> Quality</button>
+                    <div class="quality-selector" id="qualitySelector">
+                        <div class="quality-option" data-quality="360">360p</div>
+                        <div class="quality-option" data-quality="480">480p</div>
+                        <div class="quality-option active" data-quality="720">720p</div>
+                        <div class="quality-option" data-quality="1080">1080p</div>
+                    </div>
+                    <video id="mainPlayer" controls autoplay>
+                        <source src="" type="video/mp4" data-quality="720">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <!-- Video Info -->
+                <div class="video-info">
+                    <h1 id="playerTitle" class="video-title"></h1>
+                    <div class="video-meta">
+                        <div id="playerMeta" class="video-stats"></div>
+                        <div class="video-actions">
+                            <button class="action-button" id="likeButton"><i class="fas fa-thumbs-up"></i> <span
+                                    id="likeCount">0</span></button>
+                            <button class="action-button" id="dislikeButton"><i class="fas fa-thumbs-down"></i> <span
+                                    id="dislikeCount">0</span></button>
+                            <button class="action-button" id="shareButton"><i class="fas fa-share"></i>
+                                <span>Share</span></button>
+                            <button class="action-button" id="saveButton"><i class="fas fa-plus"></i>
+                                <span>Save</span></button>
+                        </div>
+                    </div>
+                    <div class="video-description">
+                        <div id="playerDescription"></div>
+                    </div>
+                    <div class="uploader-info">
+                        <div class="uploader-avatar" id="uploaderAvatar">
+                            <img src="" alt="Uploader" id="uploaderAvatarImg" style="display:none;">
+                            <i class="fas fa-user" id="uploaderAvatarIcon"></i>
+                        </div>
+                        <div class="uploader-details">
+                            <div class="uploader-name" id="uploaderName"></div>
+                            <div class="subscribers-count" id="subscribersCount">0 subscribers</div>
+                        </div>
+                        <button class="subscribe-button" id="subscribeButton">SUBSCRIBE</button>
+                    </div>
+                </div>
+
+                <!-- Comments -->
+                <div class="comments-section">
+                    <h3 class="comments-title">Comments <span id="commentsCount">(0)</span></h3>
+                    <form class="comment-form" id="commentForm">
+                        <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..."
+                            required>
+                        <button type="submit" class="comment-submit">Comment</button>
+                    </form>
+                    <div class="comment-list" id="commentList"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="section-title">Similar Videos</div>
+                <div class="related-videos" id="relatedVideos"></div>
+                <div class="trivia-container">
+                    <div class="trivia-header">
+                        <div class="trivia-title">Trivia</div>
+                        <button class="trivia-add-btn" id="triviaAddBtn"><i class="fas fa-plus"></i> Add Trivia</button>
+                    </div>
+                    <div class="trivia-content" id="triviaContent">
+                        <p class="no-trivia" id="noTrivia">No trivia added yet.</p>
+                    </div>
+                    <div class="trivia-form-container" id="triviaFormContainer" style="display: none;">
+                        <textarea class="trivia-textarea" id="triviaTextarea"
+                            placeholder="Enter trivia text..."></textarea>
+                        <div class="trivia-actions">
+                            <button class="trivia-save-btn" id="triviaSaveBtn">Save</button>
+                            <button class="trivia-cancel-btn" id="triviaCancelBtn">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Modal -->
+        <div class="share-modal" id="shareModal">
+            <div class="share-modal-content">
+                <div class="share-modal-header">
+                    <h3>Share Video</h3>
+                    <span class="share-modal-close" id="shareModalClose">&times;</span>
+                </div>
+                <div class="share-options">
+                    <div class="share-option" id="shareFacebook"><i class="fab fa-facebook"></i><span>Facebook</span>
+                    </div>
+                    <div class="share-option" id="shareTwitter"><i class="fab fa-twitter"></i><span>Twitter</span></div>
+                    <div class="share-option" id="shareWhatsApp"><i class="fab fa-whatsapp"></i><span>WhatsApp</span>
+                    </div>
+                    <div class="share-option" id="shareLinkedIn"><i class="fab fa-linkedin"></i><span>LinkedIn</span>
+                    </div>
+                </div>
+                <div class="share-link-container">
+                    <input type="text" class="share-link" id="shareLink" readonly>
+                    <button class="copy-link" id="copyLinkBtn">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
+            <p class="copyright">&copy; 2025 Soldout.com. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== VIDEO PLAYER JS ====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            const API_BASE_URL = 'http://localhost:5000';
+
+            // ---------- Helper to convert relative to absolute URL ----------
+            function getAbsoluteUrl(url) {
+                if (!url) return null;
+                if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                return url.startsWith('/')
+                    ? `${API_BASE_URL}${url}`
+                    : `${API_BASE_URL}/${url}`;
+            }
+
+            // ---------- Auth helpers ----------
+            function getAuthToken() {
+                return localStorage.getItem('authToken');
+            }
+            function getCurrentUser() {
+                const data = localStorage.getItem('currentUser');
+                return data ? JSON.parse(data) : null;
+            }
+            function updateUserState(user) {
+                const avatar = document.getElementById('userAvatar');
+                const name = document.getElementById('userNameDisplay');
+                if (user) {
+                    if (user.profilePicture) {
+                        const picUrl = getAbsoluteUrl(user.profilePicture);
+                        avatar.innerHTML = `<img src="${picUrl}" alt="${user.firstName}">`;
+                    } else {
+                        avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                    }
+                    name.textContent = `${user.firstName} ${user.lastName}`;
+                } else {
+                    avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                    name.textContent = '';
+                }
+            }
+
+            // ---------- Header dropdown ----------
+            const userInfo = document.getElementById('userInfo');
+            const dropdown = document.getElementById('userDropdown');
+            userInfo.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const user = getCurrentUser();
+                if (user) {
+                    dropdown.classList.toggle('show');
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+            document.addEventListener('click', function () {
+                dropdown.classList.remove('show');
+            });
+
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('authToken');
+                window.location.href = 'index.html';
+            });
+            // Home
+            document.getElementById('homeLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.href = 'index.html';
+            });
+
+            // ---------- Load video ----------
+            const loggedInUser = getCurrentUser();
+            if (loggedInUser) updateUserState(loggedInUser);
+
+            const videoData = JSON.parse(sessionStorage.getItem('currentVideo'));
+            if (!videoData) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            let video;
+            try {
+                const token = getAuthToken();
+                const url = `${API_BASE_URL}/api/videos/${videoData.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`;
+                const res = await fetch(url, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (!res.ok) throw new Error('Failed to fetch video');
+                video = await res.json();
+                if (!video._count) video._count = { likes: 0, subscribers: 0 };
+                if (!video.comments) video.comments = [];
+            } catch (error) {
+                console.error('Error loading video:', error);
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Populate player
+            const player = document.getElementById('mainPlayer');
+            player.src = video.videoUrl;
+            document.getElementById('playerTitle').textContent = video.title;
+            document.getElementById('uploaderName').textContent = video.user?.firstName + ' ' + video.user?.lastName || 'Unknown';
+            document.getElementById('playerMeta').innerHTML =
+                `<span>${video.views?.toLocaleString() || '0'} views</span> • <span>${new Date(video.createdAt).toLocaleDateString()}</span>`;
+            if (video.description) {
+                document.getElementById('playerDescription').textContent = video.description;
+            }
+
+            // ====== UPLOADER AVATAR (PROFILE PICTURE) ======
+            const uploaderAvatarImg = document.getElementById('uploaderAvatarImg');
+            const uploaderAvatarIcon = document.getElementById('uploaderAvatarIcon');
+            if (video.user?.profilePicture) {
+                const picUrl = getAbsoluteUrl(video.user.profilePicture);
+                uploaderAvatarImg.src = picUrl;
+                uploaderAvatarImg.style.display = 'block';
+                uploaderAvatarIcon.style.display = 'none';
+            } else {
+                uploaderAvatarImg.style.display = 'none';
+                uploaderAvatarIcon.style.display = 'block';
+            }
+
+            updateVideoUI(video);
+            initStarRating(video);
+            renderComments(video.comments || []);
+            loadRelatedVideos(video);
+            loadTrivia(video);
+
+            // ---------- Like / Dislike ----------
+            document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
+            document.getElementById('dislikeButton').addEventListener('click', () => toggleLike(true));
+
+            async function toggleLike(isDislike) {
+                if (!loggedInUser) {
+                    alert('Please log in to like/dislike');
+                    return;
+                }
+                const token = getAuthToken();
+                if (!token) { alert('Please log in again.'); return; }
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            type: 'VIDEO',
+                            userId: loggedInUser.id,
+                            videoId: video.id,
+                            isDislike
+                        })
+                    });
+                    if (res.ok) {
+                        // Refresh video data
+                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        video = await updated.json();
+                        updateVideoUI(video);
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            // ---------- Subscribe ----------
+            document.getElementById('subscribeButton').addEventListener('click', async () => {
+                if (!loggedInUser) { alert('Please log in to subscribe'); return; }
+                const token = getAuthToken();
+                if (!token) { alert('Please log in again.'); return; }
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/interactions/subscribe`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ userId: loggedInUser.id, videoId: video.id })
+                    });
+                    if (res.ok) {
+                        const result = await res.json();
+                        const btn = document.getElementById('subscribeButton');
+                        if (result.subscribed) {
+                            btn.classList.add('subscribed');
+                            btn.textContent = 'SUBSCRIBED';
+                        } else {
+                            btn.classList.remove('subscribed');
+                            btn.textContent = 'SUBSCRIBE';
+                        }
+                        // Refresh subscriber count (optional)
+                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        video = await updated.json();
+                        updateVideoUI(video);
+                    }
+                } catch (e) { console.error(e); }
+            });
+
+            // ---------- Save ----------
+            document.getElementById('saveButton').addEventListener('click', async () => {
+                if (!loggedInUser) { alert('Please log in to save'); return; }
+                const token = getAuthToken();
+                if (!token) { alert('Please log in again.'); return; }
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/interactions/save`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ userId: loggedInUser.id, videoId: video.id })
+                    });
+                    if (res.ok) {
+                        const result = await res.json();
+                        const btn = document.getElementById('saveButton');
+                        if (result.action === 'saved') {
+                            btn.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
+                            btn.classList.add('saved');
+                        } else {
+                            btn.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
+                            btn.classList.remove('saved');
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            });
+
+            // ---------- Comments ----------
+            const commentForm = document.getElementById('commentForm');
+            const commentInput = document.getElementById('commentInput');
+
+            commentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!loggedInUser) { alert('Please log in to comment'); return; }
+                const text = commentInput.value.trim();
+                if (!text) return;
+                const token = getAuthToken();
+                if (!token) { alert('Please log in again.'); return; }
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/interactions/comment`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ text, userId: loggedInUser.id, videoId: video.id })
+                    });
+                    if (res.ok) {
+                        commentInput.value = '';
+                        // Refresh comments
+                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        video = await updated.json();
+                        renderComments(video.comments || []);
+                    }
+                } catch (e) { console.error(e); alert('Failed to post comment'); }
+            });
+
+            // ---------- Trivia ----------
+            const triviaAddBtn = document.getElementById('triviaAddBtn');
+            const triviaFormContainer = document.getElementById('triviaFormContainer');
+            const triviaSaveBtn = document.getElementById('triviaSaveBtn');
+            const triviaCancelBtn = document.getElementById('triviaCancelBtn');
+            const triviaTextarea = document.getElementById('triviaTextarea');
+            const triviaContent = document.getElementById('triviaContent');
+            const noTrivia = document.getElementById('noTrivia');
+
+            triviaAddBtn.addEventListener('click', () => {
+                if (!loggedInUser) { alert('Please log in to add trivia'); return; }
+                triviaFormContainer.style.display = 'block';
+            });
+            triviaCancelBtn.addEventListener('click', () => {
+                triviaFormContainer.style.display = 'none';
+                triviaTextarea.value = '';
+            });
+            triviaSaveBtn.addEventListener('click', async () => {
+                const text = triviaTextarea.value.trim();
+                if (!text) { alert('Please enter trivia text'); return; }
+                const token = getAuthToken();
+                if (!token) { alert('Please log in again.'); return; }
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/interactions/trivia`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ text, userId: loggedInUser.id, videoId: video.id })
+                    });
+                    if (res.ok) {
+                        triviaFormContainer.style.display = 'none';
+                        triviaTextarea.value = '';
+                        loadTrivia(video);
+                    } else {
+                        throw new Error('Failed to save trivia');
+                    }
+                } catch (e) { console.error(e); alert('Failed to save trivia'); }
+            });
+
+            async function loadTrivia(video) {
+                const token = getAuthToken();
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/videos/${video.id}/trivia`, {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch trivia');
+                    const trivia = await res.json();
+                    triviaContent.innerHTML = '';
+                    if (trivia.length === 0) {
+                        triviaContent.appendChild(noTrivia);
+                        return;
+                    }
+                    trivia.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'trivia-item';
+                        div.dataset.id = item.id;
+                        div.innerHTML = `
+                            <p>${item.text}</p>
+                            <div class="trivia-meta">
+                                <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
+                                ${item.user.id === loggedInUser?.id ? `
+                                <div class="trivia-actions">
+                                    <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                                    <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        triviaContent.appendChild(div);
+                        if (item.user.id === loggedInUser?.id) {
+                            div.querySelector('.edit-trivia').addEventListener('click', () => {
+                                triviaTextarea.value = item.text;
+                                triviaFormContainer.style.display = 'block';
+                                div.remove();
+                            });
+                            div.querySelector('.delete-trivia').addEventListener('click', async () => {
+                                if (!confirm('Delete this trivia?')) return;
+                                const token = getAuthToken();
+                                try {
+                                    const del = await fetch(`${API_BASE_URL}/api/interactions/trivia/${item.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                    });
+                                    if (del.ok) {
+                                        div.remove();
+                                        if (triviaContent.children.length === 0) {
+                                            triviaContent.appendChild(noTrivia);
+                                        }
+                                    }
+                                } catch (e) { console.error(e); alert('Failed to delete trivia'); }
+                            });
+                        }
+                    });
+                } catch (e) { console.error(e); }
+            }
+
+            // ---------- Related videos ----------
+            async function loadRelatedVideos(video) {
+                const container = document.getElementById('relatedVideos');
+                container.innerHTML = '<p class="loading">Loading similar videos...</p>';
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/videos/premium`);
+                    if (!res.ok) throw new Error('Failed to fetch videos');
+                    let all = await res.json();
+                    const related = all.filter(v => v.genre === video.genre && v.id !== video.id).slice(0, 6);
+                    container.innerHTML = '';
+                    if (related.length === 0) {
+                        container.innerHTML = '<p>No similar videos found</p>';
+                        return;
+                    }
+                    related.forEach(v => {
+                        const el = document.createElement('div');
+                        el.className = 'related-video';
+                        el.innerHTML = `
+                            <div class="related-thumbnail">
+                                <img src="${v.thumbnail}" alt="${v.title}">
+                                ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
+                            </div>
+                            <div class="related-info">
+                                <div class="related-title">${v.title}</div>
+                                <div class="related-uploader">${v.user?.firstName || 'Unknown'}</div>
+                                <div class="related-stats">${v.views?.toLocaleString() || 0} views</div>
+                            </div>
+                        `;
+                        el.addEventListener('click', () => {
+                            sessionStorage.setItem('currentVideo', JSON.stringify({ id: v.id }));
+                            window.location.reload();
+                        });
+                        container.appendChild(el);
+                    });
+                } catch (e) {
+                    console.error(e);
+                    container.innerHTML = '<p>Error loading similar videos</p>';
+                }
+            }
+
+            // ---------- Helper: update UI ----------
+            function updateVideoUI(video) {
+                document.getElementById('likeCount').textContent = video.likeCount || 0;
+                document.getElementById('dislikeCount').textContent = video.dislikeCount || 0;
+                const btn = document.getElementById('subscribeButton');
+                if (video.isSubscribed) {
+                    btn.classList.add('subscribed');
+                    btn.textContent = 'SUBSCRIBED';
+                } else {
+                    btn.classList.remove('subscribed');
+                    btn.textContent = 'SUBSCRIBE';
+                }
+                const subCount = video.user?.subscriberCount || 0;
+                document.getElementById('subscribersCount').textContent =
+                    (subCount >= 1000000 ? (subCount / 1000000).toFixed(1) + 'M' :
+                        subCount >= 1000 ? (subCount / 1000).toFixed(1) + 'K' : subCount) + ' subscribers';
+            }
+
+            // ---------- Star rating ----------
+            function initStarRating(video) {
+                const stars = document.getElementById('ratingStars');
+                const avg = document.querySelector('.average-value');
+                const count = document.querySelector('.rating-count');
+                if (video.averageRating) {
+                    avg.textContent = video.averageRating;
+                    count.textContent = `(${video._count?.ratings || 0} ratings)`;
+                    if (video.userRating) {
+                        document.getElementById(`star${video.userRating}`).checked = true;
+                    }
+                }
+                stars.addEventListener('change', async (e) => {
+                    if (!loggedInUser) { alert('Please log in to rate'); return; }
+                    const val = e.target.value;
+                    const token = getAuthToken();
+                    if (!token) { alert('Please log in again.'); return; }
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/interactions/rate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ userId: loggedInUser.id, videoId: video.id, value: val })
+                        });
+                        if (res.ok) {
+                            const result = await res.json();
+                            avg.textContent = result.average;
+                            count.textContent = `(${result.count} ratings)`;
+                        }
+                    } catch (e) { console.error(e); }
+                });
+            }
+
+            // ---------- Comments rendering ----------
+            function renderComments(comments, parent = null, depth = 0) {
+                const container = parent || document.getElementById('commentList');
+                if (!parent) {
+                    container.innerHTML = comments.length ? '' : '<p>No comments yet. Be the first to comment!</p>';
+                    document.getElementById('commentsCount').textContent = `(${comments.length})`;
+                }
+                comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                comments.forEach(comment => {
+                    const isReply = depth > 0;
+                    const el = document.createElement('div');
+                    el.className = isReply ? 'comment reply' : 'comment';
+                    el.dataset.id = comment.id;
+                    el.style.marginLeft = `${depth * 20}px`;
+                    const isLiked = comment.likes?.some(l => l.userId === loggedInUser?.id);
+                    const likeCount = comment._count?.likes || 0;
+                    // Comment avatar – convert to absolute URL if needed
+                    let avatarHtml = `<i class="fas fa-user"></i>`;
+                    if (comment.user?.profilePicture) {
+                        const picUrl = getAbsoluteUrl(comment.user.profilePicture);
+                        if (picUrl) {
+                            avatarHtml = `<img src="${picUrl}" alt="${comment.user.firstName}">`;
+                        }
+                    }
+                    el.innerHTML = `
+                        <div class="comment-avatar">
+                            ${avatarHtml}
+                        </div>
+                        <div class="comment-content">
+                            <div class="comment-author">${comment.user?.firstName} ${comment.user?.lastName}</div>
+                            <div class="comment-text">${comment.text}</div>
+                            <div class="comment-actions">
+                                <span class="comment-action like-comment ${isLiked ? 'liked' : ''}"
+                                      data-id="${comment.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
+                                    <i class="fas fa-thumbs-up"></i>
+                                    <span class="like-count">${likeCount}</span>
+                                </span>
+                                <span class="comment-action reply-comment" data-id="${comment.id}">
+                                    <i class="fas fa-reply"></i> Reply
+                                </span>
+                                <span class="comment-timestamp">${formatDate(comment.createdAt)}</span>
+                            </div>
+                            <div class="replies" id="replies-${comment.id}"></div>
+                        </div>
+                    `;
+                    if (container.firstChild) {
+                        container.insertBefore(el, container.firstChild);
+                    } else {
+                        container.appendChild(el);
+                    }
+                    setupLikeButton(el, isReply ? 'REPLY' : 'COMMENT');
+                    setupReplyButton(el, comment.id, isReply);
+                    if (comment.replies?.length > 0 && depth < 5) {
+                        const repliesContainer = document.getElementById(`replies-${comment.id}`);
+                        renderComments(comment.replies, repliesContainer, depth + 1);
+                    }
+                });
+            }
+
+            function setupLikeButton(el, type) {
+                const btn = el.querySelector('.like-comment');
+                if (!btn) return;
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (!loggedInUser) { alert('Please log in to like'); return; }
+                    const id = btn.dataset.id;
+                    const isLiked = btn.classList.contains('liked');
+                    const countEl = btn.querySelector('.like-count');
+                    let count = parseInt(countEl.textContent);
+                    // Optimistic update
+                    if (isLiked) {
+                        btn.classList.remove('liked');
+                        countEl.textContent = Math.max(0, count - 1);
+                    } else {
+                        btn.classList.add('liked');
+                        countEl.textContent = count + 1;
+                    }
+                    const token = getAuthToken();
+                    try {
+                        const isReply = type === 'REPLY';
+                        const body = { userId: loggedInUser.id, type: 'LIKE', isLiked: !isLiked };
+                        if (isReply) body.replyId = id;
+                        else body.commentId = id;
+                        const res = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify(body)
+                        });
+                        if (!res.ok) throw new Error('Failed to update like');
+                        const result = await res.json();
+                        if (result.likeCount !== undefined) countEl.textContent = result.likeCount;
+                    } catch (e) {
+                        console.error(e);
+                        // revert
+                        if (isLiked) { btn.classList.add('liked'); countEl.textContent = count; }
+                        else { btn.classList.remove('liked'); countEl.textContent = Math.max(0, count - 1); }
+                    }
+                });
+            }
+
+            function setupReplyButton(el, commentId, isReply) {
+                const btn = el.querySelector('.reply-comment');
+                if (!btn) return;
+                let formContainer = document.getElementById(`reply-form-${commentId}`);
+                if (!formContainer) {
+                    formContainer = document.createElement('div');
+                    formContainer.className = 'reply-form-container';
+                    formContainer.id = `reply-form-${commentId}`;
+                    formContainer.style.display = 'none';
+                    formContainer.innerHTML = `
+                        <form class="reply-form" data-commentid="${commentId}" data-isreply="${isReply}">
+                            <input type="text" class="reply-input" placeholder="Write a reply..." required>
+                            <button type="submit" class="reply-submit">Reply</button>
+                            <button type="button" class="cancel-reply">Cancel</button>
+                        </form>
+                    `;
+                    el.appendChild(formContainer);
+                }
+                const form = formContainer.querySelector('.reply-form');
+                const input = form.querySelector('.reply-input');
+                const cancel = form.querySelector('.cancel-reply');
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.reply-form-container').forEach(f => {
+                        if (f.id !== `reply-form-${commentId}`) f.style.display = 'none';
+                    });
+                    formContainer.style.display = formContainer.style.display === 'block' ? 'none' : 'block';
+                    if (formContainer.style.display === 'block') input.focus();
+                });
+                cancel.addEventListener('click', () => { formContainer.style.display = 'none'; });
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const text = input.value.trim();
+                    if (!text) return;
+                    const parentReplyId = isReply ? commentId : null;
+                    const commentIdToUse = isReply ? commentId : commentId;
+                    // Optimistic add
+                    const optimistic = {
+                        id: 'temp-' + Date.now(),
+                        text,
+                        createdAt: new Date().toISOString(),
+                        user: {
+                            id: loggedInUser.id,
+                            firstName: loggedInUser.firstName,
+                            lastName: loggedInUser.lastName,
+                            profilePicture: loggedInUser.profilePicture
+                        },
+                        _count: { likes: 0 },
+                        parentReplyId
+                    };
+                    const containerId = parentReplyId ? `replies-${parentReplyId}` : `replies-${commentIdToUse}`;
+                    const repliesContainer = document.getElementById(containerId);
+                    if (repliesContainer) {
+                        const temp = document.createElement('div');
+                        temp.className = 'comment reply optimistic';
+                        temp.dataset.id = optimistic.id;
+                        temp.style.marginLeft = parentReplyId ? '40px' : '0';
+                        let optAvatarHtml = `<i class="fas fa-user"></i>`;
+                        if (optimistic.user.profilePicture) {
+                            const picUrl = getAbsoluteUrl(optimistic.user.profilePicture);
+                            if (picUrl) {
+                                optAvatarHtml = `<img src="${picUrl}" alt="${optimistic.user.firstName}">`;
+                            }
+                        }
+                        temp.innerHTML = `
+                            <div class="comment-avatar">
+                                ${optAvatarHtml}
+                            </div>
+                            <div class="comment-content">
+                                <div class="comment-author">${optimistic.user.firstName} ${optimistic.user.lastName}</div>
+                                <div class="comment-text">${optimistic.text}</div>
+                                <div class="comment-actions">
+                                    <span class="comment-action like-comment" data-id="${optimistic.id}" data-type="REPLY">
+                                        <i class="fas fa-thumbs-up"></i>
+                                        <span class="like-count">0</span>
+                                    </span>
+                                    <span class="comment-action reply-comment" data-id="${optimistic.id}">
+                                        <i class="fas fa-reply"></i> Reply
+                                    </span>
+                                    <span class="comment-timestamp">Just now</span>
+                                </div>
+                                <div class="replies" id="replies-${optimistic.id}"></div>
+                            </div>
+                        `;
+                        repliesContainer.prepend(temp);
+                        setupLikeButton(temp, 'REPLY');
+                        setupReplyButton(temp, optimistic.id, true);
+                    }
+                    input.value = '';
+                    formContainer.style.display = 'none';
+                    // Send to server
+                    const token = getAuthToken();
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/interactions/reply`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                text,
+                                userId: loggedInUser.id,
+                                commentId: commentIdToUse,
+                                videoId: video.id,
+                                parentReplyId
+                            })
+                        });
+                        if (!res.ok) throw new Error('Failed to post reply');
+                        // Refresh all comments
+                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        video = await updated.json();
+                        renderComments(video.comments || []);
+                    } catch (e) {
+                        console.error(e);
+                        // remove optimistic
+                        const opt = document.querySelector(`.comment[data-id="${optimistic.id}"]`);
+                        if (opt) opt.remove();
+                        alert('Failed to post reply');
+                    }
+                });
+            }
+
+            function formatDate(d) {
+                return new Date(d).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            // ---------- Quality selector ----------
+            document.getElementById('qualityToggle').addEventListener('click', () => {
+                const qs = document.getElementById('qualitySelector');
+                qs.style.display = qs.style.display === 'block' ? 'none' : 'block';
+            });
+            document.querySelectorAll('.quality-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const quality = opt.dataset.quality;
+                    document.querySelectorAll('.quality-option').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    // In a real scenario, change video source
+                    document.getElementById('qualitySelector').style.display = 'none';
+                });
+            });
+
+            // ---------- Share ----------
+            document.getElementById('shareButton').addEventListener('click', () => {
+                document.getElementById('shareLink').value = window.location.href;
+                document.getElementById('shareModal').style.display = 'flex';
+            });
+            document.getElementById('shareModalClose').addEventListener('click', () => {
+                document.getElementById('shareModal').style.display = 'none';
+            });
+            document.getElementById('copyLinkBtn').addEventListener('click', () => {
+                const link = document.getElementById('shareLink');
+                link.select();
+                document.execCommand('copy');
+                alert('Link copied!');
+            });
+            ['shareFacebook', 'shareTwitter', 'shareWhatsApp', 'shareLinkedIn'].forEach(id => {
+                document.getElementById(id).addEventListener('click', () => {
+                    const url = encodeURIComponent(window.location.href);
+                    const shareMap = {
+                        shareFacebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+                        shareTwitter: `https://twitter.com/intent/tweet?url=${url}`,
+                        shareWhatsApp: `https://wa.me/?text=${url}`,
+                        shareLinkedIn: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`
+                    };
+                    window.open(shareMap[id], '_blank');
+                });
+            });
+            window.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('shareModal')) {
+                    document.getElementById('shareModal').style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
