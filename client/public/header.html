@@ -1,4 +1,4 @@
-<!-- header.html – Shared Header with Render Static Base -->
+<!-- header.html – Shared Header with Global Functions -->
 <header>
     <div class="logo" id="homeLink">
         <i class="fas fa-ticket-alt"></i>
@@ -30,29 +30,27 @@
 </header>
 
 <script>
-    // ====== FIX: Use Render's static base URL ======
-    const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
+    // ====== EXPOSE FUNCTIONS GLOBALLY ======
+    window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-    // Convert relative URL to absolute using the Render base
-    function getAbsoluteUrl(url) {
+    window.getAbsoluteUrl = function (url) {
         if (!url) return null;
         if (url.startsWith('http://') || url.startsWith('https://')) return url;
-        // Remove leading slash to avoid double slashes
         const clean = url.startsWith('/') ? url.slice(1) : url;
-        return `${STATIC_BASE_URL}/${clean}`;
-    }
+        return `${window.STATIC_BASE_URL}/${clean}`;
+    };
 
-    function getCurrentUser() {
+    window.getCurrentUser = function () {
         const data = localStorage.getItem('currentUser');
         return data ? JSON.parse(data) : null;
-    }
+    };
 
-    function updateUserState(user) {
+    window.updateUserState = function (user) {
         const avatar = document.getElementById('userAvatar');
         const name = document.getElementById('userNameDisplay');
         if (user) {
             if (user.profilePicture) {
-                const pic = getAbsoluteUrl(user.profilePicture);
+                const pic = window.getAbsoluteUrl(user.profilePicture);
                 avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
             } else {
                 avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
@@ -62,18 +60,23 @@
             avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
             name.textContent = '';
         }
-    }
+    };
 
-    function initHeader() {
-        const user = getCurrentUser();
-        updateUserState(user);
+    window.initHeader = function () {
+        const user = window.getCurrentUser();
+        window.updateUserState(user);
 
         const userInfo = document.getElementById('userInfo');
         const dropdown = document.getElementById('userDropdown');
 
+        // Remove any existing listeners to avoid duplicates (optional)
+        // We'll just attach once.
+        if (userInfo._listenerAdded) return;
+        userInfo._listenerAdded = true;
+
         userInfo.addEventListener('click', function (e) {
             e.stopPropagation();
-            const currentUser = getCurrentUser();
+            const currentUser = window.getCurrentUser();
             if (currentUser) {
                 dropdown.classList.toggle('show');
             } else {
@@ -91,13 +94,15 @@
             e.preventDefault();
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authToken');
+            window.updateUserState(null);
             window.location.href = 'index.html';
         });
-    }
+    };
 
+    // If the header is loaded after the page, run init immediately
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeader);
+        document.addEventListener('DOMContentLoaded', window.initHeader);
     } else {
-        initHeader();
+        window.initHeader();
     }
 </script>

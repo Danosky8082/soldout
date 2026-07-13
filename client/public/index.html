@@ -104,33 +104,30 @@
                 added to wishlist</span></div>
 
         <script>
-            // ====== STATIC BASE URL ======
+            // ====== LOAD HEADER ======
+            fetch('header.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('header-container').innerHTML = html;
+                    // The header's script will run automatically and call window.initHeader()
+                    // We also need to update the header state after login/register.
+                })
+                .catch(err => console.error('Error loading header:', err));
+
+            // ====== STATIC BASE URL (for thumbnails) ======
             const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
             const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
+            // Use the global getAbsoluteUrl from header, or define our own for thumbnails
             function getAbsoluteUrl(url) {
                 if (!url) return null;
                 if (url.startsWith('http://') || url.startsWith('https://')) return url;
                 return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
             }
 
-            // ====== LOAD HEADER ======
-            fetch('header.html')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('header-container').innerHTML = html;
-                    // After header loads, run any header‑dependent initialization
-                    if (typeof initHeader === 'function') {
-                        initHeader();
-                    }
-                    // Update header state after login/register will be handled by the header's own functions
-                })
-                .catch(err => console.error('Error loading header:', err));
-
-            // ====== AUTH HELPERS (used by login/register) ======
+            // ====== AUTH HELPERS (use global ones from header if available) ======
             function getCurrentUser() {
-                const data = localStorage.getItem('currentUser');
-                return data ? JSON.parse(data) : null;
+                return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
             }
 
             function setCurrentUser(user) {
@@ -328,24 +325,6 @@
                 console.log('Rendered', videos.length, 'videos');
             }
 
-            // ====== UPDATE USER STATE (for header) ======
-            function updateUserState(user) {
-                const avatar = document.getElementById('userAvatar');
-                const name = document.getElementById('userNameDisplay');
-                if (user) {
-                    if (user.profilePicture) {
-                        const pic = getAbsoluteUrl(user.profilePicture);
-                        avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
-                    } else {
-                        avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                    }
-                    name.textContent = `${user.firstName} ${user.lastName}`;
-                } else {
-                    avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                    name.textContent = '';
-                }
-            }
-
             function playVideo(video) {
                 sessionStorage.setItem('currentVideo', JSON.stringify(video));
                 window.location.href = 'video-player.html';
@@ -361,6 +340,30 @@
                 c.appendChild(a);
                 document.body.appendChild(c);
                 setTimeout(() => c.remove(), 5000);
+            }
+
+            // ====== UPDATE HEADER AFTER LOGIN ======
+            function updateHeader(user) {
+                // If the header's updateUserState is available, call it
+                if (typeof window.updateUserState === 'function') {
+                    window.updateUserState(user);
+                } else {
+                    // Fallback: manually update header elements
+                    const avatar = document.getElementById('userAvatar');
+                    const name = document.getElementById('userNameDisplay');
+                    if (user) {
+                        if (user.profilePicture) {
+                            const pic = getAbsoluteUrl(user.profilePicture);
+                            avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
+                        } else {
+                            avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                        }
+                        name.textContent = `${user.firstName} ${user.lastName}`;
+                    } else {
+                        avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                        name.textContent = '';
+                    }
+                }
             }
 
             // ====== DOM CONTENT LOADED ======
@@ -412,7 +415,7 @@
                         setAuthToken(data.token);
                         showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                         // Update header
-                        if (typeof updateUserState === 'function') updateUserState(data.user);
+                        updateHeader(data.user);
                         loginOverlay.classList.remove('active');
                         updateWishlistButtons();
                     } catch (err) {
@@ -455,14 +458,14 @@
                         setAuthToken(data.token);
                         showAlert(`Welcome ${firstName}!`, 'success');
                         registerOverlay.classList.remove('active');
-                        if (typeof updateUserState === 'function') updateUserState(data.user);
+                        updateHeader(data.user);
                         updateWishlistButtons();
                     } catch (err) {
                         showAlert(err.message || 'Registration failed', 'danger');
                     }
                 });
 
-                // Logout button (in header) – handled by header.html
+                // Logout – handled by header.html
 
                 // Close modals
                 closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
@@ -492,9 +495,7 @@
                     if (e.target === registerOverlay) registerOverlay.classList.remove('active');
                 });
 
-                // Home nav
-                document.getElementById('homeLink')?.addEventListener('click', () => window.location.href = 'index.html');
-                document.querySelector('.home-link')?.addEventListener('click', () => window.location.href = 'index.html');
+                // Home nav – handled by header.html
             });
         </script>
 </body>
