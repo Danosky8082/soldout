@@ -7,10 +7,9 @@
     <title>Profile - Soldout.com</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- jwt-decode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
     <style>
-        /* extra profile styles (same as before) */
+        /* same as before – no changes needed */
         .profile-container {
             margin-top: 80px;
         }
@@ -337,7 +336,7 @@
 
 <body>
     <div class="container">
-        <!-- ====== HEADER (same as other pages) ====== -->
+        <!-- HEADER -->
         <header>
             <div class="logo" id="homeLink">
                 <i class="fas fa-ticket-alt"></i>
@@ -368,7 +367,7 @@
             </div>
         </header>
 
-        <!-- ====== PROFILE CONTENT ====== -->
+        <!-- PROFILE CONTENT -->
         <div class="profile-container">
             <div class="profile-header">
                 <div class="profile-picture-wrapper" id="profilePicWrapper">
@@ -415,7 +414,7 @@
             </div>
         </div>
 
-        <!-- Edit Modal -->
+        <!-- EDIT MODAL -->
         <div class="modal-overlay" id="editProfileModal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -457,32 +456,22 @@
     </div>
 
     <script>
-        // ==========================================================
-        //  PROFILE LOGIC – with correct API_BASE_URL
-        // ==========================================================
-
+        // ====== API BASE URL ======
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
 
-        function getAuthToken() {
-            return localStorage.getItem('authToken');
+        // ====== Helper: Absolute URL ======
+        function getAbsoluteUrl(url) {
+            if (!url) return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? `https://soldout-jh33.onrender.com${url}` : `https://soldout-jh33.onrender.com/${url}`;
         }
 
-        function getCurrentUser() {
-            const userData = localStorage.getItem('currentUser');
-            return userData ? JSON.parse(userData) : null;
-        }
-
-        function setCurrentUser(user) {
-            localStorage.setItem('currentUser', JSON.stringify(user));
-        }
-
-        function removeCurrentUser() {
-            localStorage.removeItem('currentUser');
-        }
-
-        function removeAuthToken() {
-            localStorage.removeItem('authToken');
-        }
+        // ====== Auth helpers ======
+        function getAuthToken() { return localStorage.getItem('authToken'); }
+        function getCurrentUser() { const data = localStorage.getItem('currentUser'); return data ? JSON.parse(data) : null; }
+        function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
+        function removeCurrentUser() { localStorage.removeItem('currentUser'); }
+        function removeAuthToken() { localStorage.removeItem('authToken'); }
 
         function getUserIdFromToken() {
             const token = getAuthToken();
@@ -490,23 +479,10 @@
             try {
                 const decoded = jwt_decode(token);
                 return decoded.id || decoded.userId;
-            } catch (e) {
-                console.error('Invalid token', e);
-                return null;
-            }
+            } catch (e) { return null; }
         }
 
-        // Convert relative URLs to absolute (for static files like thumbnails)
-        function getAbsoluteUrl(url) {
-            if (!url) return null;
-            if (url.startsWith('http://') || url.startsWith('https://')) return url;
-            // For static files, they are served from the same origin as the API (Render)
-            return url.startsWith('/')
-                ? `https://soldout-jh33.onrender.com${url}`
-                : `https://soldout-jh33.onrender.com/${url}`;
-        }
-
-        // DOM refs
+        // ====== DOM refs ======
         const profileName = document.getElementById('profileName');
         const profileEmail = document.getElementById('profileEmail');
         const profileJoinDate = document.getElementById('profileJoinDate');
@@ -534,30 +510,20 @@
             toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Load profile data
+        // ====== Load profile ======
         async function loadProfile() {
             const token = getAuthToken();
             const userId = getUserIdFromToken();
-            if (!token || !userId) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!token || !userId) { window.location.href = 'index.html'; return; }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/users/${userId}/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        removeAuthToken();
-                        removeCurrentUser();
-                        window.location.href = 'index.html';
-                        return;
-                    }
+                    if (response.status === 401) { removeAuthToken(); removeCurrentUser(); window.location.href = 'index.html'; return; }
                     throw new Error('Failed to fetch profile data');
                 }
-
                 const userData = await response.json();
 
                 profileName.textContent = `${userData.firstName} ${userData.lastName}`;
@@ -591,14 +557,13 @@
                 }
 
                 updateHeaderAvatar(userData);
-
             } catch (error) {
                 console.error('Error loading profile:', error);
                 showToast('Failed to load profile data', true);
             }
         }
 
-        // Render videos with delete button
+        // ====== Render videos ======
         function renderVideos(videos) {
             let html = '<div class="videos-grid">';
             videos.forEach(video => {
@@ -606,7 +571,7 @@
                 html += `
                     <div class="video-card" data-id="${video.id}">
                         <div class="thumb">
-                            <img src="${thumb}" alt="${video.title}">
+                            <img src="${thumb}" alt="${video.title}" onerror="this.src='https://via.placeholder.com/300x169?text=Error'">
                         </div>
                         <div class="info">
                             <div class="title">${video.title}</div>
@@ -640,7 +605,7 @@
             });
         }
 
-        // Delete video
+        // ====== Delete video ======
         async function deleteVideo(videoId) {
             if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) return;
 
@@ -665,14 +630,14 @@
                 }
 
                 showToast('Video deleted successfully!');
-                loadProfile(); // Refresh the list and stats
+                loadProfile();
             } catch (error) {
                 console.error('Delete error:', error);
                 showToast(error.message || 'Failed to delete video', true);
             }
         }
 
-        // Update header avatar
+        // ====== Update header avatar ======
         function updateHeaderAvatar(user) {
             const avatarContainer = document.getElementById('userAvatar');
             const userNameSpan = document.getElementById('userNameDisplay');
@@ -690,7 +655,7 @@
             }
         }
 
-        // Upload profile picture
+        // ====== Upload profile picture ======
         async function uploadProfilePicture(file) {
             const token = getAuthToken();
             const userId = getUserIdFromToken();
@@ -706,9 +671,7 @@
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error('Upload failed');
-                }
+                if (!response.ok) throw new Error('Upload failed');
 
                 const result = await response.json();
                 let pictureUrl = result.profilePictureUrl;
@@ -732,32 +695,22 @@
             }
         }
 
-        // ====== EVENT LISTENERS ======
+        // ====== Event listeners ======
         document.addEventListener('DOMContentLoaded', function () {
             const token = getAuthToken();
-            if (!token) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!token) { window.location.href = 'index.html'; return; }
             loadProfile();
 
             // Dropdown
             const userInfo = document.getElementById('userInfo');
             const dropdown = document.getElementById('userDropdown');
-
             userInfo.addEventListener('click', function (e) {
                 e.stopPropagation();
                 const currentUser = getCurrentUser();
-                if (currentUser) {
-                    dropdown.classList.toggle('show');
-                } else {
-                    window.location.href = 'index.html';
-                }
+                if (currentUser) dropdown.classList.toggle('show');
+                else window.location.href = 'index.html';
             });
-
-            document.addEventListener('click', function () {
-                dropdown.classList.remove('show');
-            });
+            document.addEventListener('click', function () { dropdown.classList.remove('show'); });
 
             document.getElementById('logoutBtn').addEventListener('click', function (e) {
                 e.preventDefault();
@@ -772,10 +725,7 @@
             });
 
             // Profile picture upload
-            profilePicWrapper.addEventListener('click', function () {
-                profilePicInput.click();
-            });
-
+            profilePicWrapper.addEventListener('click', function () { profilePicInput.click(); });
             profilePicInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
                 if (file) {
@@ -790,7 +740,7 @@
                 this.value = '';
             });
 
-            // Edit profile modal
+            // Edit modal
             editProfileBtn.addEventListener('click', function () {
                 const nameParts = profileName.textContent.split(' ');
                 document.getElementById('editFirstName').value = nameParts[0] || '';
@@ -800,18 +750,10 @@
                 editProfileModal.classList.add('active');
             });
 
-            closeEditModal.addEventListener('click', function () {
-                editProfileModal.classList.remove('active');
-            });
-
-            cancelEditBtn.addEventListener('click', function () {
-                editProfileModal.classList.remove('active');
-            });
-
+            closeEditModal.addEventListener('click', function () { editProfileModal.classList.remove('active'); });
+            cancelEditBtn.addEventListener('click', function () { editProfileModal.classList.remove('active'); });
             editProfileModal.addEventListener('click', function (e) {
-                if (e.target === this) {
-                    editProfileModal.classList.remove('active');
-                }
+                if (e.target === this) editProfileModal.classList.remove('active');
             });
 
             editProfileForm.addEventListener('submit', async function (e) {
@@ -837,12 +779,9 @@
                         body: JSON.stringify(updatedData)
                     });
 
-                    if (!response.ok) {
-                        throw new Error('Failed to update profile');
-                    }
+                    if (!response.ok) throw new Error('Failed to update profile');
 
                     const result = await response.json();
-
                     profileName.textContent = `${result.firstName} ${result.lastName}`;
                     profileEmail.textContent = result.email;
                     profileBio.textContent = result.bio || 'No bio yet';

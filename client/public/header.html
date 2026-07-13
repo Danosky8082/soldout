@@ -1,4 +1,4 @@
-<!-- header.html – Fixed Dropdown with Absolute URL Support -->
+<!-- header.html – Fixed Dropdown -->
 <header>
     <div class="logo" id="homeLink">
         <i class="fas fa-ticket-alt"></i>
@@ -30,7 +30,7 @@
 </header>
 
 <script>
-    // ----- GLOBAL HELPER: convert relative URL to absolute -----
+    // Convert relative to absolute
     function getAbsoluteUrl(url) {
         if (!url) return null;
         if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -60,7 +60,7 @@
         }
     }
 
-    // Run immediately when header is inserted (for pages that fetch this file)
+    // Run immediately when header is inserted
     function initHeader() {
         const user = getCurrentUser();
         updateUserState(user);
@@ -95,7 +95,6 @@
         });
     }
 
-    // Ensure it runs regardless of DOM state
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initHeader);
     } else {

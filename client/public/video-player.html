@@ -265,8 +265,10 @@
             const loggedInUser = getCurrentUser();
             if (loggedInUser) updateUserState(loggedInUser);
 
+            // ==== UPDATED VIDEO LOADING LOGIC ====
             const videoData = JSON.parse(sessionStorage.getItem('currentVideo'));
-            if (!videoData) {
+            if (!videoData || !videoData.id) {
+                alert('No video selected');
                 window.location.href = 'index.html';
                 return;
             }
@@ -278,12 +280,20 @@
                 const res = await fetch(url, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
-                if (!res.ok) throw new Error('Failed to fetch video');
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        alert('Video not found. It may have been deleted.');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    throw new Error('Failed to fetch video');
+                }
                 video = await res.json();
                 if (!video._count) video._count = { likes: 0, subscribers: 0 };
                 if (!video.comments) video.comments = [];
             } catch (error) {
                 console.error('Error loading video:', error);
+                alert('Error loading video. Please try again.');
                 window.location.href = 'index.html';
                 return;
             }

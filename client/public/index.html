@@ -280,9 +280,9 @@
                     toast.id = 'wishlistToast';
                     toast.className = 'wishlist-toast';
                     toast.innerHTML = `
-                        <i class="fas fa-check-circle"></i>
-                        <span id="toastMessage">${message}</span>
-                    `;
+                            <i class="fas fa-check-circle"></i>
+                            <span id="toastMessage">${message}</span>
+                        `;
                     document.body.appendChild(toast);
                 }
 
@@ -357,8 +357,6 @@
                 return array;
             }
 
-            // REMOVED: renderMovies() – no longer needed
-
             function renderVideos(videos) {
                 const videoGallery = document.getElementById('videoGallery');
                 videoGallery.innerHTML = '';
@@ -372,23 +370,23 @@
                     const videoEl = document.createElement('div');
                     videoEl.className = 'video-item';
                     videoEl.innerHTML = `
-                        <div class="thumbnail-container">
-                            <button class="wishlist-btn" data-video-id="${video.id}">
-                                <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
-                            </button>
-                            <img class="video-thumbnail" src="${video.thumbnail}" alt="${video.title}">
-                            <video class="video-preview" muted loop playsinline>
-                                <source src="${video.videoUrl}" type="video/mp4">
-                            </video>
-                        </div>
-                        <div class="video-info">
-                            <h3 class="video-title">${video.title}</h3>
-                            <div class="video-meta">
-                                <span>${video.genre} • ${video.year}</span>
-                                <span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span>
+                            <div class="thumbnail-container">
+                                <button class="wishlist-btn" data-video-id="${video.id}">
+                                    <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                                <img class="video-thumbnail" src="${video.thumbnail}" alt="${video.title}">
+                                <video class="video-preview" muted loop playsinline>
+                                    <source src="${video.videoUrl}" type="video/mp4">
+                                </video>
                             </div>
-                        </div>
-                    `;
+                            <div class="video-info">
+                                <h3 class="video-title">${video.title}</h3>
+                                <div class="video-meta">
+                                    <span>${video.genre} • ${video.year}</span>
+                                    <span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span>
+                                </div>
+                            </div>
+                        `;
 
                     const preview = videoEl.querySelector('.video-preview');
                     const wishlistBtn = videoEl.querySelector('.wishlist-btn');
@@ -433,7 +431,7 @@
                 });
             }
 
-            // ----- UPDATE USER STATE (with absolute URL) -----
+            // ====== UPDATE USER STATE (with absolute URL for profile picture) ======
             function updateUserState(user) {
                 const avatarContainer = document.getElementById('userAvatar');
                 const userNameSpan = document.getElementById('userNameDisplay');
@@ -494,7 +492,8 @@
                     renderVideos(shuffledVideos);
                 } catch (error) {
                     console.error('Error loading videos:', error);
-                    document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${error.message}</div>`;
+                    document.getElementById('videoGallery').innerHTML =
+                        `<div class="alert alert-danger">Error loading videos: ${error.message}</div>`;
                 }
 
                 // Login Modal Functionality
