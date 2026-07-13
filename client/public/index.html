@@ -45,18 +45,13 @@
         <div id="loginOverlay" class="login-overlay">
             <div class="login-modal">
                 <div class="login-header">
-                    <h2>Login to Soldout</h2>
-                    <i class="fas fa-times close-login"></i>
+                    <h2>Login to Soldout</h2><i class="fas fa-times close-login"></i>
                 </div>
                 <form id="loginForm">
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
+                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" required>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
+                    <div class="form-group"><label for="password">Password</label><input type="password" id="password"
+                            required></div>
                     <button type="submit">Login</button>
                     <div class="login-footer">
                         <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
@@ -69,39 +64,25 @@
         <div id="registerOverlay" class="login-overlay">
             <div class="login-modal">
                 <div class="login-header">
-                    <h2>Create Account</h2>
-                    <i class="fas fa-times close-register"></i>
+                    <h2>Create Account</h2><i class="fas fa-times close-register"></i>
                 </div>
                 <form id="registerForm">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="firstName">First Name</label>
-                            <input type="text" id="firstName" name="firstName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="lastName">Last Name</label>
-                            <input type="text" id="lastName" name="lastName" required>
-                        </div>
+                        <div class="form-group"><label for="firstName">First Name</label><input type="text"
+                                id="firstName" required></div>
+                        <div class="form-group"><label for="lastName">Last Name</label><input type="text" id="lastName"
+                                required></div>
                     </div>
-                    <div class="form-group">
-                        <label for="regEmail">Email</label>
-                        <input type="email" id="regEmail" name="email" required>
-                    </div>
+                    <div class="form-group"><label for="regEmail">Email</label><input type="email" id="regEmail"
+                            required></div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="regPassword">Password</label>
-                            <input type="password" id="regPassword" name="password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password</label>
-                            <input type="password" id="confirmPassword" required>
-                        </div>
+                        <div class="form-group"><label for="regPassword">Password</label><input type="password"
+                                id="regPassword" required></div>
+                        <div class="form-group"><label for="confirmPassword">Confirm Password</label><input
+                                type="password" id="confirmPassword" required></div>
                     </div>
-                    <div class="terms">
-                        <input type="checkbox" id="terms" required>
-                        <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
-                                Policy</a></label>
-                    </div>
+                    <div class="terms"><input type="checkbox" id="terms" required><label for="terms">I agree to the <a
+                                href="#">Terms</a> and <a href="#">Privacy Policy</a></label></div>
                     <button type="submit">Create Account</button>
                     <div class="login-footer">
                         <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
@@ -110,9 +91,8 @@
             </div>
         </div>
 
-        <!-- ===== SIDEBAR + MAIN CONTENT ===== -->
+        <!-- SIDEBAR + MAIN CONTENT -->
         <div class="sidebar-wrapper">
-            <!-- Left Sidebar -->
             <div class="sidebar">
                 <a href="#" class="active"><i class="fas fa-home"></i> Home</a>
                 <a href="#"><i class="fas fa-fire"></i> Trending</a>
@@ -131,10 +111,7 @@
                 <a href="#"><i class="fas fa-microphone"></i> Podcasts</a>
                 <a href="#"><i class="fas fa-newspaper"></i> News</a>
             </div>
-
-            <!-- Main Content -->
             <div class="main-content">
-                <!-- Video Grid -->
                 <div class="video-grid" id="videoGallery">
                     <div class="spinner" id="videoSpinner"></div>
                 </div>
@@ -142,590 +119,253 @@
         </div>
 
         <footer>
-            <div class="footer-links">
-                <a href="admin.html">
+            <div class="footer-links"><a href="admin.html">
                     <font color="green">Admin</font>
-                </a> |
-                <a href="#">About Us</a> |
-                <a href="#">Contact</a> |
-                <a href="#">Privacy Policy</a> |
-                <a href="#">Terms of Service</a> |
-                <a href="#">Help Center</a>
-            </div>
-            <p>&copy; 2025 Soldout.com. All rights reserved. The content on this site is protected by copyright.</p>
-            <p style="margin-top: 10px; color: #777;">the Entertainment Experience.</p>
+                </a> | <a href="#">About Us</a> | <a href="#">Contact</a> | <a href="#">Privacy Policy</a> | <a
+                    href="#">Terms of Service</a> | <a href="#">Help Center</a></div>
+            <p>&copy; 2025 Soldout.com. All rights reserved.</p>
+            <p style="margin-top:10px; color:#777;">the Entertainment Experience.</p>
         </footer>
 
-        <!-- Wishlist Toast Notification -->
-        <div class="wishlist-toast" id="wishlistToast">
-            <i class="fas fa-check-circle"></i>
-            <span id="toastMessage">Item added to wishlist</span>
-        </div>
+        <div class="wishlist-toast" id="wishlistToast"><i class="fas fa-check-circle"></i><span id="toastMessage">Item
+                added to wishlist</span></div>
 
         <script>
-            // ==========================================================
-            //  GLOBAL HELPERS
-            // ==========================================================
-
+            // ====== STATIC BASE URL ======
             const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
             const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-            // Convert relative URL to absolute (for static files)
             function getAbsoluteUrl(url) {
                 if (!url) return null;
                 if (url.startsWith('http://') || url.startsWith('https://')) return url;
                 return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
             }
 
-            // Function to get current user from localStorage
-            function getCurrentUser() {
-                const userData = localStorage.getItem('currentUser');
-                return userData ? JSON.parse(userData) : null;
-            }
+            function getCurrentUser() { const data = localStorage.getItem('currentUser'); return data ? JSON.parse(data) : null; }
+            function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
+            function removeCurrentUser() { localStorage.removeItem('currentUser'); }
+            function setAuthToken(token) { localStorage.setItem('authToken', token); }
+            function getAuthToken() { return localStorage.getItem('authToken'); }
+            function removeAuthToken() { localStorage.removeItem('authToken'); }
 
-            // Function to set current user in localStorage
-            function setCurrentUser(user) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-            }
+            function getUserWishlist() { const w = localStorage.getItem('userWishlist'); return w ? JSON.parse(w) : []; }
+            function saveUserWishlist(w) { localStorage.setItem('userWishlist', JSON.stringify(w)); }
 
-            // Function to remove current user from localStorage
-            function removeCurrentUser() {
-                localStorage.removeItem('currentUser');
-            }
-
-            // Function to set authorization token in localStorage
-            function setAuthToken(token) {
-                localStorage.setItem('authToken', token);
-            }
-
-            // Function to get authorization token from localStorage
-            function getAuthToken() {
-                return localStorage.getItem('authToken');
-            }
-
-            // Function to remove authorization token from localStorage
-            function removeAuthToken() {
-                localStorage.removeItem('authToken');
-            }
-
-            // Function to get user's wishlist
-            function getUserWishlist() {
-                const wishlist = localStorage.getItem('userWishlist');
-                return wishlist ? JSON.parse(wishlist) : [];
-            }
-
-            // Function to save user's wishlist
-            function saveUserWishlist(wishlist) {
-                localStorage.setItem('userWishlist', JSON.stringify(wishlist));
-            }
-
-            // Function to add item to wishlist
             function addToWishlist(video) {
                 const user = getCurrentUser();
-                if (!user) {
-                    showAlert('Please login to add items to your wishlist', 'warning');
-                    document.getElementById('loginOverlay').classList.add('active');
-                    return false;
-                }
-
-                if (!localStorage.getItem('wishlistDB')) {
-                    localStorage.setItem('wishlistDB', JSON.stringify({
-                        users: {},
-                        items: {}
-                    }));
-                }
-
+                if (!user) { showAlert('Please login to add to wishlist', 'warning'); document.getElementById('loginOverlay').classList.add('active'); return false; }
+                if (!localStorage.getItem('wishlistDB')) { localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} })); }
                 const db = JSON.parse(localStorage.getItem('wishlistDB'));
                 const userId = user.id || user.email;
                 const userWishlist = db.users[userId] || [];
-
                 if (!userWishlist.includes(video.id)) {
                     userWishlist.push(video.id);
                     db.users[userId] = userWishlist;
-
-                    if (!db.items[video.id]) {
-                        db.items[video.id] = {
-                            ...video,
-                            addedDate: new Date().toISOString()
-                        };
-                    }
-
+                    if (!db.items[video.id]) { db.items[video.id] = { ...video, addedDate: new Date().toISOString() }; }
                     localStorage.setItem('wishlistDB', JSON.stringify(db));
-
-                    showToast('Added to wishlist successfully!');
+                    showToast('Added to wishlist!');
                     return true;
-                } else {
-                    showToast('Item is already in your wishlist');
-                    return true;
-                }
+                } else { showToast('Already in wishlist'); return true; }
             }
 
             function isInWishlist(videoId) {
                 const user = getCurrentUser();
                 if (!user) return false;
-
                 const db = JSON.parse(localStorage.getItem('wishlistDB'));
                 if (!db) return false;
-
                 const userId = user.id || user.email;
                 const userWishlist = db.users[userId] || [];
-
                 return userWishlist.includes(videoId);
             }
 
-            function showToast(message) {
-                if (!document.getElementById('wishlistToast')) {
-                    const toast = document.createElement('div');
-                    toast.id = 'wishlistToast';
-                    toast.className = 'wishlist-toast';
-                    toast.innerHTML = `
-                            <i class="fas fa-check-circle"></i>
-                            <span id="toastMessage">${message}</span>
-                        `;
-                    document.body.appendChild(toast);
-                }
-
-                const toast = document.getElementById('wishlistToast');
-                const toastMessage = document.getElementById('toastMessage');
-
-                toastMessage.textContent = message;
-                toast.classList.add('show');
-
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+            function showToast(msg) {
+                const t = document.getElementById('wishlistToast');
+                const m = document.getElementById('toastMessage');
+                m.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 3000);
             }
 
             function updateWishlistButtons() {
-                const wishlistButtons = document.querySelectorAll('.wishlist-btn');
-
-                wishlistButtons.forEach(button => {
-                    const videoId = button.getAttribute('data-video-id');
-                    if (isInWishlist(videoId)) {
-                        button.classList.add('active');
-                        button.innerHTML = '<i class="fas fa-heart"></i>';
-                    } else {
-                        button.classList.remove('active');
-                        button.innerHTML = '<i class="far fa-heart"></i>';
-                    }
+                document.querySelectorAll('.wishlist-btn').forEach(btn => {
+                    const vid = btn.dataset.videoId;
+                    if (isInWishlist(vid)) { btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-heart"></i>'; }
+                    else { btn.classList.remove('active'); btn.innerHTML = '<i class="far fa-heart"></i>'; }
                 });
             }
 
-            // API Request Helper
             async function apiRequest(url, method = 'GET', body = null, isFormData = false) {
                 const headers = {};
                 const token = getAuthToken();
-
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-
-                if (!isFormData && !(body instanceof FormData)) {
-                    headers['Content-Type'] = 'application/json';
-                }
-
-                const options = {
-                    method,
-                    headers
-                };
-
-                if (body) {
-                    options.body = isFormData ? body : JSON.stringify(body);
-                }
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}${url}`, options);
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'API request failed');
-                    }
-
-                    return await response.json();
-                } catch (error) {
-                    console.error('API request error:', error);
-                    throw error;
-                }
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                if (!isFormData && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+                const options = { method, headers };
+                if (body) options.body = isFormData ? body : JSON.stringify(body);
+                const response = await fetch(`${API_BASE_URL}${url}`, options);
+                if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'API request failed'); }
+                return await response.json();
             }
 
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
+            function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
             function renderVideos(videos) {
-                const videoGallery = document.getElementById('videoGallery');
-                videoGallery.innerHTML = '';
-
-                if (!videos || videos.length === 0) {
-                    videoGallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
-                    return;
-                }
-
+                const gallery = document.getElementById('videoGallery');
+                gallery.innerHTML = '';
+                if (!videos || videos.length === 0) { gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>'; return; }
                 videos.forEach(video => {
-                    // Build absolute URLs for thumbnail and video
-                    const thumbUrl = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
-                    const videoUrl = getAbsoluteUrl(video.videoUrl);
-
-                    const videoEl = document.createElement('div');
-                    videoEl.className = 'video-item';
-                    videoEl.innerHTML = `
-                            <div class="thumbnail-container">
-                                <button class="wishlist-btn" data-video-id="${video.id}">
-                                    <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
-                                </button>
-                                <img class="video-thumbnail" src="${thumbUrl}" alt="${video.title}">
-                                ${videoUrl ? `<video class="video-preview" muted loop playsinline>
-                                    <source src="${videoUrl}" type="video/mp4">
-                                </video>` : ''}
-                            </div>
-                            <div class="video-info">
+                    const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
+                    const vidUrl = getAbsoluteUrl(video.videoUrl);
+                    const div = document.createElement('div');
+                    div.className = 'video-item';
+                    div.innerHTML = `
+                        <div class="thumbnail-container">
+                            <button class="wishlist-btn" data-video-id="${video.id}">
+                                <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
+                            </button>
+                            <img class="video-thumbnail" src="${thumb}" alt="${video.title}">
+                            ${vidUrl ? `<video class="video-preview" muted loop playsinline><source src="${vidUrl}" type="video/mp4"></video>` : ''}
+                        </div>
+                        <div class="video-info">
+                            <div class="channel-icon"><i class="fas fa-user"></i></div>
+                            <div class="video-details">
                                 <h3 class="video-title">${video.title}</h3>
-                                <div class="video-meta">
-                                    <span>${video.genre} • ${video.year}</span>
-                                    <span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span>
-                                </div>
+                                <div class="video-meta"><span>${video.genre} • ${video.year}</span><span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span></div>
                             </div>
-                        `;
-
-                    const preview = videoEl.querySelector('.video-preview');
-                    const wishlistBtn = videoEl.querySelector('.wishlist-btn');
-
+                        </div>
+                    `;
+                    const preview = div.querySelector('.video-preview');
                     if (preview) {
-                        videoEl.addEventListener('mouseenter', () => {
-                            preview.currentTime = 0;
-                            const playPromise = preview.play();
-                            if (playPromise !== undefined) {
-                                playPromise.catch(error => {
-                                    if (error.name !== 'AbortError') {
-                                        console.error('Video play error:', error);
-                                    }
-                                });
-                            }
-                        });
-
-                        videoEl.addEventListener('mouseleave', () => {
-                            if (!preview.paused) {
-                                preview.pause();
-                            }
-                        });
+                        div.addEventListener('mouseenter', () => { preview.currentTime = 0; const p = preview.play(); if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); }); });
+                        div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
                     }
-
-                    videoEl.addEventListener('click', (e) => {
-                        if (!e.target.closest('.wishlist-btn')) {
-                            playVideo(video);
-                        }
-                    });
-
-                    wishlistBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-
-                        if (isInWishlist(video.id)) {
-                            // removeFromWishlist logic placeholder, but keeping add
-                        } else {
-                            wishlistBtn.classList.add('adding');
-                            setTimeout(() => wishlistBtn.classList.remove('adding'), 500);
-                            addToWishlist(video);
-                        }
-                    });
-
-                    videoGallery.appendChild(videoEl);
+                    div.addEventListener('click', (e) => { if (!e.target.closest('.wishlist-btn')) playVideo(video); });
+                    div.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); if (isInWishlist(video.id)) { /* remove later */ } else { addToWishlist(video); } });
+                    gallery.appendChild(div);
                 });
             }
 
-            // ====== UPDATE USER STATE (with absolute URL for profile picture) ======
             function updateUserState(user) {
-                const avatarContainer = document.getElementById('userAvatar');
-                const userNameSpan = document.getElementById('userNameDisplay');
-
+                const avatar = document.getElementById('userAvatar');
+                const name = document.getElementById('userNameDisplay');
                 if (user) {
                     if (user.profilePicture) {
-                        const picUrl = getAbsoluteUrl(user.profilePicture);
-                        avatarContainer.innerHTML = `<img src="${picUrl}" alt="${user.firstName}">`;
-                    } else {
-                        avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                    }
-                    userNameSpan.textContent = `${user.firstName} ${user.lastName}`;
-                } else {
-                    avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                    userNameSpan.textContent = '';
-                }
+                        const pic = getAbsoluteUrl(user.profilePicture);
+                        avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
+                    } else { avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`; }
+                    name.textContent = `${user.firstName} ${user.lastName}`;
+                } else { avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`; name.textContent = ''; }
             }
 
-            // ----- PLAY VIDEO -----
-            function playVideo(video) {
-                sessionStorage.setItem('currentVideo', JSON.stringify(video));
-                window.location.href = 'video-player.html';
+            function playVideo(video) { sessionStorage.setItem('currentVideo', JSON.stringify(video)); window.location.href = 'video-player.html'; }
+
+            function showAlert(msg, type) {
+                const c = document.createElement('div');
+                c.className = 'alerts-container';
+                c.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;width:80%;max-width:500px;';
+                const a = document.createElement('div');
+                a.className = `alert alert-${type} alert-temporary`;
+                a.textContent = msg;
+                c.appendChild(a);
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 5000);
             }
-
-            // ----- SHOW ALERT -----
-            function showAlert(message, type) {
-                const alertsContainer = document.createElement('div');
-                alertsContainer.className = 'alerts-container';
-                alertsContainer.style.position = 'fixed';
-                alertsContainer.style.top = '20px';
-                alertsContainer.style.left = '50%';
-                alertsContainer.style.transform = 'translateX(-50%)';
-                alertsContainer.style.zIndex = '2000';
-                alertsContainer.style.width = '80%';
-                alertsContainer.style.maxWidth = '500px';
-
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type} alert-temporary`;
-                alert.textContent = message;
-                alertsContainer.appendChild(alert);
-
-                document.body.appendChild(alertsContainer);
-
-                setTimeout(() => {
-                    alertsContainer.remove();
-                }, 5000);
-            }
-
-            // ==========================================================
-            //  DOM CONTENT LOADED
-            // ==========================================================
 
             document.addEventListener('DOMContentLoaded', async () => {
-                // Load videos
                 try {
                     const videos = await apiRequest('/videos/premium');
-                    const shuffledVideos = shuffleArray([...videos]);
-                    renderVideos(shuffledVideos);
-                } catch (error) {
-                    console.error('Error loading videos:', error);
-                    document.getElementById('videoGallery').innerHTML =
-                        `<div class="alert alert-danger">Error loading videos: ${error.message}</div>`;
-                }
+                    renderVideos(shuffleArray([...videos]));
+                } catch (e) { console.error(e); document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`; }
 
-                // Login Modal Functionality
+                // Login/Register modals
                 const loginOverlay = document.getElementById('loginOverlay');
-                const closeLogin = document.querySelector('.close-login');
                 const registerOverlay = document.getElementById('registerOverlay');
+                const closeLogin = document.querySelector('.close-login');
                 const closeRegister = document.querySelector('.close-register');
                 const showRegister = document.getElementById('showRegister');
                 const showLogin = document.getElementById('showLogin');
 
-                // ====== FIXED DROPDOWN LOGIC ======
                 const userInfo = document.getElementById('userInfo');
                 const dropdown = document.getElementById('userDropdown');
-
                 userInfo.addEventListener('click', function (e) {
                     e.stopPropagation();
                     const user = getCurrentUser();
-                    if (user) {
-                        dropdown.classList.toggle('show');
-                    } else {
-                        loginOverlay.classList.add('active');
-                    }
+                    if (user) dropdown.classList.toggle('show');
+                    else loginOverlay.classList.add('active');
                 });
+                document.addEventListener('click', () => dropdown.classList.remove('show'));
 
-                document.addEventListener('click', function () {
-                    if (dropdown) dropdown.classList.remove('show');
-                });
+                const origAdd = loginOverlay.classList.add.bind(loginOverlay.classList);
+                loginOverlay.classList.add = function (c) { if (c === 'active' && getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } origAdd(c); };
+                const regAdd = registerOverlay.classList.add.bind(registerOverlay.classList);
+                registerOverlay.classList.add = function (c) { if (c === 'active' && getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } regAdd(c); };
 
-                // ====== PREVENT DUPLICATE LOGIN ======
-                const originalAdd = loginOverlay.classList.add.bind(loginOverlay.classList);
-                loginOverlay.classList.add = function (className) {
-                    if (className === 'active' && getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        return;
-                    }
-                    originalAdd(className);
-                };
-
-                const registerAdd = registerOverlay.classList.add.bind(registerOverlay.classList);
-                registerOverlay.classList.add = function (className) {
-                    if (className === 'active' && getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        return;
-                    }
-                    registerAdd(className);
-                };
-
-                closeLogin.addEventListener('click', () => {
-                    loginOverlay.classList.remove('active');
-                });
-
-                closeRegister.addEventListener('click', () => {
-                    registerOverlay.classList.remove('active');
-                });
-
-                showRegister.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        return;
-                    }
-                    loginOverlay.classList.remove('active');
-                    registerOverlay.classList.add('active');
-                });
-
-                showLogin.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        return;
-                    }
-                    registerOverlay.classList.remove('active');
-                    loginOverlay.classList.add('active');
-                });
-
-                loginOverlay.addEventListener('click', (e) => {
-                    if (e.target === loginOverlay) {
-                        loginOverlay.classList.remove('active');
-                    }
-                });
-
-                registerOverlay.addEventListener('click', (e) => {
-                    if (e.target === registerOverlay) {
-                        registerOverlay.classList.remove('active');
-                    }
-                });
+                closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
+                closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
+                showRegister.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } loginOverlay.classList.remove('active'); registerOverlay.classList.add('active'); });
+                showLogin.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } registerOverlay.classList.remove('active'); loginOverlay.classList.add('active'); });
+                loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) loginOverlay.classList.remove('active'); });
+                registerOverlay.addEventListener('click', (e) => { if (e.target === registerOverlay) registerOverlay.classList.remove('active'); });
 
                 const user = getCurrentUser();
-                if (user) {
-                    updateUserState(user);
-                }
+                if (user) updateUserState(user);
 
-                // ====== LOGIN FORM SUBMISSION ======
-                const loginForm = document.getElementById('loginForm');
-                loginForm.addEventListener('submit', async (e) => {
+                // Login
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
-
-                    if (getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        loginOverlay.classList.remove('active');
-                        return;
-                    }
-
+                    if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); loginOverlay.classList.remove('active'); return; }
                     const email = document.getElementById('email').value;
                     const password = document.getElementById('password').value;
-
                     try {
-                        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ email, password })
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Login failed');
-                        }
-
+                        const response = await fetch(`${API_BASE_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+                        if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Login failed'); }
                         const data = await response.json();
-
-                        // Convert profile picture to absolute URL before storing
-                        if (data.user.profilePicture) {
-                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
-                        }
+                        if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
-
-                        showAlert(`Welcome back ${data.user.firstName}! Login successfully.`, 'success');
-
+                        showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                         updateUserState(data.user);
                         loginOverlay.classList.remove('active');
-
                         updateWishlistButtons();
-                    } catch (error) {
-                        showAlert(error.message || 'Login failed. Please try again.', 'danger');
-                    }
+                    } catch (err) { showAlert(err.message || 'Login failed', 'danger'); }
                 });
 
-                // ====== REGISTRATION FORM SUBMISSION ======
-                const registerForm = document.getElementById('registerForm');
-                registerForm.addEventListener('submit', async (e) => {
+                // Register
+                document.getElementById('registerForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
-
-                    if (getCurrentUser()) {
-                        showAlert('You are already logged in.', 'warning');
-                        registerOverlay.classList.remove('active');
-                        return;
-                    }
-
+                    if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); registerOverlay.classList.remove('active'); return; }
                     const firstName = document.getElementById('firstName').value;
                     const lastName = document.getElementById('lastName').value;
                     const email = document.getElementById('regEmail').value;
                     const password = document.getElementById('regPassword').value;
-                    const confirmPassword = document.getElementById('confirmPassword').value;
-
-                    if (password !== confirmPassword) {
-                        showAlert('Passwords do not match!', 'danger');
-                        return;
-                    }
-
+                    const confirm = document.getElementById('confirmPassword').value;
+                    if (password !== confirm) { showAlert('Passwords do not match!', 'danger'); return; }
                     try {
-                        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                firstName,
-                                lastName,
-                                email,
-                                password
-                            })
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Registration failed');
-                        }
-
+                        const response = await fetch(`${API_BASE_URL}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName, lastName, email, password }) });
+                        if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Registration failed'); }
                         const data = await response.json();
-
-                        // Convert profile picture to absolute URL before storing
-                        if (data.user.profilePicture) {
-                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
-                        }
+                        if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
-
-                        showAlert(`Congratulations ${firstName}! Registration successfully.`, 'success');
-
+                        showAlert(`Welcome ${firstName}!`, 'success');
                         registerOverlay.classList.remove('active');
-
                         updateUserState(data.user);
-
                         updateWishlistButtons();
-                    } catch (error) {
-                        showAlert(error.message || 'Registration failed. Please try again.', 'danger');
-                    }
+                    } catch (err) { showAlert(err.message || 'Registration failed', 'danger'); }
                 });
 
-                // ====== LOGOUT ======
-                document.getElementById('logoutBtn').addEventListener('click', function (e) {
+                // Logout
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
                     e.preventDefault();
-
                     removeCurrentUser();
                     removeAuthToken();
-
                     updateUserState();
-
-                    document.getElementById('userDropdown').classList.remove('show');
-
-                    showAlert('You have been logged out successfully.', 'success');
-
+                    dropdown.classList.remove('show');
+                    showAlert('Logged out.', 'success');
                     updateWishlistButtons();
                 });
 
-                // ====== HOME NAVIGATION ======
-                document.getElementById('homeLink').addEventListener('click', function (e) {
-                    e.preventDefault();
-                    window.location.href = 'index.html';
-                });
-                document.querySelector('.home-link').addEventListener('click', function (e) {
-                    e.preventDefault();
-                    window.location.href = 'index.html';
-                });
+                document.getElementById('homeLink').addEventListener('click', () => window.location.href = 'index.html');
+                document.querySelector('.home-link').addEventListener('click', () => window.location.href = 'index.html');
             });
         </script>
 </body>

@@ -402,13 +402,25 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script>
-        // Base API URL
+        // ============================================================
+        //  ADMIN DASHBOARD – WITH ABSOLUTE URL SUPPORT
+        // ============================================================
+
+        // ----- Static Base URL -----
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
+        const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
+
+        function getAdminAbsoluteUrl(url) {
+            if (!url) return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
+        }
+
         let currentAdmin = null;
         let currentVideoBeingReviewed = null;
         let currentUserBeingEdited = null;
 
-        // ====== FIX: Safe DataTable Initialization ======
+        // ====== Safe DataTable Initialization ======
         function safeInitDataTable(selector, options) {
             const table = $(selector);
             if ($.fn.DataTable.isDataTable(selector)) {
@@ -418,30 +430,22 @@
             table.DataTable(options);
         }
 
-        // Function to check if user is admin
         function isAdmin() {
             return currentAdmin && (currentAdmin.role === 'ADMIN' || currentAdmin.role === 'SUPER_ADMIN');
         }
 
-        // Function to check if user is super admin
         function isSuperAdmin() {
             return currentAdmin && currentAdmin.role === 'SUPER_ADMIN';
         }
 
-        // Function to show alert
         function showAlert(message, type = 'success') {
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
             document.body.appendChild(alert);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
+            setTimeout(() => alert.remove(), 5000);
         }
 
-        // Function to close modal
         function closeModal() {
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.style.display = 'none';
@@ -450,40 +454,32 @@
             currentUserBeingEdited = null;
         }
 
-        // Function to show add admin modal
         function showAddAdminModal() {
-            // Reset form
             document.getElementById('adminRegistrationForm').reset();
             document.getElementById('addAdminModal').style.display = 'flex';
         }
 
-        // Function to show loading spinner
         function showLoading() {
             document.getElementById('tableLoading').style.display = 'block';
         }
 
-        // Function to hide loading spinner
         function hideLoading() {
             document.getElementById('tableLoading').style.display = 'none';
         }
 
-        // Admin login functionality
+        // ----- Admin Login -----
         document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const email = document.getElementById('adminEmail').value;
             const password = document.getElementById('adminPassword').value;
 
             try {
                 const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
 
-                // First check if the response is JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
@@ -504,8 +500,12 @@
                 document.getElementById('adminUserName').textContent =
                     `${currentAdmin.firstName} ${currentAdmin.lastName}`;
 
-                // Set profile picture
-                document.querySelector('.admin-user img').src = currentAdmin.profilePicture || 'https://via.placeholder.com/40';
+                // Profile picture
+                if (currentAdmin.profilePicture) {
+                    document.querySelector('.admin-user img').src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
+                } else {
+                    document.querySelector('.admin-user img').src = 'https://via.placeholder.com/40';
+                }
 
                 loadDashboardData();
                 initDataTables();
@@ -516,7 +516,7 @@
             }
         });
 
-        // Admin registration form submission
+        // ----- Admin Registration -----
         document.getElementById('adminRegistrationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -538,7 +538,6 @@
                     body: JSON.stringify(formData)
                 });
 
-                // First check if response is JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
@@ -560,22 +559,20 @@
             }
         });
 
-        // Logout function
+        // ----- Logout -----
         document.getElementById('logoutBtn').addEventListener('click', function () {
             localStorage.removeItem('adminToken');
             location.reload();
         });
 
-        // Check for existing admin session
+        // ----- Check Session -----
         async function checkAdminSession() {
             const token = localStorage.getItem('adminToken');
             if (!token) return false;
 
             try {
                 const response = await fetch(`${API_BASE_URL}/auth/admin/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
@@ -584,8 +581,9 @@
                     document.getElementById('adminDashboard').style.display = 'grid';
                     document.getElementById('adminUserName').textContent =
                         `${currentAdmin.firstName} ${currentAdmin.lastName}`;
-                    // Set profile picture
-                    document.querySelector('.admin-user img').src = currentAdmin.profilePicture || 'https://via.placeholder.com/40';
+                    if (currentAdmin.profilePicture) {
+                        document.querySelector('.admin-user img').src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
+                    }
                     loadDashboardData();
                     initDataTables();
                     return true;
@@ -596,13 +594,11 @@
             return false;
         }
 
-        // Load dashboard summary data
+        // ----- Load Dashboard Data -----
         async function loadDashboardData() {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                 });
 
                 if (response.ok) {
@@ -617,7 +613,7 @@
             }
         }
 
-        // ====== UPDATED initDataTables with safeInitDataTable ======
+        // ====== INIT DATATABLES WITH ABSOLUTE THUMBNAILS ======
         function initDataTables() {
             showLoading();
 
@@ -625,9 +621,7 @@
             safeInitDataTable('#pendingVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/pending`,
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, error, thrown) {
                         console.error('Pending Videos API Error:', error, thrown);
@@ -639,7 +633,8 @@
                     {
                         data: 'thumbnail',
                         render: function (data) {
-                            return data ? `<img src="${data}" class="video-thumbnail">` :
+                            const thumb = getAdminAbsoluteUrl(data);
+                            return thumb ? `<img src="${thumb}" class="video-thumbnail">` :
                                 '<div class="video-thumbnail-placeholder"><i class="fas fa-video"></i></div>';
                         }
                     },
@@ -685,18 +680,14 @@
                     }
                 ],
                 responsive: true,
-                initComplete: function () {
-                    hideLoading();
-                }
+                initComplete: function () { hideLoading(); }
             });
 
             // Approved Videos Table
             safeInitDataTable('#approvedVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/approved`,
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, error, thrown) {
                         console.error('Approved Videos API Error:', error, thrown);
@@ -708,7 +699,9 @@
                     {
                         data: 'thumbnail',
                         render: function (data) {
-                            return `<img src="${data}" class="video-thumbnail">`;
+                            const thumb = getAdminAbsoluteUrl(data);
+                            return thumb ? `<img src="${thumb}" class="video-thumbnail">` :
+                                '<div class="video-thumbnail-placeholder"><i class="fas fa-video"></i></div>';
                         }
                     },
                     { data: 'title' },
@@ -745,18 +738,14 @@
                         }
                     }
                 ],
-                initComplete: function () {
-                    hideLoading();
-                }
+                initComplete: function () { hideLoading(); }
             });
 
             // Rejected Videos Table
             safeInitDataTable('#rejectedVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/rejected`,
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, error, thrown) {
                         console.error('Rejected Videos API Error:', error, thrown);
@@ -768,7 +757,9 @@
                     {
                         data: 'thumbnail',
                         render: function (data) {
-                            return `<img src="${data}" class="video-thumbnail">`;
+                            const thumb = getAdminAbsoluteUrl(data);
+                            return thumb ? `<img src="${thumb}" class="video-thumbnail">` :
+                                '<div class="video-thumbnail-placeholder"><i class="fas fa-video"></i></div>';
                         }
                     },
                     { data: 'title' },
@@ -805,18 +796,14 @@
                         }
                     }
                 ],
-                initComplete: function () {
-                    hideLoading();
-                }
+                initComplete: function () { hideLoading(); }
             });
 
             // Users Table
             safeInitDataTable('#usersTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/users`,
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, status, error) {
                         console.error('Users API Error:', {
@@ -833,7 +820,6 @@
                         } catch (e) {
                             errorMessage += '. Please try again later.';
                         }
-                        // Display error in table
                         $('#usersTable').DataTable().clear().draw();
                         $('#usersTable').DataTable().row.add([
                             '',
@@ -854,7 +840,8 @@
                     {
                         data: 'profilePicture',
                         render: function (data) {
-                            return `<img src="${data || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                            const img = getAdminAbsoluteUrl(data);
+                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
                         }
                     },
                     {
@@ -900,22 +887,15 @@
                         }
                     }
                 ],
-                language: {
-                    emptyTable: 'No users found',
-                    zeroRecords: 'No matching users found'
-                },
-                initComplete: function () {
-                    hideLoading();
-                }
+                language: { emptyTable: 'No users found', zeroRecords: 'No matching users found' },
+                initComplete: function () { hideLoading(); }
             });
 
             // Admins Table
             safeInitDataTable('#adminsTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/admins`,
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, error, thrown) {
                         console.error('Admins API Error:', error, thrown);
@@ -927,7 +907,8 @@
                     {
                         data: 'profilePicture',
                         render: function (data) {
-                            return `<img src="${data || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                            const img = getAdminAbsoluteUrl(data);
+                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
                         }
                     },
                     {
@@ -974,22 +955,15 @@
                         }
                     }
                 ],
-                initComplete: function () {
-                    hideLoading();
-                }
+                initComplete: function () { hideLoading(); }
             });
         }
 
-        // Menu navigation
+        // ----- Menu Navigation -----
         document.querySelectorAll('.admin-menu-item').forEach(item => {
             item.addEventListener('click', function () {
-                // Update active menu item
-                document.querySelectorAll('.admin-menu-item').forEach(i => {
-                    i.classList.remove('active');
-                });
+                document.querySelectorAll('.admin-menu-item').forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
-
-                // Show the corresponding section
                 const section = this.dataset.section;
                 document.querySelectorAll('.admin-table-container').forEach(container => {
                     container.style.display = 'none';
@@ -998,13 +972,11 @@
             });
         });
 
-        // Video review functionality
+        // ====== Video Review ======
         async function reviewVideo(videoId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                 });
 
                 if (!response.ok) {
@@ -1014,7 +986,6 @@
                 const video = await response.json();
                 currentVideoBeingReviewed = video;
 
-                // Populate modal with video data
                 document.getElementById('reviewVideoTitle').textContent = video.title;
                 document.getElementById('reviewVideoUploader').textContent =
                     video.user ? `${video.user.firstName} ${video.user.lastName}` : 'Unknown';
@@ -1023,12 +994,16 @@
                     video.createdAt ? new Date(video.createdAt).toLocaleDateString() : 'N/A';
                 document.getElementById('reviewVideoDescription').textContent = video.description || 'No description';
 
-                // Set video source
+                // Set video source with absolute URL
                 const videoPlayer = document.getElementById('reviewVideoPlayer');
-                videoPlayer.src = video.videoUrl;
-                videoPlayer.load();
+                const videoSrc = getAdminAbsoluteUrl(video.videoUrl);
+                if (videoSrc) {
+                    videoPlayer.src = videoSrc;
+                    videoPlayer.load();
+                } else {
+                    videoPlayer.src = '';
+                }
 
-                // Show appropriate buttons based on video status
                 const rejectBtn = document.getElementById('rejectVideoBtn');
                 const approveBtn = document.getElementById('approveVideoBtn');
                 const reasonContainer = document.getElementById('rejectionReasonContainer');
@@ -1048,17 +1023,15 @@
                     reasonContainer.style.display = 'none';
                 }
 
-                // Show modal
                 document.getElementById('videoReviewModal').style.display = 'flex';
             } catch (error) {
                 showAlert(error.message || 'Failed to load video details', 'danger');
             }
         }
 
-        // Approve video
+        // ----- Approve Video -----
         document.getElementById('approveVideoBtn').addEventListener('click', async function () {
             if (!currentVideoBeingReviewed) return;
-
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/videos/${currentVideoBeingReviewed.id}/approve`, {
                     method: 'POST',
@@ -1067,11 +1040,9 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to approve video');
                 }
-
                 showAlert('Video approved successfully!');
                 closeModal();
                 refreshTables();
@@ -1081,16 +1052,14 @@
             }
         });
 
-        // Reject video
+        // ----- Reject Video -----
         document.getElementById('rejectVideoBtn').addEventListener('click', async function () {
             if (!currentVideoBeingReviewed) return;
-
             const reason = document.getElementById('rejectionReason').value.trim();
             if (!reason) {
                 showAlert('Please provide a rejection reason', 'warning');
                 return;
             }
-
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/videos/${currentVideoBeingReviewed.id}/reject`, {
                     method: 'POST',
@@ -1100,11 +1069,9 @@
                     },
                     body: JSON.stringify({ reason })
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to reject video');
                 }
-
                 showAlert('Video rejected successfully!');
                 closeModal();
                 refreshTables();
@@ -1114,27 +1081,22 @@
             }
         });
 
-        // Edit video
+        // ----- Edit Video (stub) -----
         function editVideo(videoId) {
-            // In a real implementation, this would open an edit form
             alert(`Edit video ${videoId} functionality would be implemented here`);
         }
 
-        // Unpublish video
+        // ----- Unpublish Video -----
         async function unpublishVideo(videoId) {
             if (confirm('Are you sure you want to unpublish this video?')) {
                 try {
                     const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}/unpublish`, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                        }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                     });
-
                     if (!response.ok) {
                         throw new Error('Failed to unpublish video');
                     }
-
                     showAlert('Video unpublished successfully!');
                     refreshTables();
                     loadDashboardData();
@@ -1144,21 +1106,17 @@
             }
         }
 
-        // Delete video
+        // ----- Delete Video -----
         async function deleteVideo(videoId) {
             if (confirm('Are you sure you want to permanently delete this video?')) {
                 try {
                     const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
                         method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                        }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                     });
-
                     if (!response.ok) {
                         throw new Error('Failed to delete video');
                     }
-
                     showAlert('Video deleted successfully!');
                     refreshTables();
                     loadDashboardData();
@@ -1168,7 +1126,7 @@
             }
         }
 
-        // Approve rejected video
+        // ----- Approve Rejected Video -----
         async function approveRejectedVideo(videoId) {
             if (confirm('Are you sure you want to approve this previously rejected video?')) {
                 try {
@@ -1179,11 +1137,9 @@
                             'Content-Type': 'application/json'
                         }
                     });
-
                     if (!response.ok) {
                         throw new Error('Failed to approve video');
                     }
-
                     showAlert('Video approved successfully!');
                     refreshTables();
                     loadDashboardData();
@@ -1193,43 +1149,35 @@
             }
         }
 
-        // User management functions
+        // ----- Edit User -----
         async function editUser(userId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to fetch user details');
                 }
-
                 const user = await response.json();
                 currentUserBeingEdited = user;
 
-                // Populate modal with user data
                 document.getElementById('editUserId').textContent = user.id;
                 document.getElementById('editUserName').value = `${user.firstName} ${user.lastName}`;
                 document.getElementById('editUserEmail').value = user.email;
                 document.getElementById('editUserRole').value = user.role;
 
-                // Set ban button text
                 const banBtn = document.getElementById('banUserBtn');
                 banBtn.innerHTML = `<i class="fas fa-${user.isBanned ? 'undo' : 'ban'}"></i> ${user.isBanned ? 'Unban' : 'Ban'}`;
 
-                // Show modal
                 document.getElementById('userEditModal').style.display = 'flex';
             } catch (error) {
                 showAlert(error.message || 'Failed to load user details', 'danger');
             }
         }
 
-        // Save user changes
+        // ----- Save User Changes -----
         document.getElementById('saveUserBtn').addEventListener('click', async function () {
             if (!currentUserBeingEdited) return;
-
             const name = document.getElementById('editUserName').value.trim();
             const email = document.getElementById('editUserEmail').value.trim();
             const role = document.getElementById('editUserRole').value;
@@ -1239,7 +1187,6 @@
                 return;
             }
 
-            // Split name into first and last
             const nameParts = name.split(' ');
             const firstName = nameParts[0];
             const lastName = nameParts.slice(1).join(' ') || '';
@@ -1251,18 +1198,11 @@
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        firstName,
-                        lastName,
-                        email,
-                        role
-                    })
+                    body: JSON.stringify({ firstName, lastName, email, role })
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to update user');
                 }
-
                 showAlert('User updated successfully!');
                 closeModal();
                 refreshTables();
@@ -1271,28 +1211,22 @@
             }
         });
 
-        // Ban/Unban user
+        // ----- Ban/Unban User -----
         document.getElementById('banUserBtn').addEventListener('click', async function () {
             if (!currentUserBeingEdited) return;
-
             const action = currentUserBeingEdited.isBanned ? 'unban' : 'ban';
             if (confirm(`Are you sure you want to ${action} this user?`)) {
                 try {
                     const endpoint = currentUserBeingEdited.isBanned ?
                         `${API_BASE_URL}/admin/users/${currentUserBeingEdited.id}/unban` :
                         `${API_BASE_URL}/admin/users/${currentUserBeingEdited.id}/ban`;
-
                     const response = await fetch(endpoint, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                        }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                     });
-
                     if (!response.ok) {
                         throw new Error(`Failed to ${action} user`);
                     }
-
                     showAlert(`User ${action}ned successfully!`);
                     closeModal();
                     refreshTables();
@@ -1302,53 +1236,42 @@
             }
         });
 
-        // Edit admin
+        // ----- Edit Admin -----
         async function editAdmin(adminId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/admins/${adminId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to fetch admin details');
                 }
-
                 const admin = await response.json();
                 currentUserBeingEdited = admin;
 
-                // Populate modal with admin data
                 document.getElementById('editUserId').textContent = admin.id;
                 document.getElementById('editUserName').value = `${admin.firstName} ${admin.lastName}`;
                 document.getElementById('editUserEmail').value = admin.email;
                 document.getElementById('editUserRole').value = admin.role;
 
-                // Hide ban button for admin edit
                 document.getElementById('banUserBtn').style.display = 'none';
 
-                // Show modal
                 document.getElementById('userEditModal').style.display = 'flex';
             } catch (error) {
                 showAlert(error.message || 'Failed to load admin details', 'danger');
             }
         }
 
-        // Delete admin
+        // ----- Delete Admin -----
         async function deleteAdmin(adminId) {
             if (confirm('Are you sure you want to remove this admin? This action cannot be undone.')) {
                 try {
                     const response = await fetch(`${API_BASE_URL}/admin/admins/${adminId}`, {
                         method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                        }
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                     });
-
                     if (!response.ok) {
                         throw new Error('Failed to delete admin');
                     }
-
                     showAlert('Admin removed successfully!');
                     $('#adminsTable').DataTable().ajax.reload();
                 } catch (error) {
@@ -1357,7 +1280,7 @@
             }
         }
 
-        // Change admin password
+        // ----- Change Password -----
         document.getElementById('changePasswordBtn').addEventListener('click', async function () {
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
@@ -1367,7 +1290,6 @@
                 showAlert('Please fill in all password fields', 'warning');
                 return;
             }
-
             if (newPassword !== confirmNewPassword) {
                 showAlert('New passwords do not match', 'warning');
                 return;
@@ -1380,16 +1302,11 @@
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        currentPassword,
-                        newPassword
-                    })
+                    body: JSON.stringify({ currentPassword, newPassword })
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to change password');
                 }
-
                 showAlert('Password changed successfully!');
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword').value = '';
@@ -1399,7 +1316,7 @@
             }
         });
 
-        // Refresh all DataTables
+        // ----- Refresh Tables -----
         function refreshTables() {
             $('#pendingVideosTable').DataTable().ajax.reload();
             $('#approvedVideosTable').DataTable().ajax.reload();
@@ -1408,19 +1325,17 @@
             $('#adminsTable').DataTable().ajax.reload();
         }
 
-        // Close modals when clicking outside
+        // ----- Modal Close -----
         window.addEventListener('click', function (event) {
             if (event.target.classList.contains('modal')) {
                 closeModal();
             }
         });
-
-        // Close modals with close buttons
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', closeModal);
         });
 
-        // Initialize admin session check when page loads
+        // ----- Initialize -----
         document.addEventListener('DOMContentLoaded', async function () {
             const isLoggedIn = await checkAdminSession();
             if (!isLoggedIn) {

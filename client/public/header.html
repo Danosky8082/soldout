@@ -1,4 +1,4 @@
-<!-- header.html – Fixed Dropdown -->
+<!-- header.html – Shared Header -->
 <header>
     <div class="logo" id="homeLink">
         <i class="fas fa-ticket-alt"></i>
@@ -30,7 +30,7 @@
 </header>
 
 <script>
-    // Convert relative to absolute
+    // Helper: convert relative URL to absolute
     function getAbsoluteUrl(url) {
         if (!url) return null;
         if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -38,29 +38,27 @@
     }
 
     function getCurrentUser() {
-        const userData = localStorage.getItem('currentUser');
-        return userData ? JSON.parse(userData) : null;
+        const data = localStorage.getItem('currentUser');
+        return data ? JSON.parse(data) : null;
     }
 
     function updateUserState(user) {
-        const avatarContainer = document.getElementById('userAvatar');
-        const userNameSpan = document.getElementById('userNameDisplay');
-
+        const avatar = document.getElementById('userAvatar');
+        const name = document.getElementById('userNameDisplay');
         if (user) {
             if (user.profilePicture) {
-                const picUrl = getAbsoluteUrl(user.profilePicture);
-                avatarContainer.innerHTML = `<img src="${picUrl}" alt="${user.firstName}">`;
+                const pic = getAbsoluteUrl(user.profilePicture);
+                avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
             } else {
-                avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
             }
-            userNameSpan.textContent = `${user.firstName} ${user.lastName}`;
+            name.textContent = `${user.firstName} ${user.lastName}`;
         } else {
-            avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-            userNameSpan.textContent = '';
+            avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+            name.textContent = '';
         }
     }
 
-    // Run immediately when header is inserted
     function initHeader() {
         const user = getCurrentUser();
         updateUserState(user);
@@ -75,11 +73,8 @@
                 dropdown.classList.toggle('show');
             } else {
                 const loginOverlay = document.getElementById('loginOverlay');
-                if (loginOverlay) {
-                    loginOverlay.classList.add('active');
-                } else {
-                    window.location.href = 'index.html';
-                }
+                if (loginOverlay) loginOverlay.classList.add('active');
+                else window.location.href = 'index.html';
             }
         });
 
