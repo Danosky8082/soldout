@@ -11,35 +11,8 @@
 
 <body>
     <div class="container">
-        <header>
-            <div class="logo" id="homeLink">
-                <i class="fab fa-youtube"></i>
-                <span>Soldout</span>
-            </div>
-            <div class="nav-links">
-                <a href="index.html" class="active home-link">Home</a>
-                <a href="gallery.html">Movies</a>
-                <a href="series.html">TV Shows</a>
-                <a href="#">New Releases</a>
-                <a href="soundtracks.html">Soundtracks</a>
-            </div>
-            <div class="user-actions">
-                <i class="fas fa-search search-icon" id="mobileSearchIcon"></i>
-                <i class="fas fa-bell"></i>
-                <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
-                    <div class="user-avatar-container" id="userAvatar">
-                        <i class="fas fa-user-circle user-icon"></i>
-                    </div>
-                    <span class="user-name" id="userNameDisplay"></span>
-                    <div class="user-dropdown" id="userDropdown">
-                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
-                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
-                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
-                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    </div>
-                </div>
-            </div>
-        </header>
+        <!-- ===== HEADER LOADED FROM SHARED FILE ===== -->
+        <div id="header-container"></div>
 
         <!-- Login Overlay -->
         <div id="loginOverlay" class="login-overlay">
@@ -141,31 +114,81 @@
                 return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
             }
 
-            function getCurrentUser() { const data = localStorage.getItem('currentUser'); return data ? JSON.parse(data) : null; }
-            function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
-            function removeCurrentUser() { localStorage.removeItem('currentUser'); }
-            function setAuthToken(token) { localStorage.setItem('authToken', token); }
-            function getAuthToken() { return localStorage.getItem('authToken'); }
-            function removeAuthToken() { localStorage.removeItem('authToken'); }
+            // ====== LOAD HEADER ======
+            fetch('header.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('header-container').innerHTML = html;
+                    // After header loads, run any header‑dependent initialization
+                    if (typeof initHeader === 'function') {
+                        initHeader();
+                    }
+                    // Update header state after login/register will be handled by the header's own functions
+                })
+                .catch(err => console.error('Error loading header:', err));
 
-            function getUserWishlist() { const w = localStorage.getItem('userWishlist'); return w ? JSON.parse(w) : []; }
-            function saveUserWishlist(w) { localStorage.setItem('userWishlist', JSON.stringify(w)); }
+            // ====== AUTH HELPERS (used by login/register) ======
+            function getCurrentUser() {
+                const data = localStorage.getItem('currentUser');
+                return data ? JSON.parse(data) : null;
+            }
+
+            function setCurrentUser(user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+
+            function removeCurrentUser() {
+                localStorage.removeItem('currentUser');
+            }
+
+            function setAuthToken(token) {
+                localStorage.setItem('authToken', token);
+            }
+
+            function getAuthToken() {
+                return localStorage.getItem('authToken');
+            }
+
+            function removeAuthToken() {
+                localStorage.removeItem('authToken');
+            }
+
+            // ====== WISHLIST HELPERS ======
+            function getUserWishlist() {
+                const w = localStorage.getItem('userWishlist');
+                return w ? JSON.parse(w) : [];
+            }
+
+            function saveUserWishlist(w) {
+                localStorage.setItem('userWishlist', JSON.stringify(w));
+            }
 
             function addToWishlist(video) {
                 const user = getCurrentUser();
-                if (!user) { showAlert('Please login to add to wishlist', 'warning'); document.getElementById('loginOverlay').classList.add('active'); return false; }
-                if (!localStorage.getItem('wishlistDB')) { localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} })); }
+                if (!user) {
+                    showAlert('Please login to add to wishlist', 'warning');
+                    document.getElementById('loginOverlay').classList.add('active');
+                    return false;
+                }
+                if (!localStorage.getItem('wishlistDB')) {
+                    localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
+                }
                 const db = JSON.parse(localStorage.getItem('wishlistDB'));
                 const userId = user.id || user.email;
                 const userWishlist = db.users[userId] || [];
                 if (!userWishlist.includes(video.id)) {
                     userWishlist.push(video.id);
                     db.users[userId] = userWishlist;
-                    if (!db.items[video.id]) { db.items[video.id] = { ...video, addedDate: new Date().toISOString() }; }
+                    if (!db.items[video.id]) {
+                        db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
+                    }
                     localStorage.setItem('wishlistDB', JSON.stringify(db));
                     showToast('Added to wishlist!');
                     return true;
-                } else { showToast('Already in wishlist'); return true; }
+                } else {
+                    showToast('Already in wishlist');
+                    return true;
+                }
             }
 
             function isInWishlist(videoId) {
@@ -189,11 +212,17 @@
             function updateWishlistButtons() {
                 document.querySelectorAll('.wishlist-btn').forEach(btn => {
                     const vid = btn.dataset.videoId;
-                    if (isInWishlist(vid)) { btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-heart"></i>'; }
-                    else { btn.classList.remove('active'); btn.innerHTML = '<i class="far fa-heart"></i>'; }
+                    if (isInWishlist(vid)) {
+                        btn.classList.add('active');
+                        btn.innerHTML = '<i class="fas fa-heart"></i>';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.innerHTML = '<i class="far fa-heart"></i>';
+                    }
                 });
             }
 
+            // ====== API REQUEST ======
             async function apiRequest(url, method = 'GET', body = null, isFormData = false) {
                 const headers = {};
                 const token = getAuthToken();
@@ -202,13 +231,22 @@
                 const options = { method, headers };
                 if (body) options.body = isFormData ? body : JSON.stringify(body);
                 const response = await fetch(`${API_BASE_URL}${url}`, options);
-                if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'API request failed'); }
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'API request failed');
+                }
                 return await response.json();
             }
 
-            function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+            function shuffleArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
 
-            // ====== RENDER VIDEOS – WITH FALLBACKS AND LOGGING ======
+            // ====== RENDER VIDEOS ======
             function renderVideos(videos) {
                 console.log('renderVideos called with', videos);
                 const gallery = document.getElementById('videoGallery');
@@ -220,7 +258,6 @@
                     return;
                 }
 
-                // Ensure each video has a valid id
                 videos.forEach((video, index) => {
                     if (!video.id) {
                         console.warn('Video at index', index, 'has no id, skipping');
@@ -230,7 +267,6 @@
                     const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
                     const vidUrl = getAbsoluteUrl(video.videoUrl);
 
-                    // Compute uploader name safely
                     let uploaderName = 'Unknown';
                     if (video.user && video.user.firstName) {
                         uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
@@ -288,11 +324,11 @@
                     gallery.appendChild(div);
                 });
 
-                // Update wishlist buttons after rendering
                 updateWishlistButtons();
                 console.log('Rendered', videos.length, 'videos');
             }
 
+            // ====== UPDATE USER STATE (for header) ======
             function updateUserState(user) {
                 const avatar = document.getElementById('userAvatar');
                 const name = document.getElementById('userNameDisplay');
@@ -300,12 +336,20 @@
                     if (user.profilePicture) {
                         const pic = getAbsoluteUrl(user.profilePicture);
                         avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
-                    } else { avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`; }
+                    } else {
+                        avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                    }
                     name.textContent = `${user.firstName} ${user.lastName}`;
-                } else { avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`; name.textContent = ''; }
+                } else {
+                    avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                    name.textContent = '';
+                }
             }
 
-            function playVideo(video) { sessionStorage.setItem('currentVideo', JSON.stringify(video)); window.location.href = 'video-player.html'; }
+            function playVideo(video) {
+                sessionStorage.setItem('currentVideo', JSON.stringify(video));
+                window.location.href = 'video-player.html';
+            }
 
             function showAlert(msg, type) {
                 const c = document.createElement('div');
@@ -319,14 +363,17 @@
                 setTimeout(() => c.remove(), 5000);
             }
 
+            // ====== DOM CONTENT LOADED ======
             document.addEventListener('DOMContentLoaded', async () => {
+                // Load videos
                 try {
                     const videos = await apiRequest('/videos/premium');
                     console.log('Fetched videos:', videos);
                     renderVideos(shuffleArray([...videos]));
                 } catch (e) {
                     console.error('Error loading videos:', e);
-                    document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
+                    document.getElementById('videoGallery').innerHTML =
+                        `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
                 }
 
                 // Login/Register modals
@@ -337,93 +384,117 @@
                 const showRegister = document.getElementById('showRegister');
                 const showLogin = document.getElementById('showLogin');
 
-                const userInfo = document.getElementById('userInfo');
-                const dropdown = document.getElementById('userDropdown');
-                userInfo.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    const user = getCurrentUser();
-                    if (user) dropdown.classList.toggle('show');
-                    else loginOverlay.classList.add('active');
-                });
-                document.addEventListener('click', () => dropdown.classList.remove('show'));
-
-                const origAdd = loginOverlay.classList.add.bind(loginOverlay.classList);
-                loginOverlay.classList.add = function (c) { if (c === 'active' && getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } origAdd(c); };
-                const regAdd = registerOverlay.classList.add.bind(registerOverlay.classList);
-                registerOverlay.classList.add = function (c) { if (c === 'active' && getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } regAdd(c); };
-
-                closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
-                closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
-                showRegister.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } loginOverlay.classList.remove('active'); registerOverlay.classList.add('active'); });
-                showLogin.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } registerOverlay.classList.remove('active'); loginOverlay.classList.add('active'); });
-                loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) loginOverlay.classList.remove('active'); });
-                registerOverlay.addEventListener('click', (e) => { if (e.target === registerOverlay) registerOverlay.classList.remove('active'); });
-
-                const user = getCurrentUser();
-                if (user) updateUserState(user);
-
                 // Login
                 document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); loginOverlay.classList.remove('active'); return; }
+                    if (getCurrentUser()) {
+                        showAlert('Already logged in.', 'warning');
+                        loginOverlay.classList.remove('active');
+                        return;
+                    }
                     const email = document.getElementById('email').value;
                     const password = document.getElementById('password').value;
                     try {
-                        const response = await fetch(`${API_BASE_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-                        if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Login failed'); }
+                        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, password })
+                        });
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.message || 'Login failed');
+                        }
                         const data = await response.json();
-                        if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                        if (data.user.profilePicture) {
+                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                        }
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
                         showAlert(`Welcome back ${data.user.firstName}!`, 'success');
-                        updateUserState(data.user);
+                        // Update header
+                        if (typeof updateUserState === 'function') updateUserState(data.user);
                         loginOverlay.classList.remove('active');
                         updateWishlistButtons();
-                    } catch (err) { showAlert(err.message || 'Login failed', 'danger'); }
+                    } catch (err) {
+                        showAlert(err.message || 'Login failed', 'danger');
+                    }
                 });
 
                 // Register
                 document.getElementById('registerForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); registerOverlay.classList.remove('active'); return; }
+                    if (getCurrentUser()) {
+                        showAlert('Already logged in.', 'warning');
+                        registerOverlay.classList.remove('active');
+                        return;
+                    }
                     const firstName = document.getElementById('firstName').value;
                     const lastName = document.getElementById('lastName').value;
                     const email = document.getElementById('regEmail').value;
                     const password = document.getElementById('regPassword').value;
                     const confirm = document.getElementById('confirmPassword').value;
-                    if (password !== confirm) { showAlert('Passwords do not match!', 'danger'); return; }
+                    if (password !== confirm) {
+                        showAlert('Passwords do not match!', 'danger');
+                        return;
+                    }
                     try {
-                        const response = await fetch(`${API_BASE_URL}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName, lastName, email, password }) });
-                        if (!response.ok) { const err = await response.json(); throw new Error(err.message || 'Registration failed'); }
+                        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ firstName, lastName, email, password })
+                        });
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.message || 'Registration failed');
+                        }
                         const data = await response.json();
-                        if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                        if (data.user.profilePicture) {
+                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                        }
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
                         showAlert(`Welcome ${firstName}!`, 'success');
                         registerOverlay.classList.remove('active');
-                        updateUserState(data.user);
+                        if (typeof updateUserState === 'function') updateUserState(data.user);
                         updateWishlistButtons();
-                    } catch (err) { showAlert(err.message || 'Registration failed', 'danger'); }
+                    } catch (err) {
+                        showAlert(err.message || 'Registration failed', 'danger');
+                    }
                 });
 
-                // Logout
-                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                // Logout button (in header) – handled by header.html
+
+                // Close modals
+                closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
+                closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
+                showRegister.addEventListener('click', (e) => {
                     e.preventDefault();
-                    removeCurrentUser();
-                    removeAuthToken();
-                    updateUserState();
-                    dropdown.classList.remove('show');
-                    showAlert('Logged out.', 'success');
-                    updateWishlistButtons();
+                    if (getCurrentUser()) {
+                        showAlert('Already logged in.', 'warning');
+                        return;
+                    }
+                    loginOverlay.classList.remove('active');
+                    registerOverlay.classList.add('active');
+                });
+                showLogin.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (getCurrentUser()) {
+                        showAlert('Already logged in.', 'warning');
+                        return;
+                    }
+                    registerOverlay.classList.remove('active');
+                    loginOverlay.classList.add('active');
+                });
+                loginOverlay.addEventListener('click', (e) => {
+                    if (e.target === loginOverlay) loginOverlay.classList.remove('active');
+                });
+                registerOverlay.addEventListener('click', (e) => {
+                    if (e.target === registerOverlay) registerOverlay.classList.remove('active');
                 });
 
-                document.getElementById('homeLink').addEventListener('click', () => window.location.href = 'index.html');
-                document.querySelector('.home-link').addEventListener('click', () => window.location.href = 'index.html');
-
-                // Mobile search icon – redirect to gallery
-                document.getElementById('mobileSearchIcon').addEventListener('click', () => {
-                    window.location.href = 'gallery.html';
-                });
+                // Home nav
+                document.getElementById('homeLink')?.addEventListener('click', () => window.location.href = 'index.html');
+                document.querySelector('.home-link')?.addEventListener('click', () => window.location.href = 'index.html');
             });
         </script>
 </body>
