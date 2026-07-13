@@ -208,13 +208,36 @@
 
             function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
 
+            // ====== RENDER VIDEOS – WITH FALLBACKS AND LOGGING ======
             function renderVideos(videos) {
+                console.log('renderVideos called with', videos);
                 const gallery = document.getElementById('videoGallery');
                 gallery.innerHTML = '';
-                if (!videos || videos.length === 0) { gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>'; return; }
-                videos.forEach(video => {
+
+                if (!videos || videos.length === 0) {
+                    gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
+                    console.warn('No videos to render');
+                    return;
+                }
+
+                // Ensure each video has a valid id
+                videos.forEach((video, index) => {
+                    if (!video.id) {
+                        console.warn('Video at index', index, 'has no id, skipping');
+                        return;
+                    }
+
                     const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
                     const vidUrl = getAbsoluteUrl(video.videoUrl);
+
+                    // Compute uploader name safely
+                    let uploaderName = 'Unknown';
+                    if (video.user && video.user.firstName) {
+                        uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
+                    } else if (video.uploaderName) {
+                        uploaderName = video.uploaderName;
+                    }
+
                     const div = document.createElement('div');
                     div.className = 'video-item';
                     div.innerHTML = `
@@ -222,26 +245,52 @@
                             <button class="wishlist-btn" data-video-id="${video.id}">
                                 <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
                             </button>
-                            <img class="video-thumbnail" src="${thumb}" alt="${video.title}">
+                            <img class="video-thumbnail" src="${thumb}" alt="${video.title || 'Video'}">
                             ${vidUrl ? `<video class="video-preview" muted loop playsinline><source src="${vidUrl}" type="video/mp4"></video>` : ''}
                         </div>
                         <div class="video-info">
                             <div class="channel-icon"><i class="fas fa-user"></i></div>
                             <div class="video-details">
-                                <h3 class="video-title">${video.title}</h3>
-                                <div class="video-meta"><span>${video.genre} • ${video.year}</span><span class="uploader-name">By: ${video.uploaderName || 'Unknown'}</span></div>
+                                <h3 class="video-title">${video.title || 'Untitled'}</h3>
+                                <div class="video-meta">
+                                    <span>${video.genre || 'No genre'} • ${video.year || 'N/A'}</span>
+                                    <span class="uploader-name">By: ${uploaderName}</span>
+                                </div>
                             </div>
                         </div>
                     `;
+
                     const preview = div.querySelector('.video-preview');
                     if (preview) {
-                        div.addEventListener('mouseenter', () => { preview.currentTime = 0; const p = preview.play(); if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); }); });
+                        div.addEventListener('mouseenter', () => {
+                            preview.currentTime = 0;
+                            const p = preview.play();
+                            if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
+                        });
                         div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
                     }
-                    div.addEventListener('click', (e) => { if (!e.target.closest('.wishlist-btn')) playVideo(video); });
-                    div.querySelector('.wishlist-btn').addEventListener('click', (e) => { e.stopPropagation(); if (isInWishlist(video.id)) { /* remove later */ } else { addToWishlist(video); } });
+
+                    div.addEventListener('click', (e) => {
+                        if (!e.target.closest('.wishlist-btn')) {
+                            playVideo(video);
+                        }
+                    });
+
+                    div.querySelector('.wishlist-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (isInWishlist(video.id)) {
+                            // Optionally remove from wishlist
+                        } else {
+                            addToWishlist(video);
+                        }
+                    });
+
                     gallery.appendChild(div);
                 });
+
+                // Update wishlist buttons after rendering
+                updateWishlistButtons();
+                console.log('Rendered', videos.length, 'videos');
             }
 
             function updateUserState(user) {
@@ -273,8 +322,12 @@
             document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const videos = await apiRequest('/videos/premium');
+                    console.log('Fetched videos:', videos);
                     renderVideos(shuffleArray([...videos]));
-                } catch (e) { console.error(e); document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`; }
+                } catch (e) {
+                    console.error('Error loading videos:', e);
+                    document.getElementById('videoGallery').innerHTML = `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
+                }
 
                 // Login/Register modals
                 const loginOverlay = document.getElementById('loginOverlay');
@@ -367,7 +420,7 @@
                 document.getElementById('homeLink').addEventListener('click', () => window.location.href = 'index.html');
                 document.querySelector('.home-link').addEventListener('click', () => window.location.href = 'index.html');
 
-                // Optional: mobile search icon – you can add a search modal or redirect to gallery
+                // Mobile search icon – redirect to gallery
                 document.getElementById('mobileSearchIcon').addEventListener('click', () => {
                     window.location.href = 'gallery.html';
                 });
