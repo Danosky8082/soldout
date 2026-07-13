@@ -104,51 +104,88 @@
                 added to wishlist</span></div>
 
         <script>
-            // ====== LOAD HEADER ======
-            fetch('header.html')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('header-container').innerHTML = html;
-                    // The header's script will run automatically and call window.initHeader()
-                    // We also need to update the header state after login/register.
-                })
-                .catch(err => console.error('Error loading header:', err));
+            // ============================================================
+            // 1. LOAD HEADER HTML + EXECUTE ITS SCRIPT
+            // ============================================================
+            async function loadHeader() {
+                try {
+                    const response = await fetch('header.html');
+                    const html = await response.text();
+                    const container = document.getElementById('header-container');
+                    container.innerHTML = html;
 
-            // ====== STATIC BASE URL (for thumbnails) ======
+                    // Extract and execute all <script> tags from the header
+                    const scriptTags = container.querySelectorAll('script');
+                    scriptTags.forEach(oldScript => {
+                        const newScript = document.createElement('script');
+                        if (oldScript.src) {
+                            newScript.src = oldScript.src;
+                        } else {
+                            newScript.textContent = oldScript.textContent;
+                        }
+                        // Append to head to execute (or to body)
+                        document.head.appendChild(newScript);
+                        // Remove the old script from container to avoid duplication
+                        oldScript.remove();
+                    });
+
+                    // After header script runs, its globals (window.initHeader, window.updateUserState) are available.
+                    // The header script will have called initHeader() automatically.
+                    // We also need to update the header with the current user (if any)
+                    if (typeof window.updateUserState === 'function') {
+                        const user = window.getCurrentUser ? window.getCurrentUser() : null;
+                        window.updateUserState(user);
+                    }
+
+                    console.log('Header loaded and initialized.');
+                } catch (err) {
+                    console.error('Error loading header:', err);
+                }
+            }
+
+            // ============================================================
+            // 2. PAGE LOGIC (videos, login, wishlist)
+            // ============================================================
+
+            // Use header's globals if available, otherwise fallback
             const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
             const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-            // Use the global getAbsoluteUrl from header, or define our own for thumbnails
-            function getAbsoluteUrl(url) {
-                if (!url) return null;
-                if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
+            // Ensure getAbsoluteUrl is defined (use header's or our own)
+            if (typeof window.getAbsoluteUrl !== 'function') {
+                window.getAbsoluteUrl = function (url) {
+                    if (!url) return null;
+                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                    const clean = url.startsWith('/') ? url.slice(1) : url;
+                    return `${STATIC_BASE_URL}/${clean}`;
+                };
             }
 
-            // ====== AUTH HELPERS (use global ones from header if available) ======
+            // Auth helpers – use header's if available
             function getCurrentUser() {
                 return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
             }
 
             function setCurrentUser(user) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
+                // Also update header
+                if (typeof window.updateUserState === 'function') {
+                    window.updateUserState(user);
+                }
             }
 
             function removeCurrentUser() {
                 localStorage.removeItem('currentUser');
+                if (typeof window.updateUserState === 'function') {
+                    window.updateUserState(null);
+                }
             }
 
-            function setAuthToken(token) {
-                localStorage.setItem('authToken', token);
-            }
+            function setAuthToken(token) { localStorage.setItem('authToken', token); }
 
-            function getAuthToken() {
-                return localStorage.getItem('authToken');
-            }
+            function getAuthToken() { return localStorage.getItem('authToken'); }
 
-            function removeAuthToken() {
-                localStorage.removeItem('authToken');
-            }
+            function removeAuthToken() { localStorage.removeItem('authToken'); }
 
             // ====== WISHLIST HELPERS ======
             function getUserWishlist() {
@@ -245,24 +282,19 @@
 
             // ====== RENDER VIDEOS ======
             function renderVideos(videos) {
-                console.log('renderVideos called with', videos);
                 const gallery = document.getElementById('videoGallery');
                 gallery.innerHTML = '';
 
                 if (!videos || videos.length === 0) {
                     gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
-                    console.warn('No videos to render');
                     return;
                 }
 
                 videos.forEach((video, index) => {
-                    if (!video.id) {
-                        console.warn('Video at index', index, 'has no id, skipping');
-                        return;
-                    }
+                    if (!video.id) return;
 
-                    const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
-                    const vidUrl = getAbsoluteUrl(video.videoUrl);
+                    const thumb = window.getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
+                    const vidUrl = window.getAbsoluteUrl(video.videoUrl);
 
                     let uploaderName = 'Unknown';
                     if (video.user && video.user.firstName) {
@@ -311,18 +343,13 @@
 
                     div.querySelector('.wishlist-btn').addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (isInWishlist(video.id)) {
-                            // Optionally remove from wishlist
-                        } else {
-                            addToWishlist(video);
-                        }
+                        addToWishlist(video);
                     });
 
                     gallery.appendChild(div);
                 });
 
                 updateWishlistButtons();
-                console.log('Rendered', videos.length, 'videos');
             }
 
             function playVideo(video) {
@@ -342,36 +369,17 @@
                 setTimeout(() => c.remove(), 5000);
             }
 
-            // ====== UPDATE HEADER AFTER LOGIN ======
-            function updateHeader(user) {
-                // If the header's updateUserState is available, call it
-                if (typeof window.updateUserState === 'function') {
-                    window.updateUserState(user);
-                } else {
-                    // Fallback: manually update header elements
-                    const avatar = document.getElementById('userAvatar');
-                    const name = document.getElementById('userNameDisplay');
-                    if (user) {
-                        if (user.profilePicture) {
-                            const pic = getAbsoluteUrl(user.profilePicture);
-                            avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}">`;
-                        } else {
-                            avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                        }
-                        name.textContent = `${user.firstName} ${user.lastName}`;
-                    } else {
-                        avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                        name.textContent = '';
-                    }
-                }
-            }
-
-            // ====== DOM CONTENT LOADED ======
+            // ============================================================
+            // 3. INITIALIZATION
+            // ============================================================
             document.addEventListener('DOMContentLoaded', async () => {
+                // Load header first
+                await loadHeader();
+
+                // Now that header is loaded, we can proceed with the page
                 // Load videos
                 try {
                     const videos = await apiRequest('/videos/premium');
-                    console.log('Fetched videos:', videos);
                     renderVideos(shuffleArray([...videos]));
                 } catch (e) {
                     console.error('Error loading videos:', e);
@@ -409,13 +417,11 @@
                         }
                         const data = await response.json();
                         if (data.user.profilePicture) {
-                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                            data.user.profilePicture = window.getAbsoluteUrl(data.user.profilePicture);
                         }
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
                         showAlert(`Welcome back ${data.user.firstName}!`, 'success');
-                        // Update header
-                        updateHeader(data.user);
                         loginOverlay.classList.remove('active');
                         updateWishlistButtons();
                     } catch (err) {
@@ -452,20 +458,17 @@
                         }
                         const data = await response.json();
                         if (data.user.profilePicture) {
-                            data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                            data.user.profilePicture = window.getAbsoluteUrl(data.user.profilePicture);
                         }
                         setCurrentUser(data.user);
                         setAuthToken(data.token);
                         showAlert(`Welcome ${firstName}!`, 'success');
                         registerOverlay.classList.remove('active');
-                        updateHeader(data.user);
                         updateWishlistButtons();
                     } catch (err) {
                         showAlert(err.message || 'Registration failed', 'danger');
                     }
                 });
-
-                // Logout – handled by header.html
 
                 // Close modals
                 closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
@@ -494,8 +497,6 @@
                 registerOverlay.addEventListener('click', (e) => {
                     if (e.target === registerOverlay) registerOverlay.classList.remove('active');
                 });
-
-                // Home nav – handled by header.html
             });
         </script>
 </body>
