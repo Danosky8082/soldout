@@ -408,6 +408,16 @@
         let currentVideoBeingReviewed = null;
         let currentUserBeingEdited = null;
 
+        // ====== FIX: Safe DataTable Initialization ======
+        function safeInitDataTable(selector, options) {
+            const table = $(selector);
+            if ($.fn.DataTable.isDataTable(selector)) {
+                table.DataTable().destroy();
+                table.empty();
+            }
+            table.DataTable(options);
+        }
+
         // Function to check if user is admin
         function isAdmin() {
             return currentAdmin && (currentAdmin.role === 'ADMIN' || currentAdmin.role === 'SUPER_ADMIN');
@@ -607,12 +617,12 @@
             }
         }
 
-        // Initialize DataTables
+        // ====== UPDATED initDataTables with safeInitDataTable ======
         function initDataTables() {
             showLoading();
 
             // Pending Videos Table
-            $('#pendingVideosTable').DataTable({
+            safeInitDataTable('#pendingVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/pending`,
                     headers: {
@@ -656,18 +666,18 @@
                     },
                     {
                         data: 'status',
-                        render: function (data) {
+                        render: function () {
                             return `<span class="badge badge-pending">Pending</span>`;
                         }
                     },
                     {
                         data: 'id',
-                        render: function (data, type, row) {
+                        render: function (data) {
                             return `
-                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                <button class="action-btn btn-view" onclick="reviewVideo('${data}')">
                                     <i class="fas fa-eye"></i> Review
                                 </button>
-                                <button class="action-btn btn-edit" data-id="${data}" onclick="editVideo('${data}')">
+                                <button class="action-btn btn-edit" onclick="editVideo('${data}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                             `;
@@ -681,7 +691,7 @@
             });
 
             // Approved Videos Table
-            $('#approvedVideosTable').DataTable({
+            safeInitDataTable('#approvedVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/approved`,
                     headers: {
@@ -720,15 +730,15 @@
                     { data: 'views' },
                     {
                         data: 'id',
-                        render: function (data, type, row) {
+                        render: function (data) {
                             return `
-                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                <button class="action-btn btn-view" onclick="reviewVideo('${data}')">
                                     <i class="fas fa-eye"></i> View
                                 </button>
-                                <button class="action-btn btn-edit" data-id="${data}" onclick="editVideo('${data}')">
+                                <button class="action-btn btn-edit" onclick="editVideo('${data}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button class="action-btn btn-delete" data-id="${data}" onclick="unpublishVideo('${data}')">
+                                <button class="action-btn btn-delete" onclick="unpublishVideo('${data}')">
                                     <i class="fas fa-times"></i> Unpublish
                                 </button>
                             `;
@@ -741,7 +751,7 @@
             });
 
             // Rejected Videos Table
-            $('#rejectedVideosTable').DataTable({
+            safeInitDataTable('#rejectedVideosTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/videos/rejected`,
                     headers: {
@@ -780,15 +790,15 @@
                     { data: 'rejectionReason' },
                     {
                         data: 'id',
-                        render: function (data, type, row) {
+                        render: function (data) {
                             return `
-                                <button class="action-btn btn-view" data-id="${data}" onclick="reviewVideo('${data}')">
+                                <button class="action-btn btn-view" onclick="reviewVideo('${data}')">
                                     <i class="fas fa-eye"></i> View
                                 </button>
-                                <button class="action-btn btn-approve" data-id="${data}" onclick="approveRejectedVideo('${data}')">
+                                <button class="action-btn btn-approve" onclick="approveRejectedVideo('${data}')">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
-                                <button class="action-btn btn-delete" data-id="${data}" onclick="deleteVideo('${data}')">
+                                <button class="action-btn btn-delete" onclick="deleteVideo('${data}')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
                             `;
@@ -800,8 +810,8 @@
                 }
             });
 
-            // Users Table with enhanced error handling
-            $('#usersTable').DataTable({
+            // Users Table
+            safeInitDataTable('#usersTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/users`,
                     headers: {
@@ -814,7 +824,6 @@
                             statusText: xhr.statusText,
                             responseText: xhr.responseText
                         });
-
                         let errorMessage = 'Failed to load users data';
                         try {
                             const errorData = JSON.parse(xhr.responseText);
@@ -824,7 +833,6 @@
                         } catch (e) {
                             errorMessage += '. Please try again later.';
                         }
-
                         // Display error in table
                         $('#usersTable').DataTable().clear().draw();
                         $('#usersTable').DataTable().row.add([
@@ -838,9 +846,7 @@
                                 <i class="fas fa-sync-alt"></i> Retry
                             </button>`
                         ]).draw();
-
                         hideLoading();
-                        // Also show alert notification
                         showAlert(errorMessage, 'danger');
                     }
                 },
@@ -848,7 +854,7 @@
                     {
                         data: 'profilePicture',
                         render: function (data) {
-                            return `<img src="${data || '${data}'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                            return `<img src="${data || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
                         }
                     },
                     {
@@ -882,11 +888,11 @@
                         data: 'id',
                         render: function (data, type, row) {
                             return `
-                                <button class="action-btn btn-edit" data-id="${data}" onclick="editUser('${data}')">
+                                <button class="action-btn btn-edit" onclick="editUser('${data}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 ${row.role !== 'ADMIN' ? `
-                                <button class="action-btn btn-delete" data-id="${data}" onclick="toggleBanUser('${data}', ${row.isBanned})">
+                                <button class="action-btn btn-delete" onclick="toggleBanUser('${data}', ${row.isBanned})">
                                     <i class="fas fa-${row.isBanned ? 'undo' : 'ban'}"></i> ${row.isBanned ? 'Unban' : 'Ban'}
                                 </button>
                                 ` : ''}
@@ -904,7 +910,7 @@
             });
 
             // Admins Table
-            $('#adminsTable').DataTable({
+            safeInitDataTable('#adminsTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/admins`,
                     headers: {
@@ -955,12 +961,12 @@
                         render: function (data, type, row) {
                             return `
                                 ${row.role !== 'SUPER_ADMIN' || currentAdmin.id === row.id ? `
-                                <button class="action-btn btn-edit" data-id="${data}" onclick="editAdmin('${data}')">
+                                <button class="action-btn btn-edit" onclick="editAdmin('${data}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 ` : ''}
                                 ${row.role !== 'SUPER_ADMIN' && currentAdmin.role === 'SUPER_ADMIN' ? `
-                                <button class="action-btn btn-delete" data-id="${data}" onclick="deleteAdmin('${data}')">
+                                <button class="action-btn btn-delete" onclick="deleteAdmin('${data}')">
                                     <i class="fas fa-trash"></i> Remove
                                 </button>
                                 ` : ''}

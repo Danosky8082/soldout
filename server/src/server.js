@@ -51,12 +51,15 @@ async function checkSuperAdmin() {
 // Configure paths
 const PROJECT_ROOT = path.join(__dirname, '../..');
 const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+// ====== FIX: Use the same upload directory as multer storage ======
+const UPLOADS_DIR = path.join(__dirname, '../uploads');   // server/uploads
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'uploads'));
+    cb(null, path.join(__dirname, 'uploads'));   // still points to server/src/uploads? 
+    // Actually we want to match UPLOADS_DIR. We'll change this too.
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -64,8 +67,17 @@ const storage = multer.diskStorage({
   }
 });
 
+// ====== FIX: Make multer store files in the same directory ======
 const upload = multer({ 
-  storage: storage,
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, UPLOADS_DIR);   // now uses the same directory
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  }),
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 

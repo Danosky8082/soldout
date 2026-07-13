@@ -139,13 +139,21 @@
 
                 const preview = videoEl.querySelector('.video-preview');
                 videoEl.addEventListener('mouseenter', () => {
-                    if (preview) {
-                        preview.currentTime = 0;
-                        preview.play().catch(e => console.log("Video preview error:", e));
+                    preview.currentTime = 0;
+                    const playPromise = preview.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            if (error.name !== 'AbortError') {
+                                console.error('Video play error:', error);
+                            }
+                        });
                     }
                 });
+
                 videoEl.addEventListener('mouseleave', () => {
-                    if (preview) preview.pause();
+                    if (!preview.paused) {
+                        preview.pause();
+                    }
                 });
 
                 videoEl.addEventListener('click', () => {
