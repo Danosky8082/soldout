@@ -30,92 +30,102 @@
 </header>
 
 <script>
-    // ============================================================
-    // GLOBALS – shared across all pages
-    // ============================================================
-    window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
+    (function () {
+        // ============================================================
+        // GLOBALS – shared across all pages
+        // ============================================================
+        window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-    window.getAbsoluteUrl = function (url) {
-        if (!url) return null;
-        if (url.startsWith('http://') || url.startsWith('https://')) return url;
-        const clean = url.startsWith('/') ? url.slice(1) : url;
-        return `${window.STATIC_BASE_URL}/${clean}`;
-    };
+        window.getAbsoluteUrl = function (url) {
+            if (!url) return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            const clean = url.startsWith('/') ? url.slice(1) : url;
+            return `${window.STATIC_BASE_URL}/${clean}`;
+        };
 
-    window.getCurrentUser = function () {
-        const data = localStorage.getItem('currentUser');
-        return data ? JSON.parse(data) : null;
-    };
+        window.getCurrentUser = function () {
+            const data = localStorage.getItem('currentUser');
+            return data ? JSON.parse(data) : null;
+        };
 
-    // ============================================================
-    // UPDATE HEADER AVATAR + NAME
-    // ============================================================
-    window.updateUserState = function (user) {
-        const avatar = document.getElementById('userAvatar');
-        const name = document.getElementById('userNameDisplay');
-        if (user && user.firstName) {
-            if (user.profilePicture) {
-                const pic = window.getAbsoluteUrl(user.profilePicture);
-                avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        // ============================================================
+        // UPDATE HEADER AVATAR + NAME
+        // ============================================================
+        window.updateUserState = function (user) {
+            const avatar = document.getElementById('userAvatar');
+            const name = document.getElementById('userNameDisplay');
+            if (user && user.firstName) {
+                if (user.profilePicture) {
+                    const pic = window.getAbsoluteUrl(user.profilePicture);
+                    avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                } else {
+                    avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                }
+                name.textContent = `${user.firstName} ${user.lastName || ''}`;
             } else {
                 avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                name.textContent = '';
             }
-            name.textContent = `${user.firstName} ${user.lastName || ''}`;
+        };
+
+        // ============================================================
+        // INIT HEADER – dropdown toggle + logout
+        // ============================================================
+        window.initHeader = function () {
+            const user = window.getCurrentUser();
+            window.updateUserState(user);
+
+            const userInfo = document.getElementById('userInfo');
+            const dropdown = document.getElementById('userDropdown');
+
+            if (userInfo._listenerAdded) return;
+            userInfo._listenerAdded = true;
+
+            userInfo.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const currentUser = window.getCurrentUser();
+                if (currentUser) {
+                    dropdown.classList.toggle('show');
+                } else {
+                    const loginOverlay = document.getElementById('loginOverlay');
+                    if (loginOverlay) loginOverlay.classList.add('active');
+                    else window.location.href = 'index.html';
+                }
+            });
+
+            document.addEventListener('click', function () {
+                dropdown.classList.remove('show');
+            });
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                // Remove old listeners to avoid duplicates
+                const newBtn = logoutBtn.cloneNode(true);
+                logoutBtn.parentNode.replaceChild(newBtn, logoutBtn);
+                newBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('authToken');
+                    window.updateUserState(null);
+                    window.location.href = 'index.html';
+                });
+            }
+
+            // Home link
+            const homeLink = document.getElementById('homeLink');
+            if (homeLink) {
+                homeLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.location.href = 'index.html';
+                });
+            }
+        };
+
+        // Auto‑init when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', window.initHeader);
         } else {
-            avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-            name.textContent = '';
+            window.initHeader();
         }
-    };
-
-    // ============================================================
-    // INIT HEADER – dropdown toggle + logout
-    // ============================================================
-    window.initHeader = function () {
-        const user = window.getCurrentUser();
-        window.updateUserState(user);
-
-        const userInfo = document.getElementById('userInfo');
-        const dropdown = document.getElementById('userDropdown');
-
-        // Prevent duplicate listeners (important when pages reload)
-        if (userInfo._listenerAdded) return;
-        userInfo._listenerAdded = true;
-
-        userInfo.addEventListener('click', function (e) {
-            e.stopPropagation();
-            const currentUser = window.getCurrentUser();
-            if (currentUser) {
-                dropdown.classList.toggle('show');
-            } else {
-                // Redirect to login or show login modal
-                const loginOverlay = document.getElementById('loginOverlay');
-                if (loginOverlay) loginOverlay.classList.add('active');
-                else window.location.href = 'index.html';
-            }
-        });
-
-        document.addEventListener('click', function () {
-            dropdown.classList.remove('show');
-        });
-
-        // Logout – clean and update header
-        const logoutBtn = document.getElementById('logoutBtn');
-        // Remove old listeners if any
-        const newLogout = logoutBtn.cloneNode(true);
-        logoutBtn.parentNode.replaceChild(newLogout, logoutBtn);
-        newLogout.addEventListener('click', function (e) {
-            e.preventDefault();
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-            window.updateUserState(null);
-            window.location.href = 'index.html';
-        });
-    };
-
-    // Run init when DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', window.initHeader);
-    } else {
-        window.initHeader();
-    }
+    })();
 </script>
