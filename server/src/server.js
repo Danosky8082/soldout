@@ -192,10 +192,13 @@ app.get('/api', (req, res) => {
 });
 
 // ============================================================
-//  AUTH ROUTES
+//  AUTH ROUTES (NOW WITH ROUTER MOUNT)
 // ============================================================
 
-// Register (with profile picture)
+// ***** FIX: Mount the external auth router *****
+app.use('/api/auth', require('./routes/authRoutes'));
+
+// Register (with profile picture) – direct handler (redundant but kept)
 app.post('/api/auth/register', upload.single('profilePicture'), async (req, res) => {
   try {
     const { firstName, lastName, email, password, isAdmin, role } = req.body;
@@ -307,45 +310,6 @@ app.post('/api/auth/admin/login', async (req, res) => {
   } catch (error) {
     console.error('Admin login error:', error);
     res.status(500).json({ error: 'Failed to process admin login' });
-  }
-});
-
-// Admin registration (requires super admin)
-app.post('/api/admin/register', adminAuth, async (req, res) => {
-  try {
-    const { firstName, lastName, email, password, role } = req.body;
-    if (!firstName || !lastName || !email || !password || !role) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    const requestingAdmin = await prisma.user.findUnique({
-      where: { id: req.admin.id },
-      select: { role: true }
-    });
-    if (requestingAdmin.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ message: 'Only super admins can register new admins' });
-    }
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const newAdmin = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role,
-        isAdmin: true
-      }
-    });
-    const { password: _, ...userWithoutPassword } = newAdmin;
-    res.status(201).json(userWithoutPassword);
-  } catch (error) {
-    console.error('Admin registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
