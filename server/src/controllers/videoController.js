@@ -21,8 +21,9 @@ async function uploadToSupabase(file, folder) {
       contentType: file.mimetype,
     });
   if (error) throw new Error(`Supabase upload error: ${error.message}`);
-  const { publicURL } = supabase.storage.from('uploads').getPublicUrl(fileName);
-  return publicURL;
+  // CORRECT: use publicUrl (lowercase u)
+  const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(fileName);
+  return publicUrl;
 }
 
 const uploadVideo = async (req, res) => {
