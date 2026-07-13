@@ -48,30 +48,24 @@ async function checkSuperAdmin() {
   }
 }
 
-// Configure paths
+// ====== UNIFIED PATHS ======
 const PROJECT_ROOT = path.join(__dirname, '../..');
 const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
 
-// ====== FIX: Use the same upload directory as multer storage ======
-const UPLOADS_DIR = path.join(__dirname, '../uploads');   // server/uploads
+// --- Upload directory – consistent across server and multer ---
+const UPLOADS_DIR = path.join(__dirname, 'uploads');   // server/src/uploads
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'uploads'));   // still points to server/src/uploads? 
-    // Actually we want to match UPLOADS_DIR. We'll change this too.
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Ensure the uploads directory exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  console.log('Created uploads directory:', UPLOADS_DIR);
+}
 
-// ====== FIX: Make multer store files in the same directory ======
+// ====== CONFIGURE MULTER (for profile picture) ======
 const upload = multer({ 
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, UPLOADS_DIR);   // now uses the same directory
+      cb(null, UPLOADS_DIR);
     },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -87,31 +81,34 @@ const upload = multer({
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// CORS – allow all origins for production, or set specific
 app.use(cors({
-  origin: '*', // For production, consider using process.env.CLIENT_URL
+  origin: '*',
   credentials: true
 }));
 
-// Create uploads directory if not exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  console.log('Created uploads directory:', UPLOADS_DIR);
-}
-
-// Serve uploaded files statically (BEFORE API routes? no, this is static, but it's fine)
+// ====== SERVE UPLOADED FILES STATICALLY ======
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+// ====== FALLBACK ROUTE TO SERVE FILES (if static fails) ======
+app.get('/uploads/:filename', (req, res) => {
+  const filePath = path.join(UPLOADS_DIR, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ error: 'File not found' });
+  }
+});
 
 // ============================================================
 //  API ROUTES – ALL DEFINED BEFORE STATIC FILE SERVING
 // ============================================================
 
-// Root route – just a welcome message
+// Root route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Soldout API' });
 });
 
-// Admin dashboard route (this is a static HTML, but we handle it separately)
+// Admin dashboard route
 app.get('/admin', (req, res) => {
   const adminFile = path.join(CLIENT_PUBLIC_DIR, 'admin.html');
   if (!fs.existsSync(adminFile)) {

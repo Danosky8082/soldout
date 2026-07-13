@@ -2,14 +2,16 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// ====== UNIFIED UPLOAD DIRECTORY ======
+const uploadDir = path.resolve(__dirname, '../uploads');   // server/src/uploads
+
 // Ensure uploads directory exists
-const uploadDir = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
   console.log('Created upload directory:', uploadDir);
 }
 
-// Configure storage
+// Configure storage – uses the same directory as server.js
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
