@@ -24,7 +24,7 @@
                 <a href="soundtracks.html">Soundtracks</a>
             </div>
             <div class="user-actions">
-                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-search search-icon" id="mobileSearchIcon"></i>
                 <i class="fas fa-bell"></i>
                 <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
                     <div class="user-avatar-container" id="userAvatar">
@@ -366,6 +366,11 @@
 
                 document.getElementById('homeLink').addEventListener('click', () => window.location.href = 'index.html');
                 document.querySelector('.home-link').addEventListener('click', () => window.location.href = 'index.html');
+
+                // Optional: mobile search icon – you can add a search modal or redirect to gallery
+                document.getElementById('mobileSearchIcon').addEventListener('click', () => {
+                    window.location.href = 'gallery.html';
+                });
             });
         </script>
 </body>
