@@ -1111,7 +1111,7 @@ app.get('/api/videos/:id', async (req, res) => {
   }
 });
 
-// ====== DELETE VIDEO ENDPOINT (with manual cascade deletion) ======
+// ====== DELETE VIDEO ENDPOINT (with detailed error handling) ======
 app.delete('/api/videos/:id', async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
@@ -1119,7 +1119,7 @@ app.delete('/api/videos/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid video ID' });
     }
 
-    // Verify token
+    // 1) Verify token
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'Unauthorized: No token provided' });
@@ -1132,24 +1132,23 @@ app.delete('/api/videos/:id', async (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
-    const userId = decoded.id; // Adjust if your token uses 'userId' instead of 'id'
+    const userId = decoded.id; // ensure your JWT contains `id`
     if (!userId) {
       return res.status(400).json({ message: 'Invalid token payload: missing user ID' });
     }
 
-    // Fetch the video with its relations to check ownership
+    // 2) Fetch the video with necessary relations
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       include: {
         comments: {
-          include: {
-            replies: true
-          }
+          include: { replies: true }
         },
         likes: true,
         ratings: true,
         trivia: true,
-        subscriptions: true
+        subscriptions: true,
+        // Add any other relations that might reference this video
       }
     });
 
@@ -1157,13 +1156,13 @@ app.delete('/api/videos/:id', async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
 
-    // Check ownership
+    // 3) Check ownership
     const isAdmin = decoded.role === 'ADMIN' || decoded.role === 'SUPER_ADMIN';
     if (video.userId !== userId && !isAdmin) {
       return res.status(403).json({ message: 'You do not have permission to delete this video' });
     }
 
-    // Manually delete related records to avoid foreign key constraint errors
+    // 4) Delete related records in the correct order to avoid foreign key errors
     // Delete replies (belong to comments)
     for (const comment of video.comments) {
       if (comment.replies.length > 0) {
@@ -1193,20 +1192,20 @@ app.delete('/api/videos/:id', async (req, res) => {
       where: { videoId: videoId }
     });
 
-    // Delete subscriptions (if they exist for this video)
+    // Delete subscriptions that reference this video
     await prisma.subscription.deleteMany({
       where: { videoId: videoId }
     });
 
-    // Finally, delete the video itself
+    // 5) Finally delete the video itself
     await prisma.video.delete({
       where: { id: videoId }
     });
 
     res.json({ message: 'Video deleted successfully' });
   } catch (error) {
-    console.error('Delete video error:', error);
-    // Log the full error for debugging
+    console.error('DELETE /api/videos/:id error:', error);
+    // Send back the actual error message for debugging
     res.status(500).json({
       message: 'Failed to delete video',
       error: error.message,
