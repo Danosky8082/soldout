@@ -2,16 +2,35 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const path = require('path');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+// Helper to upload to Supabase
+async function uploadToSupabase(file, folder) {
+  const fileExt = path.extname(file.originalname);
+  const fileName = `${folder}/${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+  const { data, error } = await supabase.storage
+    .from('uploads')
+    .upload(fileName, file.buffer, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.mimetype,
+    });
+  if (error) throw new Error(`Supabase upload error: ${error.message}`);
+  const { publicURL } = supabase.storage.from('uploads').getPublicUrl(fileName);
+  return publicURL;
+}
 
 const uploadVideo = async (req, res) => {
   try {
     console.log('Upload request received');
-console.log('Headers:', req.headers);
-console.log('User:', req.user);
-console.log('Files:', req.files);
-console.log('Body:', req.body);
-    
-    // Validate required files
+    console.log('Files:', req.files);
+    console.log('Body:', req.body);
+
     if (!req.files || !req.files.thumbnail || !req.files.video) {
       return res.status(400).json({ message: 'Both thumbnail and video files are required' });
     }
@@ -19,21 +38,19 @@ console.log('Body:', req.body);
     const { title, description, genre, releaseDate } = req.body;
     const userId = req.user.id;
 
-    // Parse release date to get year
     const releaseYear = new Date(releaseDate).getFullYear();
     if (isNaN(releaseYear)) {
       return res.status(400).json({ message: 'Invalid release date format' });
     }
 
-    // Get uploaded files
     const thumbnailFile = req.files.thumbnail[0];
     const videoFile = req.files.video[0];
-    
-    // Create relative paths for database storage
-    const thumbnailUrl = `/uploads/${thumbnailFile.filename}`;
-    const videoUrl = `/uploads/${videoFile.filename}`;
 
-    // Create video in database using userId for relation
+    // Upload to Supabase
+    const thumbnailUrl = await uploadToSupabase(thumbnailFile, 'thumbnails');
+    const videoUrl = await uploadToSupabase(videoFile, 'videos');
+
+    // Create video record
     const video = await prisma.video.create({
       data: {
         title,
@@ -52,15 +69,13 @@ console.log('Body:', req.body);
     });
 
     console.log('Video created:', video);
-
-    // Respond with created video
     res.status(201).json({
       message: 'Video uploaded successfully and pending approval',
       video: {
         id: video.id,
         title: video.title,
-        thumbnail: thumbnailUrl,
-        videoUrl: videoUrl,
+        thumbnail: video.thumbnail,
+        videoUrl: video.videoUrl,
         year: video.year,
         genre: video.genre,
         status: video.status
@@ -68,25 +83,14 @@ console.log('Body:', req.body);
     });
   } catch (error) {
     console.error('Upload error:', error);
-    
-    // Clean up uploaded files if database operation failed
-    if (req.files) {
-      req.files.thumbnail?.forEach(f => {
-        if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
-      });
-      req.files.video?.forEach(f => {
-        if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
-      });
-    }
-    
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Video upload failed',
       error: error.message
     });
   }
 };
 
-// Get premium videos (recent 30 days)
+// Get premium videos (recent 30 days, approved)
 const getPremiumVideos = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -106,7 +110,9 @@ const getPremiumVideos = async (req, res) => {
             lastName: true
           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20
     });
 
     const formattedVideos = videos.map(video => ({
@@ -117,14 +123,14 @@ const getPremiumVideos = async (req, res) => {
     res.json(formattedVideos);
   } catch (error) {
     console.error('Premium videos error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to fetch videos',
       error: error.message
     });
   }
 };
 
-// Get trending videos (older than 30 days)
+// Get trending videos (older than 30 days, approved)
 const getTrendingVideos = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -144,7 +150,9 @@ const getTrendingVideos = async (req, res) => {
             lastName: true
           }
         }
-      }
+      },
+      orderBy: { views: 'desc' },
+      take: 20
     });
 
     const formattedVideos = videos.map(video => ({
@@ -155,7 +163,7 @@ const getTrendingVideos = async (req, res) => {
     res.json(formattedVideos);
   } catch (error) {
     console.error('Trending videos error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to fetch videos',
       error: error.message
     });
@@ -183,7 +191,8 @@ const getPendingVideos = async (req, res) => {
             email: true
           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     res.status(200).json({
@@ -200,7 +209,7 @@ const getPendingVideos = async (req, res) => {
   }
 };
 
-// Approve video (admin only)
+// Approve video
 const approveVideo = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -228,7 +237,7 @@ const approveVideo = async (req, res) => {
   }
 };
 
-// Reject video (admin only)
+// Reject video
 const rejectVideo = async (req, res) => {
   try {
     const { videoId } = req.params;

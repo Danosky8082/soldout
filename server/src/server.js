@@ -8,6 +8,7 @@ const { PrismaClient, LikeType } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
+const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables
 dotenv.config();
@@ -18,18 +19,71 @@ connectDB();
 const prisma = new PrismaClient();
 const app = express();
 
-// Add super admin check function
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+// ====== MULTER: Memory Storage (for Supabase uploads) ======
+const storage = multer.memoryStorage();
+
+// For profile picture (max 5MB)
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+// For video upload (max 2GB)
+const videoUpload = multer({
+  storage: storage,
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 }
+});
+
+// ====== PATHS ======
+const PROJECT_ROOT = path.join(__dirname, '../..');
+const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
+
+// ============================================================
+//  MIDDLEWARE
+// ============================================================
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+
+// ============================================================
+//  HELPER: Upload to Supabase
+// ============================================================
+async function uploadToSupabase(file, folder) {
+  const fileExt = path.extname(file.originalname);
+  const fileName = `${folder}/${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+  const { data, error } = await supabase.storage
+    .from('uploads')
+    .upload(fileName, file.buffer, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.mimetype,
+    });
+  if (error) throw new Error(`Supabase upload error: ${error.message}`);
+  const { publicURL } = supabase.storage.from('uploads').getPublicUrl(fileName);
+  return publicURL;
+}
+
+// ============================================================
+//  SUPER ADMIN CHECK
+// ============================================================
 async function checkSuperAdmin() {
   const superAdminEmail = 'superadmin@example.com';
-  
   try {
     const existing = await prisma.user.findUnique({
       where: { email: superAdminEmail }
     });
-
     if (!existing) {
       const hashedPassword = await bcrypt.hash('ChangeThisPassword123!', 12);
-      
       await prisma.user.create({
         data: {
           email: superAdminEmail,
@@ -40,7 +94,6 @@ async function checkSuperAdmin() {
           role: 'SUPER_ADMIN'
         }
       });
-      
       console.log('Initial Super Admin created');
     }
   } catch (error) {
@@ -48,83 +101,13 @@ async function checkSuperAdmin() {
   }
 }
 
-// ====== UNIFIED PATHS ======
-const PROJECT_ROOT = path.join(__dirname, '../..');
-const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
-
-// --- Upload directory – consistent across server and multer ---
-const UPLOADS_DIR = path.join(__dirname, 'uploads');   // server/src/uploads
-
-// Ensure the uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  console.log('Created uploads directory:', UPLOADS_DIR);
-}
-
-// ====== CONFIGURE MULTER (for profile picture) ======
-const upload = multer({ 
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-    }
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 }
-});
-
 // ============================================================
-//  MIDDLEWARE – MUST BE BEFORE ANY ROUTE HANDLERS
+//  ADMIN AUTH MIDDLEWARE
 // ============================================================
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
-
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
-
-// ====== SERVE UPLOADED FILES STATICALLY ======
-app.use('/uploads', express.static(UPLOADS_DIR));
-
-// ====== FALLBACK ROUTE TO SERVE FILES (if static fails) ======
-app.get('/uploads/:filename', (req, res) => {
-  const filePath = path.join(UPLOADS_DIR, req.params.filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).json({ error: 'File not found' });
-  }
-});
-
-// ============================================================
-//  API ROUTES – ALL DEFINED BEFORE STATIC FILE SERVING
-// ============================================================
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Soldout API' });
-});
-
-// Admin dashboard route
-app.get('/admin', (req, res) => {
-  const adminFile = path.join(CLIENT_PUBLIC_DIR, 'admin.html');
-  if (!fs.existsSync(adminFile)) {
-    console.error('Admin file not found at:', adminFile);
-    return res.status(404).send('Admin dashboard not found');
-  }
-  res.sendFile(adminFile);
-});
-
-// Admin Auth Middleware
 const adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'Authorization required' });
-    }
+    if (!token) return res.status(401).json({ error: 'Authorization required' });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const admin = await prisma.user.findUnique({
       where: { id: decoded.id },
@@ -141,93 +124,26 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
-// Promote user to Super Admin
-app.post('/promote-to-super', adminAuth, async (req, res) => {
-  try {
-    if (req.admin.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Only Super Admins can promote users' });
-    }
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) }
-    });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    const updatedUser = await prisma.user.update({
-      where: { id: parseInt(userId) },
-      data: { role: 'SUPER_ADMIN', isAdmin: true },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isAdmin: true
-      }
-    });
-    await prisma.auditLog.create({
-      data: {
-        action: 'PROMOTE_TO_SUPER_ADMIN',
-        userId: req.admin.id,
-        targetUserId: updatedUser.id,
-        details: `Promoted user ${updatedUser.email} to Super Admin`
-      }
-    });
-    res.json({
-      success: true,
-      message: 'User promoted to Super Admin successfully',
-      user: updatedUser
-    });
-  } catch (error) {
-    console.error('Promotion error:', error);
-    res.status(500).json({ error: 'Failed to promote user' });
-  }
+// ============================================================
+//  PUBLIC ROUTES
+// ============================================================
+
+// Root
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to Soldout API' });
 });
 
-// Admin Registration Endpoint
-app.post('/api/admin/register', adminAuth, async (req, res) => {
-  try {
-    const { firstName, lastName, email, password, role } = req.body;
-    if (!firstName || !lastName || !email || !password || !role) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    const requestingAdmin = await prisma.user.findUnique({
-      where: { id: req.admin.id },
-      select: { role: true }
-    });
-    if (requestingAdmin.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ message: 'Only super admins can register new admins' });
-    }
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const newAdmin = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role,
-        isAdmin: true
-      }
-    });
-    const { password: _, ...userWithoutPassword } = newAdmin;
-    res.status(201).json(userWithoutPassword);
-  } catch (error) {
-    console.error('Admin registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+// Admin HTML (static)
+app.get('/admin', (req, res) => {
+  const adminFile = path.join(CLIENT_PUBLIC_DIR, 'admin.html');
+  if (!fs.existsSync(adminFile)) {
+    console.error('Admin file not found at:', adminFile);
+    return res.status(404).send('Admin dashboard not found');
   }
+  res.sendFile(adminFile);
 });
 
-// API documentation route
+// API Documentation
 app.get('/api', (req, res) => {
   res.json({
     message: 'Soldout API Documentation',
@@ -274,18 +190,30 @@ app.get('/api', (req, res) => {
   });
 });
 
-// User Registration Route
+// ============================================================
+//  AUTH ROUTES
+// ============================================================
+
+// Register (with profile picture)
 app.post('/api/auth/register', upload.single('profilePicture'), async (req, res) => {
   try {
     const { firstName, lastName, email, password, isAdmin, role } = req.body;
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already in use' });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let profilePictureUrl = null;
+    if (req.file) {
+      profilePictureUrl = await uploadToSupabase(req.file, 'profiles');
+    }
+
     const newUser = await prisma.user.create({
       data: {
         firstName,
@@ -294,9 +222,10 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
         password: hashedPassword,
         isAdmin: isAdmin === 'true',
         role: role || 'USER',
-        profilePicture: req.file ? `/uploads/${req.file.filename}` : null
+        profilePicture: profilePictureUrl,
       }
     });
+
     const token = jwt.sign(
       { 
         id: newUser.id,
@@ -307,6 +236,7 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
+
     res.status(201).json({ 
       user: {
         id: newUser.id,
@@ -324,10 +254,6 @@ app.post('/api/auth/register', upload.single('profilePicture'), async (req, res)
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
-
-// Mount auth and video routes from separate files
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/videos', require('./routes/videoRoutes'));
 
 // Admin Login
 app.post('/api/auth/admin/login', async (req, res) => {
@@ -383,350 +309,50 @@ app.post('/api/auth/admin/login', async (req, res) => {
   }
 });
 
-// Dashboard summary endpoint
-app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
+// Admin registration (requires super admin)
+app.post('/api/admin/register', adminAuth, async (req, res) => {
   try {
-    const [pendingVideos, approvedVideos, rejectedVideos, totalUsers] = await Promise.all([
-      prisma.video.count({ where: { status: 'PENDING' } }),
-      prisma.video.count({ where: { status: 'APPROVED' } }),
-      prisma.video.count({ where: { status: 'REJECTED' } }),
-      prisma.user.count()
-    ]);
-    res.json({
-      pendingVideos,
-      approvedVideos,
-      rejectedVideos,
-      totalUsers
-    });
-  } catch (error) {
-    console.error('Dashboard error:', error);
-    res.status(500).json({ error: 'Failed to load dashboard data' });
-  }
-});
-
-// Get pending videos
-app.get('/api/admin/videos/pending', adminAuth, async (req, res) => {
-  try {
-    const videos = await prisma.video.findMany({
-      where: { status: 'PENDING' },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(videos);
-  } catch (error) {
-    console.error('Pending videos error:', error);
-    res.status(500).json({ error: 'Failed to fetch pending videos' });
-  }
-});
-
-// Get approved videos
-app.get('/api/admin/videos/approved', adminAuth, async (req, res) => {
-  try {
-    const videos = await prisma.video.findMany({
-      where: { status: 'APPROVED' },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      },
-      orderBy: { approvedAt: 'desc' }
-    });
-    res.json(videos);
-  } catch (error) {
-    console.error('Approved videos error:', error);
-    res.status(500).json({ error: 'Failed to fetch approved videos' });
-  }
-});
-
-// Get rejected videos
-app.get('/api/admin/videos/rejected', adminAuth, async (req, res) => {
-  try {
-    const videos = await prisma.video.findMany({
-      where: { status: 'REJECTED' },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      },
-      orderBy: { rejectedAt: 'desc' }
-    });
-    res.json(videos);
-  } catch (error) {
-    console.error('Rejected videos error:', error);
-    res.status(500).json({ error: 'Failed to fetch rejected videos' });
-  }
-});
-
-// Get video by ID for review
-app.get('/api/admin/videos/:id', adminAuth, async (req, res) => {
-  try {
-    const videoId = parseInt(req.params.id);
-    const video = await prisma.video.findUnique({
-      where: { id: videoId },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      }
-    });
-    if (!video) {
-      return res.status(404).json({ error: 'Video not found' });
+    const { firstName, lastName, email, password, role } = req.body;
+    if (!firstName || !lastName || !email || !password || !role) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
-    res.json(video);
-  } catch (error) {
-    console.error('Video by ID error:', error);
-    res.status(500).json({ error: 'Failed to fetch video details' });
-  }
-});
-
-// Approve video
-app.post('/api/admin/videos/:id/approve', adminAuth, async (req, res) => {
-  try {
-    const videoId = parseInt(req.params.id);
-    const video = await prisma.video.update({
-      where: { id: videoId },
-      data: { 
-        status: 'APPROVED',
-        approvedAt: new Date() 
-      }
-    });
-    res.json(video);
-  } catch (error) {
-    console.error('Approve video error:', error);
-    res.status(500).json({ error: 'Failed to approve video' });
-  }
-});
-
-// Reject video
-app.post('/api/admin/videos/:id/reject', adminAuth, async (req, res) => {
-  try {
-    const videoId = parseInt(req.params.id);
-    const { reason } = req.body;
-    const video = await prisma.video.update({
-      where: { id: videoId },
-      data: { 
-        status: 'REJECTED',
-        rejectedAt: new Date(),
-        rejectionReason: reason 
-      }
-    });
-    res.json(video);
-  } catch (error) {
-    console.error('Reject video error:', error);
-    res.status(500).json({ error: 'Failed to reject video' });
-  }
-});
-
-// Unpublish video
-app.post('/api/admin/videos/:id/unpublish', adminAuth, async (req, res) => {
-  try {
-    const videoId = parseInt(req.params.id);
-    const video = await prisma.video.update({
-      where: { id: videoId },
-      data: { 
-        status: 'PENDING',
-        approvedAt: null
-      }
-    });
-    res.json(video);
-  } catch (error) {
-    console.error('Unpublish video error:', error);
-    res.status(500).json({ error: 'Failed to unpublish video' });
-  }
-});
-
-// Get all users
-app.get('/api/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        isBanned: true,
-        createdAt: true,
-        _count: {
-          select: { videos: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(users);
-  } catch (error) {
-    console.error('Admin users error:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
-});
-
-// Get all admins
-app.get('/api/admin/admins', adminAuth, async (req, res) => {
-  try {
-    const admins = await prisma.user.findMany({
-      where: { isAdmin: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        profilePicture: true,
-        createdAt: true,
-        lastLogin: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(admins);
-  } catch (error) {
-    console.error('Admin list error:', error);
-    res.status(500).json({ error: 'Failed to fetch admins' });
-  }
-});
-
-// Update user
-app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { firstName, lastName, email, role } = req.body;
-    if (!firstName || !lastName || !email || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        firstName,
-        lastName,
-        email,
-        role
-      }
-    });
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-});
-
-// Ban/Unban user
-app.post('/api/admin/users/:id/ban', adminAuth, async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const { isBanned } = req.body;
-    if (isBanned) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true }
-      });
-      if (user.role === 'ADMIN' && req.admin.role !== 'SUPER_ADMIN') {
-        return res.status(403).json({ error: 'Only super admins can ban other admins' });
-      }
-    }
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { isBanned }
-    });
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Ban user error:', error);
-    res.status(500).json({ error: 'Failed to update user ban status' });
-  }
-});
-
-// Unban user
-app.post('/api/admin/users/:id/unban', adminAuth, async (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { isBanned: false }
-    });
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Unban user error:', error);
-    res.status(500).json({ error: 'Failed to unban user' });
-  }
-});
-
-// Delete admin
-app.delete('/api/admin/admins/:id', adminAuth, async (req, res) => {
-  try {
-    const adminId = parseInt(req.params.id);
     const requestingAdmin = await prisma.user.findUnique({
       where: { id: req.admin.id },
       select: { role: true }
     });
     if (requestingAdmin.role !== 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Only super admins can delete other admins' });
+      return res.status(403).json({ message: 'Only super admins can register new admins' });
     }
-    const targetAdmin = await prisma.user.findUnique({
-      where: { id: adminId },
-      select: { role: true }
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     });
-    if (!targetAdmin) {
-      return res.status(404).json({ error: 'Admin not found' });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
     }
-    if (targetAdmin.role === 'SUPER_ADMIN') {
-      return res.status(403).json({ error: 'Cannot delete super admin' });
-    }
-    await prisma.user.delete({
-      where: { id: adminId }
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const newAdmin = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        role,
+        isAdmin: true
+      }
     });
-    res.json({ message: 'Admin deleted successfully' });
+    const { password: _, ...userWithoutPassword } = newAdmin;
+    res.status(201).json(userWithoutPassword);
   } catch (error) {
-    console.error('Delete admin error:', error);
-    res.status(500).json({ error: 'Failed to delete admin' });
+    console.error('Admin registration error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Change password
-app.post('/api/admin/change-password', adminAuth, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const adminId = req.admin.id;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Current and new password are required' });
-    }
-    const admin = await prisma.user.findUnique({
-      where: { id: adminId },
-      select: { password: true }
-    });
-    if (!admin) {
-      return res.status(404).json({ error: 'Admin not found' });
-    }
-    const validPassword = await bcrypt.compare(currentPassword, admin.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
-    }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({
-      where: { id: adminId },
-      data: { password: hashedPassword }
-    });
-    res.json({ message: 'Password changed successfully' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Failed to change password' });
-  }
-});
+// ============================================================
+//  USER ROUTES
+// ============================================================
 
-// User Routes
+// Get profile (including videos)
 app.get('/api/users/:id/profile', async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -793,6 +419,7 @@ app.get('/api/users/:id/profile', async (req, res) => {
   }
 });
 
+// Update user profile
 app.put('/api/users/:id', async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -834,6 +461,7 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
+// Update profile picture (Supabase)
 app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
@@ -849,7 +477,9 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    const profilePictureUrl = `/uploads/${req.file.filename}`;
+
+    const profilePictureUrl = await uploadToSupabase(req.file, 'profiles');
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { profilePicture: profilePictureUrl },
@@ -858,6 +488,7 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
         profilePicture: true
       }
     });
+
     res.json({ 
       profilePictureUrl: updatedUser.profilePicture,
       message: 'Profile picture updated successfully'
@@ -868,179 +499,110 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
   }
 });
 
-// Video Routes
-app.get('/api/videos/premium', async (req, res) => {
+// ============================================================
+//  VIDEO ROUTES (with Supabase uploads)
+// ============================================================
+
+// Mount video routes from separate file
+app.use('/api/videos', require('./routes/videoRoutes'));
+
+// ============================================================
+//  ADMIN ROUTES (dashboard, pending, approve, reject, etc.)
+// ============================================================
+
+app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
   try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const videos = await prisma.video.findMany({
-      where: {
-        updatedAt: {
-          gte: thirtyDaysAgo
-        }
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
-          }
-        },
-        _count: {
-          select: {
-            likes: true,
-            subscribers: true,
-            ratings: true,
-            trivia: true
-          }
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      take: 20
+    const [pendingVideos, approvedVideos, rejectedVideos, totalUsers] = await Promise.all([
+      prisma.video.count({ where: { status: 'PENDING' } }),
+      prisma.video.count({ where: { status: 'APPROVED' } }),
+      prisma.video.count({ where: { status: 'REJECTED' } }),
+      prisma.user.count()
+    ]);
+    res.json({
+      pendingVideos,
+      approvedVideos,
+      rejectedVideos,
+      totalUsers
     });
-    res.json(videos);
   } catch (error) {
-    console.error('Error fetching premium videos:', error);
-    res.status(500).json({ error: 'Failed to fetch premium videos' });
+    console.error('Dashboard error:', error);
+    res.status(500).json({ error: 'Failed to load dashboard data' });
   }
 });
 
-app.get('/api/videos/:id', async (req, res) => {
+app.get('/api/admin/videos/pending', adminAuth, async (req, res) => {
   try {
-    if (!req.params.id || isNaN(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid video ID' });
-    }
-    const videoId = parseInt(req.params.id);
-    const userId = req.query.userId ? parseInt(req.query.userId) : undefined;
-    const video = await prisma.video.findUnique({
-      where: { id: videoId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        videoUrl: true,
-        thumbnail: true,
-        genre: true,
-        year: true,
-        views: true,
-        createdAt: true,
-        updatedAt: true,
-        userId: true,
+    const videos = await prisma.video.findMany({
+      where: { status: 'PENDING' },
+      include: {
         user: {
           select: {
-            id: true,
             firstName: true,
             lastName: true
           }
-        },
-        comments: {
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(videos);
+  } catch (error) {
+    console.error('Pending videos error:', error);
+    res.status(500).json({ error: 'Failed to fetch pending videos' });
+  }
+});
+
+app.get('/api/admin/videos/approved', adminAuth, async (req, res) => {
+  try {
+    const videos = await prisma.video.findMany({
+      where: { status: 'APPROVED' },
+      include: {
+        user: {
           select: {
-            id: true,
-            text: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
-              }
-            },
-            replies: {
-              select: {
-                id: true,
-                text: true,
-                createdAt: true,
-                user: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true
-                  }
-                },
-                likes: {
-                  where: {
-                    type: "LIKE"
-                  },
-                  select: {
-                    userId: true
-                  }
-                },
-                _count: {
-                  select: {
-                    likes: true
-                  }
-                }
-              }
-            },
-            likes: {
-              where: {
-                type: "LIKE"
-              },
-              select: {
-                userId: true
-              }
-            },
-            _count: {
-              select: {
-                likes: true,
-                replies: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: "desc"
+            firstName: true,
+            lastName: true
           }
-        },
-        subscriptions: {
-          where: {
-            userId: userId
-          },
+        }
+      },
+      orderBy: { approvedAt: 'desc' }
+    });
+    res.json(videos);
+  } catch (error) {
+    console.error('Approved videos error:', error);
+    res.status(500).json({ error: 'Failed to fetch approved videos' });
+  }
+});
+
+app.get('/api/admin/videos/rejected', adminAuth, async (req, res) => {
+  try {
+    const videos = await prisma.video.findMany({
+      where: { status: 'REJECTED' },
+      include: {
+        user: {
           select: {
-            userId: true
+            firstName: true,
+            lastName: true
           }
-        },
-        likes: {
-          where: {
-            userId: userId
-          },
+        }
+      },
+      orderBy: { rejectedAt: 'desc' }
+    });
+    res.json(videos);
+  } catch (error) {
+    console.error('Rejected videos error:', error);
+    res.status(500).json({ error: 'Failed to fetch rejected videos' });
+  }
+});
+
+app.get('/api/admin/videos/:id', adminAuth, async (req, res) => {
+  try {
+    const videoId = parseInt(req.params.id);
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      include: {
+        user: {
           select: {
-            type: true
-          }
-        },
-        ratings: {
-          where: {
-            userId: userId
-          },
-          select: {
-            value: true
-          }
-        },
-        trivia: {
-          select: {
-            id: true,
-            text: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: "desc"
-          }
-        },
-        _count: {
-          select: {
-            likes: true,
-            subscriptions: true,
-            ratings: true,
-            trivia: true
+            firstName: true,
+            lastName: true
           }
         }
       }
@@ -1048,159 +610,238 @@ app.get('/api/videos/:id', async (req, res) => {
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
     }
-    const [ratings, likes, dislikes, subscriberCount, isSubscribed] = await Promise.all([
-      prisma.rating.findMany({
-        where: { videoId: videoId }
-      }),
-      prisma.like.count({
-        where: { 
-          videoId: videoId,
-          type: LikeType.LIKE
-        }
-      }),
-      prisma.like.count({
-        where: { 
-          videoId: videoId,
-          type: LikeType.DISLIKE
-        }
-      }),
-      prisma.subscription.count({
-        where: {
-          video: {
-            userId: video.userId
-          }
-        }
-      }),
-      userId ? prisma.subscription.count({
-        where: {
-          userId: userId,
-          videoId: videoId
-        }
-      }).then(count => count > 0) : Promise.resolve(false)
-    ]);
-    const averageRating = ratings.length > 0 ? 
-      ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length : 0;
-    const userRating = userId ? await prisma.rating.findUnique({
-      where: {
-        userId_videoId: {
-          userId: userId,
-          videoId: videoId
-        }
-      }
-    }) : null;
-    await prisma.video.update({
-      where: { id: videoId },
-      data: { views: { increment: 1 } }
-    });
-    const response = {
-      ...video,
-      averageRating: averageRating.toFixed(1),
-      likeCount: likes,
-      dislikeCount: dislikes,
-      isSubscribed: isSubscribed,
-      userRating: userRating ? userRating.value : null,
-      user: {
-        ...video.user,
-        subscriberCount: subscriberCount
-      }
-    };
-    res.json(response);
+    res.json(video);
   } catch (error) {
     console.error('Video by ID error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to fetch video details' });
   }
 });
 
-// ====== DELETE VIDEO – SAFE CASCADE VIA TRANSACTION ======
-app.delete('/api/videos/:id', async (req, res) => {
+app.post('/api/admin/videos/:id/approve', adminAuth, async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
-    if (isNaN(videoId)) {
-      return res.status(400).json({ message: 'Invalid video ID' });
-    }
-
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    const userId = decoded.id || decoded.userId; // support both
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID missing from token' });
-    }
-
-    // Check if video exists
-    const video = await prisma.video.findUnique({
+    const video = await prisma.video.update({
       where: { id: videoId },
-      select: { userId: true }
+      data: { 
+        status: 'APPROVED',
+        approvedAt: new Date() 
+      }
     });
-    if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
-    }
-
-    // Check ownership
-    const isAdmin = decoded.role === 'ADMIN' || decoded.role === 'SUPER_ADMIN';
-    if (video.userId !== userId && !isAdmin) {
-      return res.status(403).json({ message: 'Permission denied' });
-    }
-
-    // Use a transaction to delete all related records
-    await prisma.$transaction(async (prisma) => {
-      // 1. Delete replies (which may have likes)
-      await prisma.reply.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 2. Delete comments (which may have likes)
-      await prisma.comment.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 3. Delete likes on the video
-      await prisma.like.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 4. Delete ratings
-      await prisma.rating.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 5. Delete trivia
-      await prisma.trivia.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 6. Delete subscriptions (if any)
-      await prisma.subscription.deleteMany({
-        where: { videoId: videoId }
-      });
-
-      // 7. Finally, delete the video
-      await prisma.video.delete({
-        where: { id: videoId }
-      });
-    });
-
-    res.json({ message: 'Video deleted successfully' });
+    res.json(video);
   } catch (error) {
-    console.error('Delete error:', error);
-    res.status(500).json({
-      message: 'Failed to delete video',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('Approve video error:', error);
+    res.status(500).json({ error: 'Failed to approve video' });
   }
 });
 
-// Interaction Routes
+app.post('/api/admin/videos/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const videoId = parseInt(req.params.id);
+    const { reason } = req.body;
+    const video = await prisma.video.update({
+      where: { id: videoId },
+      data: { 
+        status: 'REJECTED',
+        rejectedAt: new Date(),
+        rejectionReason: reason 
+      }
+    });
+    res.json(video);
+  } catch (error) {
+    console.error('Reject video error:', error);
+    res.status(500).json({ error: 'Failed to reject video' });
+  }
+});
+
+app.post('/api/admin/videos/:id/unpublish', adminAuth, async (req, res) => {
+  try {
+    const videoId = parseInt(req.params.id);
+    const video = await prisma.video.update({
+      where: { id: videoId },
+      data: { 
+        status: 'PENDING',
+        approvedAt: null
+      }
+    });
+    res.json(video);
+  } catch (error) {
+    console.error('Unpublish video error:', error);
+    res.status(500).json({ error: 'Failed to unpublish video' });
+  }
+});
+
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        isBanned: true,
+        createdAt: true,
+        _count: {
+          select: { videos: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(users);
+  } catch (error) {
+    console.error('Admin users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.get('/api/admin/admins', adminAuth, async (req, res) => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { isAdmin: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        profilePicture: true,
+        createdAt: true,
+        lastLogin: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(admins);
+  } catch (error) {
+    console.error('Admin list error:', error);
+    res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+});
+
+app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { firstName, lastName, email, role } = req.body;
+    if (!firstName || !lastName || !email || !role) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName,
+        lastName,
+        email,
+        role
+      }
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+app.post('/api/admin/users/:id/ban', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { isBanned } = req.body;
+    if (isBanned) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+      });
+      if (user.role === 'ADMIN' && req.admin.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Only super admins can ban other admins' });
+      }
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isBanned }
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Ban user error:', error);
+    res.status(500).json({ error: 'Failed to update user ban status' });
+  }
+});
+
+app.post('/api/admin/users/:id/unban', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isBanned: false }
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Unban user error:', error);
+    res.status(500).json({ error: 'Failed to unban user' });
+  }
+});
+
+app.delete('/api/admin/admins/:id', adminAuth, async (req, res) => {
+  try {
+    const adminId = parseInt(req.params.id);
+    const requestingAdmin = await prisma.user.findUnique({
+      where: { id: req.admin.id },
+      select: { role: true }
+    });
+    if (requestingAdmin.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Only super admins can delete other admins' });
+    }
+    const targetAdmin = await prisma.user.findUnique({
+      where: { id: adminId },
+      select: { role: true }
+    });
+    if (!targetAdmin) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    if (targetAdmin.role === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Cannot delete super admin' });
+    }
+    await prisma.user.delete({
+      where: { id: adminId }
+    });
+    res.json({ message: 'Admin deleted successfully' });
+  } catch (error) {
+    console.error('Delete admin error:', error);
+    res.status(500).json({ error: 'Failed to delete admin' });
+  }
+});
+
+app.post('/api/admin/change-password', adminAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const adminId = req.admin.id;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are required' });
+    }
+    const admin = await prisma.user.findUnique({
+      where: { id: adminId },
+      select: { password: true }
+    });
+    if (!admin) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    const validPassword = await bcrypt.compare(currentPassword, admin.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: adminId },
+      data: { password: hashedPassword }
+    });
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// ============================================================
+//  INTERACTION ROUTES (like, comment, reply, subscribe, rate, trivia)
+// ============================================================
+
 app.post('/api/interactions/like', async (req, res) => {
   try {
     const { userId, videoId, commentId, replyId, isLiked, type } = req.body;
@@ -1511,71 +1152,71 @@ app.post('/api/interactions/subscribe', async (req, res) => {
 });
 
 app.post('/api/interactions/rate', async (req, res) => {
-    try {
-        const { userId, videoId, value } = req.body;
-        if (value < 1 || value > 10) {
-            return res.status(400).json({ 
-                success: false,
-                error: 'Rating must be between 1 and 10' 
-            });
-        }
-        const numericUserId = parseInt(userId);
-        const numericVideoId = parseInt(videoId);
-        const videoExists = await prisma.video.findUnique({
-            where: { id: numericVideoId }
-        });
-        if (!videoExists) {
-            return res.status(404).json({ 
-                success: false,
-                error: 'Video not found' 
-            });
-        }
-        const rating = await prisma.rating.upsert({
-            where: {
-                userId_videoId: {
-                    userId: numericUserId,
-                    videoId: numericVideoId
-                }
-            },
-            update: {
-                value: parseInt(value),
-                updatedAt: new Date()
-            },
-            create: {
-                value: parseInt(value),
-                userId: numericUserId,
-                videoId: numericVideoId
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                }
-            }
-        });
-        const ratings = await prisma.rating.findMany({
-            where: { videoId: numericVideoId }
-        });
-        const totalSum = ratings.reduce((sum, r) => sum + r.value, 0);
-        const average = totalSum / ratings.length;
-        const roundedAverage = Math.round(average * 10) / 10;
-        res.status(200).json({ 
-            success: true,
-            rating,
-            average: roundedAverage,
-            count: ratings.length
-        });
-    } catch (error) {
-        console.error('Rating error:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Failed to save rating',
-            details: error.message
-        });
+  try {
+    const { userId, videoId, value } = req.body;
+    if (value < 1 || value > 10) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Rating must be between 1 and 10' 
+      });
     }
+    const numericUserId = parseInt(userId);
+    const numericVideoId = parseInt(videoId);
+    const videoExists = await prisma.video.findUnique({
+      where: { id: numericVideoId }
+    });
+    if (!videoExists) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Video not found' 
+      });
+    }
+    const rating = await prisma.rating.upsert({
+      where: {
+        userId_videoId: {
+          userId: numericUserId,
+          videoId: numericVideoId
+        }
+      },
+      update: {
+        value: parseInt(value),
+        updatedAt: new Date()
+      },
+      create: {
+        value: parseInt(value),
+        userId: numericUserId,
+        videoId: numericVideoId
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+    const ratings = await prisma.rating.findMany({
+      where: { videoId: numericVideoId }
+    });
+    const totalSum = ratings.reduce((sum, r) => sum + r.value, 0);
+    const average = totalSum / ratings.length;
+    const roundedAverage = Math.round(average * 10) / 10;
+    res.status(200).json({ 
+      success: true,
+      rating,
+      average: roundedAverage,
+      count: ratings.length
+    });
+  } catch (error) {
+    console.error('Rating error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to save rating',
+      details: error.message
+    });
+  }
 });
 
 app.post('/api/interactions/trivia', async (req, res) => {
@@ -1691,24 +1332,102 @@ app.post('/api/videos/:id/synopsis', async (req, res) => {
 });
 
 // ============================================================
-//  STATIC FILE SERVING – AFTER ALL API ROUTES
+//  DELETE VIDEO ENDPOINT (with cascade and ownership check)
+// ============================================================
+app.delete('/api/videos/:id', async (req, res) => {
+  try {
+    const videoId = parseInt(req.params.id);
+    if (isNaN(videoId)) {
+      return res.status(400).json({ message: 'Invalid video ID' });
+    }
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const userId = decoded.id || decoded.userId;
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID missing from token' });
+    }
+
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: { userId: true }
+    });
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    const isAdmin = decoded.role === 'ADMIN' || decoded.role === 'SUPER_ADMIN';
+    if (video.userId !== userId && !isAdmin) {
+      return res.status(403).json({ message: 'Permission denied' });
+    }
+
+    // Use a transaction to delete all related records
+    await prisma.$transaction(async (prisma) => {
+      // Delete replies
+      await prisma.reply.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Delete comments
+      await prisma.comment.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Delete likes
+      await prisma.like.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Delete ratings
+      await prisma.rating.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Delete trivia
+      await prisma.trivia.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Delete subscriptions
+      await prisma.subscription.deleteMany({
+        where: { videoId: videoId }
+      });
+      // Finally, delete the video
+      await prisma.video.delete({
+        where: { id: videoId }
+      });
+    });
+
+    res.json({ message: 'Video deleted successfully' });
+  } catch (error) {
+    console.error('Delete error:', error);
+    res.status(500).json({
+      message: 'Failed to delete video',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// ============================================================
+//  STATIC FILES & CATCH-ALL
 // ============================================================
 app.use(express.static(CLIENT_PUBLIC_DIR));
 
-// ============================================================
-//  CATCH-ALL – ONLY FOR NON-API ROUTES (SPA routing)
-// ============================================================
 app.get('*', (req, res) => {
-  // If the request is for /api/*, return 404 JSON instead of HTML
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
-  // Otherwise, serve index.html for client-side routing
   res.sendFile(path.join(CLIENT_PUBLIC_DIR, 'index.html'));
 });
 
 // ============================================================
-//  ERROR HANDLING MIDDLEWARE
+//  ERROR HANDLING
 // ============================================================
 app.use((err, req, res, next) => {
   console.error('Server error:', err.stack);
@@ -1724,8 +1443,5 @@ checkSuperAdmin().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Serving static files from: ${CLIENT_PUBLIC_DIR}`);
-    console.log(`Upload directory: ${UPLOADS_DIR}`);
-    console.log(`Verify admin.html exists: ${fs.existsSync(path.join(CLIENT_PUBLIC_DIR, 'admin.html'))}`);
-    console.log(`Verify index.html exists: ${fs.existsSync(path.join(CLIENT_PUBLIC_DIR, 'index.html'))}`);
   });
 });
