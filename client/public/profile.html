@@ -196,7 +196,6 @@
             margin-top: 4px;
         }
 
-        /* Delete button on video card */
         .video-card .delete-btn {
             position: absolute;
             top: 8px;
@@ -237,7 +236,6 @@
             display: block;
         }
 
-        /* Edit Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -373,20 +371,16 @@
         <!-- ====== PROFILE CONTENT ====== -->
         <div class="profile-container">
             <div class="profile-header">
-                <!-- Profile Picture -->
                 <div class="profile-picture-wrapper" id="profilePicWrapper">
                     <img id="profilePicImg" src="" alt="Profile Picture">
                     <div class="overlay"><i class="fas fa-camera"></i> Change</div>
                     <input type="file" id="profilePicInput" accept="image/*">
                 </div>
-
-                <!-- User Info -->
                 <div class="profile-info">
                     <h1 class="profile-name" id="profileName">User Name</h1>
                     <p class="profile-email" id="profileEmail">user@example.com</p>
                     <p class="profile-join-date" id="profileJoinDate">Joined: Jan 2025</p>
                     <div class="profile-bio" id="profileBio">No bio yet.</div>
-
                     <div class="profile-stats">
                         <div class="stat-item">
                             <div class="stat-value" id="videosCount">0</div>
@@ -405,7 +399,6 @@
                             <div class="stat-label">Subscribers</div>
                         </div>
                     </div>
-
                     <div class="profile-actions">
                         <button class="profile-btn edit-btn" id="editProfileBtn">Edit Profile</button>
                         <a href="upload.html" class="profile-btn edit-btn"
@@ -414,7 +407,6 @@
                 </div>
             </div>
 
-            <!-- User's Videos -->
             <div class="profile-videos">
                 <h2 class="section-title"><i class="fas fa-video"></i> My Uploads</h2>
                 <div id="userVideosContainer">
@@ -423,7 +415,7 @@
             </div>
         </div>
 
-        <!-- ====== EDIT PROFILE MODAL ====== -->
+        <!-- Edit Modal -->
         <div class="modal-overlay" id="editProfileModal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -431,21 +423,13 @@
                     <span class="modal-close" id="closeEditModal">&times;</span>
                 </div>
                 <form id="editProfileForm">
-                    <div class="form-group">
-                        <label for="editFirstName">First Name</label>
-                        <input type="text" id="editFirstName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editLastName">Last Name</label>
-                        <input type="text" id="editLastName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editEmail">Email</label>
-                        <input type="email" id="editEmail" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editBio">Bio</label>
-                        <textarea id="editBio" rows="3"></textarea>
+                    <div class="form-group"><label for="editFirstName">First Name</label><input type="text"
+                            id="editFirstName" required></div>
+                    <div class="form-group"><label for="editLastName">Last Name</label><input type="text"
+                            id="editLastName" required></div>
+                    <div class="form-group"><label for="editEmail">Email</label><input type="email" id="editEmail"
+                            required></div>
+                    <div class="form-group"><label for="editBio">Bio</label><textarea id="editBio" rows="3"></textarea>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
@@ -455,7 +439,6 @@
             </div>
         </div>
 
-        <!-- Toast -->
         <div class="toast-upload" id="toastUpload">Profile updated!</div>
 
         <footer>
@@ -475,10 +458,11 @@
 
     <script>
         // ==========================================================
-        //  PROFILE LOGIC – using authToken and jwt-decode
+        //  PROFILE LOGIC – with correct API_BASE_URL
         // ==========================================================
 
-        // ----- Helper functions (aligned with index.html) -----
+        const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
+
         function getAuthToken() {
             return localStorage.getItem('authToken');
         }
@@ -500,30 +484,29 @@
             localStorage.removeItem('authToken');
         }
 
-        // ----- Get user ID from token -----
         function getUserIdFromToken() {
             const token = getAuthToken();
             if (!token) return null;
             try {
                 const decoded = jwt_decode(token);
-                return decoded.userId || decoded.id; // adjust to your JWT payload
+                return decoded.id || decoded.userId;
             } catch (e) {
                 console.error('Invalid token', e);
                 return null;
             }
         }
 
-        // ----- Helper to convert relative to absolute URL -----
+        // Convert relative URLs to absolute (for static files like thumbnails)
         function getAbsoluteUrl(url) {
             if (!url) return null;
             if (url.startsWith('http://') || url.startsWith('https://')) return url;
-            // If it starts with '/', prepend the base URL, else add a slash
+            // For static files, they are served from the same origin as the API (Render)
             return url.startsWith('/')
-                ? `${window.location.origin}${url}`
-                : `${window.location.origin}/${url}`;
+                ? `https://soldout-jh33.onrender.com${url}`
+                : `https://soldout-jh33.onrender.com/${url}`;
         }
 
-        // ----- DOM refs -----
+        // DOM refs
         const profileName = document.getElementById('profileName');
         const profileEmail = document.getElementById('profileEmail');
         const profileJoinDate = document.getElementById('profileJoinDate');
@@ -531,23 +514,18 @@
         const profilePicImg = document.getElementById('profilePicImg');
         const profilePicWrapper = document.getElementById('profilePicWrapper');
         const profilePicInput = document.getElementById('profilePicInput');
-
         const videosCount = document.getElementById('videosCount');
         const viewsCount = document.getElementById('viewsCount');
         const likesCount = document.getElementById('likesCount');
         const subscribersCount = document.getElementById('subscribersCount');
-
         const userVideosContainer = document.getElementById('userVideosContainer');
-
         const editProfileBtn = document.getElementById('editProfileBtn');
         const editProfileModal = document.getElementById('editProfileModal');
         const closeEditModal = document.getElementById('closeEditModal');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
         const editProfileForm = document.getElementById('editProfileForm');
-
         const toast = document.getElementById('toastUpload');
 
-        // ----- Toast helper -----
         function showToast(message, isError = false) {
             toast.textContent = message;
             toast.style.background = isError ? 'rgba(239,68,68,0.9)' : 'var(--bg-card)';
@@ -556,7 +534,7 @@
             toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // ----- Fetch profile data -----
+        // Load profile data
         async function loadProfile() {
             const token = getAuthToken();
             const userId = getUserIdFromToken();
@@ -566,7 +544,7 @@
             }
 
             try {
-                const response = await fetch(`/api/users/${userId}/profile`, {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -582,19 +560,16 @@
 
                 const userData = await response.json();
 
-                // Display user info
                 profileName.textContent = `${userData.firstName} ${userData.lastName}`;
                 profileEmail.textContent = userData.email;
                 profileJoinDate.textContent = `Member since ${new Date(userData.createdAt).toLocaleDateString()}`;
                 profileBio.textContent = userData.bio || 'No bio yet';
 
-                // Stats
                 videosCount.textContent = userData.stats?.videos || 0;
                 viewsCount.textContent = userData.stats?.views || 0;
                 likesCount.textContent = userData.stats?.likes || 0;
                 subscribersCount.textContent = userData.stats?.subscribers || 0;
 
-                // Profile picture
                 if (userData.profilePicture) {
                     const picUrl = getAbsoluteUrl(userData.profilePicture);
                     profilePicImg.src = picUrl;
@@ -603,7 +578,6 @@
                     profilePicImg.style.display = 'none';
                 }
 
-                // Videos
                 if (userData.videos && userData.videos.length > 0) {
                     renderVideos(userData.videos);
                 } else {
@@ -616,7 +590,6 @@
                     `;
                 }
 
-                // Update header avatar
                 updateHeaderAvatar(userData);
 
             } catch (error) {
@@ -625,7 +598,7 @@
             }
         }
 
-        // ----- Render videos grid with Delete button -----
+        // Render videos with delete button
         function renderVideos(videos) {
             let html = '<div class="videos-grid">';
             videos.forEach(video => {
@@ -649,10 +622,8 @@
             html += '</div>';
             userVideosContainer.innerHTML = html;
 
-            // Click to go to video player (on the card itself, excluding the delete button)
             document.querySelectorAll('.video-card').forEach(card => {
                 card.addEventListener('click', function (e) {
-                    // Ignore if delete button was clicked
                     if (e.target.closest('.delete-btn')) return;
                     const id = this.dataset.id;
                     sessionStorage.setItem('currentVideo', JSON.stringify({ id }));
@@ -660,7 +631,6 @@
                 });
             });
 
-            // Delete button event listeners
             document.querySelectorAll('.video-card .delete-btn').forEach(btn => {
                 btn.addEventListener('click', function (e) {
                     e.stopPropagation();
@@ -670,11 +640,9 @@
             });
         }
 
-        // ----- Delete video -----
+        // Delete video
         async function deleteVideo(videoId) {
-            if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
-                return;
-            }
+            if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) return;
 
             const token = getAuthToken();
             if (!token) {
@@ -683,7 +651,7 @@
             }
 
             try {
-                const response = await fetch(`/api/videos/${videoId}`, {
+                const response = await fetch(`${API_BASE_URL}/videos/${videoId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -696,17 +664,15 @@
                     throw new Error(errorData.message || 'Failed to delete video');
                 }
 
-                // Show success and reload profile data
                 showToast('Video deleted successfully!');
-                // Refresh the videos list and stats
-                loadProfile();
+                loadProfile(); // Refresh the list and stats
             } catch (error) {
                 console.error('Delete error:', error);
                 showToast(error.message || 'Failed to delete video', true);
             }
         }
 
-        // ----- Update header avatar (with absolute URL) -----
+        // Update header avatar
         function updateHeaderAvatar(user) {
             const avatarContainer = document.getElementById('userAvatar');
             const userNameSpan = document.getElementById('userNameDisplay');
@@ -724,7 +690,7 @@
             }
         }
 
-        // ----- Upload profile picture (store absolute URL) -----
+        // Upload profile picture
         async function uploadProfilePicture(file) {
             const token = getAuthToken();
             const userId = getUserIdFromToken();
@@ -734,7 +700,7 @@
             formData.append('profilePicture', file);
 
             try {
-                const response = await fetch(`/api/users/${userId}/profile-picture`, {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/profile-picture`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -745,19 +711,14 @@
                 }
 
                 const result = await response.json();
-                // Convert to absolute URL if relative
                 let pictureUrl = result.profilePictureUrl;
                 if (pictureUrl && !pictureUrl.startsWith('http')) {
-                    pictureUrl = pictureUrl.startsWith('/')
-                        ? `${window.location.origin}${pictureUrl}`
-                        : `${window.location.origin}/${pictureUrl}`;
+                    pictureUrl = getAbsoluteUrl(pictureUrl);
                 }
 
-                // Update UI
                 profilePicImg.src = pictureUrl;
                 profilePicImg.style.display = 'block';
 
-                // Update localStorage
                 const user = getCurrentUser();
                 if (user) {
                     user.profilePicture = pictureUrl;
@@ -771,21 +732,16 @@
             }
         }
 
-        // ==========================================================
-        //  EVENT LISTENERS
-        // ==========================================================
-
+        // ====== EVENT LISTENERS ======
         document.addEventListener('DOMContentLoaded', function () {
-            // Check token
             const token = getAuthToken();
             if (!token) {
                 window.location.href = 'index.html';
                 return;
             }
-            // Load profile
             loadProfile();
 
-            // ====== DROPDOWN ======
+            // Dropdown
             const userInfo = document.getElementById('userInfo');
             const dropdown = document.getElementById('userDropdown');
 
@@ -803,7 +759,6 @@
                 dropdown.classList.remove('show');
             });
 
-            // Logout
             document.getElementById('logoutBtn').addEventListener('click', function (e) {
                 e.preventDefault();
                 removeAuthToken();
@@ -811,13 +766,12 @@
                 window.location.href = 'index.html';
             });
 
-            // Home link
             document.getElementById('homeLink').addEventListener('click', function (e) {
                 e.preventDefault();
                 window.location.href = 'index.html';
             });
 
-            // ====== PROFILE PICTURE UPLOAD ======
+            // Profile picture upload
             profilePicWrapper.addEventListener('click', function () {
                 profilePicInput.click();
             });
@@ -836,7 +790,7 @@
                 this.value = '';
             });
 
-            // ====== EDIT PROFILE MODAL ======
+            // Edit profile modal
             editProfileBtn.addEventListener('click', function () {
                 const nameParts = profileName.textContent.split(' ');
                 document.getElementById('editFirstName').value = nameParts[0] || '';
@@ -860,7 +814,6 @@
                 }
             });
 
-            // Save profile changes
             editProfileForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const token = getAuthToken();
@@ -875,7 +828,7 @@
                 };
 
                 try {
-                    const response = await fetch(`/api/users/${userId}`, {
+                    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -890,12 +843,10 @@
 
                     const result = await response.json();
 
-                    // Update UI
                     profileName.textContent = `${result.firstName} ${result.lastName}`;
                     profileEmail.textContent = result.email;
                     profileBio.textContent = result.bio || 'No bio yet';
 
-                    // Update header and localStorage
                     const storedUser = getCurrentUser();
                     if (storedUser) {
                         storedUser.firstName = result.firstName;

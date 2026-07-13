@@ -1111,6 +1111,42 @@ app.get('/api/videos/:id', async (req, res) => {
   }
 });
 
+// ====== DELETE VIDEO ENDPOINT (User-owned or admin) ======
+app.delete('/api/videos/:id', async (req, res) => {
+  try {
+    const videoId = parseInt(req.params.id);
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: { userId: true }
+    });
+
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    // Check ownership: user can delete their own video, admin can delete any
+    const isAdmin = decoded.role === 'ADMIN' || decoded.role === 'SUPER_ADMIN';
+    if (video.userId !== userId && !isAdmin) {
+      return res.status(403).json({ message: 'You do not have permission to delete this video' });
+    }
+
+    // Delete the video (and any associated records – Prisma will cascade if defined)
+    await prisma.video.delete({ where: { id: videoId } });
+
+    res.json({ message: 'Video deleted successfully' });
+  } catch (error) {
+    console.error('Delete video error:', error);
+    res.status(500).json({ message: 'Failed to delete video' });
+  }
+});
+
 // Interaction Routes
 app.post('/api/interactions/like', async (req, res) => {
   try {
