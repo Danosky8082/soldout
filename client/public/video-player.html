@@ -197,14 +197,13 @@
         // ==================== VIDEO PLAYER JS ====================
         document.addEventListener('DOMContentLoaded', async () => {
             const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
+            const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
             // ---------- Helper to convert relative to absolute URL ----------
             function getAbsoluteUrl(url) {
                 if (!url) return null;
                 if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                return url.startsWith('/')
-                    ? `${API_BASE_URL}${url}`
-                    : `${API_BASE_URL}/${url}`;
+                return url.startsWith('/') ? `${STATIC_BASE_URL}${url}` : `${STATIC_BASE_URL}/${url}`;
             }
 
             // ---------- Auth helpers ----------
@@ -265,7 +264,6 @@
             const loggedInUser = getCurrentUser();
             if (loggedInUser) updateUserState(loggedInUser);
 
-            // ==== UPDATED VIDEO LOADING LOGIC ====
             const videoData = JSON.parse(sessionStorage.getItem('currentVideo'));
             if (!videoData || !videoData.id) {
                 alert('No video selected');
@@ -276,7 +274,7 @@
             let video;
             try {
                 const token = getAuthToken();
-                const url = `${API_BASE_URL}/api/videos/${videoData.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`;
+                const url = `${API_BASE_URL}/videos/${videoData.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`;
                 const res = await fetch(url, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
@@ -300,7 +298,15 @@
 
             // Populate player
             const player = document.getElementById('mainPlayer');
-            player.src = video.videoUrl;
+            const videoSrc = getAbsoluteUrl(video.videoUrl);
+            if (videoSrc) {
+                player.src = videoSrc;
+            } else {
+                alert('Video URL not available');
+                window.location.href = 'index.html';
+                return;
+            }
+
             document.getElementById('playerTitle').textContent = video.title;
             document.getElementById('uploaderName').textContent = video.user?.firstName + ' ' + video.user?.lastName || 'Unknown';
             document.getElementById('playerMeta').innerHTML =
@@ -340,7 +346,7 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                    const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -355,7 +361,7 @@
                     });
                     if (res.ok) {
                         // Refresh video data
-                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                        const updated = await fetch(`${API_BASE_URL}/videos/${video.id}?userId=${loggedInUser.id}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         video = await updated.json();
@@ -370,7 +376,7 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/interactions/subscribe`, {
+                    const res = await fetch(`${API_BASE_URL}/interactions/subscribe`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -389,7 +395,7 @@
                             btn.textContent = 'SUBSCRIBE';
                         }
                         // Refresh subscriber count (optional)
-                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                        const updated = await fetch(`${API_BASE_URL}/videos/${video.id}?userId=${loggedInUser.id}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         video = await updated.json();
@@ -404,7 +410,7 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/interactions/save`, {
+                    const res = await fetch(`${API_BASE_URL}/interactions/save`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -438,7 +444,7 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/interactions/comment`, {
+                    const res = await fetch(`${API_BASE_URL}/interactions/comment`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -449,7 +455,7 @@
                     if (res.ok) {
                         commentInput.value = '';
                         // Refresh comments
-                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                        const updated = await fetch(`${API_BASE_URL}/videos/${video.id}?userId=${loggedInUser.id}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         video = await updated.json();
@@ -481,7 +487,7 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/interactions/trivia`, {
+                    const res = await fetch(`${API_BASE_URL}/interactions/trivia`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -502,7 +508,7 @@
             async function loadTrivia(video) {
                 const token = getAuthToken();
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/videos/${video.id}/trivia`, {
+                    const res = await fetch(`${API_BASE_URL}/videos/${video.id}/trivia`, {
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     });
                     if (!res.ok) throw new Error('Failed to fetch trivia');
@@ -539,7 +545,7 @@
                                 if (!confirm('Delete this trivia?')) return;
                                 const token = getAuthToken();
                                 try {
-                                    const del = await fetch(`${API_BASE_URL}/api/interactions/trivia/${item.id}`, {
+                                    const del = await fetch(`${API_BASE_URL}/interactions/trivia/${item.id}`, {
                                         method: 'DELETE',
                                         headers: { 'Authorization': `Bearer ${token}` }
                                     });
@@ -561,7 +567,7 @@
                 const container = document.getElementById('relatedVideos');
                 container.innerHTML = '<p class="loading">Loading similar videos...</p>';
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/videos/premium`);
+                    const res = await fetch(`${API_BASE_URL}/videos/premium`);
                     if (!res.ok) throw new Error('Failed to fetch videos');
                     let all = await res.json();
                     const related = all.filter(v => v.genre === video.genre && v.id !== video.id).slice(0, 6);
@@ -571,11 +577,12 @@
                         return;
                     }
                     related.forEach(v => {
+                        const thumb = getAbsoluteUrl(v.thumbnail) || 'https://via.placeholder.com/168x94?text=No+Image';
                         const el = document.createElement('div');
                         el.className = 'related-video';
                         el.innerHTML = `
                             <div class="related-thumbnail">
-                                <img src="${v.thumbnail}" alt="${v.title}">
+                                <img src="${thumb}" alt="${v.title}">
                                 ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
                             </div>
                             <div class="related-info">
@@ -632,7 +639,7 @@
                     const token = getAuthToken();
                     if (!token) { alert('Please log in again.'); return; }
                     try {
-                        const res = await fetch(`${API_BASE_URL}/api/interactions/rate`, {
+                        const res = await fetch(`${API_BASE_URL}/interactions/rate`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -665,7 +672,6 @@
                     el.style.marginLeft = `${depth * 20}px`;
                     const isLiked = comment.likes?.some(l => l.userId === loggedInUser?.id);
                     const likeCount = comment._count?.likes || 0;
-                    // Comment avatar – convert to absolute URL if needed
                     let avatarHtml = `<i class="fas fa-user"></i>`;
                     if (comment.user?.profilePicture) {
                         const picUrl = getAbsoluteUrl(comment.user.profilePicture);
@@ -732,7 +738,7 @@
                         const body = { userId: loggedInUser.id, type: 'LIKE', isLiked: !isLiked };
                         if (isReply) body.replyId = id;
                         else body.commentId = id;
-                        const res = await fetch(`${API_BASE_URL}/api/interactions/like`, {
+                        const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                             body: JSON.stringify(body)
@@ -842,7 +848,7 @@
                     // Send to server
                     const token = getAuthToken();
                     try {
-                        const res = await fetch(`${API_BASE_URL}/api/interactions/reply`, {
+                        const res = await fetch(`${API_BASE_URL}/interactions/reply`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -858,7 +864,7 @@
                         });
                         if (!res.ok) throw new Error('Failed to post reply');
                         // Refresh all comments
-                        const updated = await fetch(`${API_BASE_URL}/api/videos/${video.id}?userId=${loggedInUser.id}`, {
+                        const updated = await fetch(`${API_BASE_URL}/videos/${video.id}?userId=${loggedInUser.id}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         video = await updated.json();
