@@ -539,12 +539,14 @@ footer p {
 }
 
 /* ---------- RESPONSIVE ---------- */
+/* Large screens: 4 columns */
 @media (min-width: 1200px) {
     .video-grid {
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     }
 }
 
+/* Tablet: 3 columns */
 @media (max-width: 992px) {
     .sidebar {
         display: none;
@@ -570,6 +572,7 @@ footer p {
     }
 }
 
+/* Small tablet / large phone: 2 columns */
 @media (max-width: 768px) {
     header {
         padding: 0 8px;
@@ -626,6 +629,7 @@ footer p {
     }
 }
 
+/* Mobile: 1 column */
 @media (max-width: 576px) {
     .video-grid {
         grid-template-columns: 1fr;
@@ -672,6 +676,7 @@ footer p {
         font-size: 12px;
     }
 
+    /* Make action buttons more touch-friendly */
     .action-button,
     .subscribe-button,
     .upload-btn,
