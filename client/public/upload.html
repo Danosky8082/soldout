@@ -62,6 +62,52 @@
         .upload-btn:hover {
             background: var(--accent-indigo);
         }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ---- Progress Bar ---- */
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+            /* hidden by default */
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar-wrapper {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            overflow: hidden;
+            height: 12px;
+            width: 100%;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--gradient-main);
+            border-radius: 40px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .progress-text span {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
     </style>
 </head>
 
@@ -211,6 +257,16 @@
                 </div>
 
                 <button type="submit" class="upload-btn" id="uploadBtn">Upload Video</button>
+
+                <!-- Progress Bar -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        Uploading... <span id="progressPercent">0%</span>
+                    </div>
+                </div>
             </form>
         </div>
 
@@ -314,7 +370,6 @@
                 removeCurrentUser();
                 removeAuthToken();
                 window.location.href = 'index.html';
-                console.log('Upload token:', token);
                 return;
             }
 
@@ -438,72 +493,103 @@
                 document.getElementById('videoUpload').click();
             });
 
-            // ====== FORM SUBMISSION ======
-            document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            // ====== FORM SUBMISSION WITH PROGRESS ======
+            const form = document.getElementById('uploadForm');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+
+            form.addEventListener('submit', function (e) {
                 e.preventDefault();
-                const uploadBtn = document.getElementById('uploadBtn');
-                const originalBtnText = uploadBtn.innerHTML;
 
-                try {
-                    const title = document.getElementById('videoTitle').value.trim();
-                    const genre = document.getElementById('videoGenre').value;
-                    const day = document.getElementById('releaseDay').value;
-                    const month = document.getElementById('releaseMonth').value;
-                    const year = document.getElementById('releaseYear').value;
-                    const synopsis = document.getElementById('videoSynopsis').value.trim();
+                // Validate fields
+                const title = document.getElementById('videoTitle').value.trim();
+                const genre = document.getElementById('videoGenre').value;
+                const day = document.getElementById('releaseDay').value;
+                const month = document.getElementById('releaseMonth').value;
+                const year = document.getElementById('releaseYear').value;
+                const synopsis = document.getElementById('videoSynopsis').value.trim();
 
-                    if (!title) { showAlert('Please enter a video title', 'danger'); return; }
-                    if (!genre) { showAlert('Please select a genre', 'danger'); return; }
-                    if (!day || !month || !year) { showAlert('Please select a complete release date', 'danger'); return; }
+                if (!title) { showAlert('Please enter a video title', 'danger'); return; }
+                if (!genre) { showAlert('Please select a genre', 'danger'); return; }
+                if (!day || !month || !year) { showAlert('Please select a complete release date', 'danger'); return; }
 
-                    const thumbnailInput = document.getElementById('thumbnailUpload');
-                    const videoInput = document.getElementById('videoUpload');
-                    const thumbnailFile = thumbnailInput.files[0];
-                    const videoFile = videoInput.files[0];
+                const thumbnailInput = document.getElementById('thumbnailUpload');
+                const videoInput = document.getElementById('videoUpload');
+                const thumbnailFile = thumbnailInput.files[0];
+                const videoFile = videoInput.files[0];
 
-                    if (!thumbnailFile) { showAlert('Please upload a thumbnail image', 'danger'); return; }
-                    if (!videoFile) { showAlert('Please upload a video file', 'danger'); return; }
+                if (!thumbnailFile) { showAlert('Please upload a thumbnail image', 'danger'); return; }
+                if (!videoFile) { showAlert('Please upload a video file', 'danger'); return; }
 
-                    const formData = new FormData();
-                    formData.append('title', title);
-                    formData.append('genre', genre);
-                    formData.append('releaseDate', `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-                    formData.append('description', synopsis);
-                    formData.append('thumbnail', thumbnailFile);
-                    formData.append('video', videoFile);
-                    formData.append('status', 'pending');
+                // Build FormData
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('genre', genre);
+                formData.append('releaseDate', `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                formData.append('description', synopsis);
+                formData.append('thumbnail', thumbnailFile);
+                formData.append('video', videoFile);
+                formData.append('status', 'pending');
 
-                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-                    uploadBtn.disabled = true;
+                // Disable button and show progress
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Uploading...';
+                progressContainer.classList.add('active');
+                progressFill.style.width = '0%';
+                progressPercent.textContent = '0%';
 
-                    const token = getAuthToken();
-                    // Use the full Render URL
-                    const response = await fetch(`${API_BASE_URL}/videos`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        body: formData
-                    });
+                const token = getAuthToken();
+                const xhr = new XMLHttpRequest();
+                const url = `${API_BASE_URL}/videos`;
 
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || 'Upload failed');
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+                // Progress event
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressFill.style.width = percent + '%';
+                        progressPercent.textContent = percent + '%';
+                        uploadBtn.textContent = `Uploading ${percent}%`;
                     }
+                });
 
-                    const newVideo = await response.json();
-                    document.getElementById('successModal').classList.add('active');
-
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    showAlert(`Upload failed: ${error.message}`, 'danger');
-                    if (error.message.includes('token') || error.message.includes('authenticate')) {
-                        removeCurrentUser();
-                        removeAuthToken();
-                        window.location.href = 'index.html';
-                    }
-                } finally {
-                    uploadBtn.innerHTML = originalBtnText;
+                xhr.onload = function () {
                     uploadBtn.disabled = false;
-                }
+                    uploadBtn.textContent = 'Upload Video';
+                    progressContainer.classList.remove('active');
+
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const response = JSON.parse(xhr.responseText);
+                        document.getElementById('successModal').classList.add('active');
+                    } else {
+                        let errorMsg = 'Upload failed. Please try again.';
+                        try {
+                            const err = JSON.parse(xhr.responseText);
+                            errorMsg = err.message || errorMsg;
+                        } catch (e) {}
+                        showAlert(errorMsg, 'danger');
+                    }
+                };
+
+                xhr.onerror = function () {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload Video';
+                    progressContainer.classList.remove('active');
+                    showAlert('Network error. Please check your connection.', 'danger');
+                };
+
+                xhr.onabort = function () {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload Video';
+                    progressContainer.classList.remove('active');
+                    showAlert('Upload cancelled.', 'warning');
+                };
+
+                xhr.send(formData);
             });
         });
     </script>
