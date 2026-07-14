@@ -1,4 +1,4 @@
-// header.js – Shared Header Logic (place in same folder as index.html)
+// header.js – Shared Header Logic (works for both hardcoded and dynamically loaded headers)
 (function() {
     // ============================================================
     // GLOBALS – shared across all pages
@@ -45,7 +45,7 @@
     let headerInitialized = false;
 
     window.initHeader = function() {
-        // Always update avatar first (in case user changed)
+        // Always update avatar first
         const user = window.getCurrentUser();
         window.updateUserState(user);
 
@@ -56,7 +56,7 @@
         const dropdown = document.getElementById('userDropdown');
 
         if (!userInfo || !dropdown) {
-            // Elements not yet in DOM – will try again later
+            // Header not yet in DOM – will try again later via observer
             return;
         }
 
@@ -146,22 +146,54 @@
     };
 
     // ============================================================
-    // AUTO-INIT – only if header elements already exist (e.g., profile page)
+    // WATCH FOR HEADER APPEARANCE (for dynamically loaded headers)
     // ============================================================
-    function tryAutoInit() {
-        // Check if header elements are already in the DOM (hardcoded header)
-        if (document.getElementById('userInfo') && document.getElementById('userDropdown')) {
+    function watchForHeader() {
+        // If header already exists, init immediately
+        if (document.getElementById('userInfo')) {
             window.initHeader();
+            return;
         }
-        // For dynamically loaded headers, pages will call initHeader() after injection.
+
+        // Otherwise, observe DOM for changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node.querySelector && node.querySelector('#userInfo')) {
+                        // Header has been added
+                        observer.disconnect();
+                        window.initHeader();
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // Also check periodically in case observer misses it
+        const interval = setInterval(function() {
+            if (document.getElementById('userInfo')) {
+                clearInterval(interval);
+                observer.disconnect();
+                window.initHeader();
+            }
+        }, 500);
     }
 
+    // ============================================================
+    // AUTO-INIT – run when DOM is ready
+    // ============================================================
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryAutoInit);
+        document.addEventListener('DOMContentLoaded', watchForHeader);
     } else {
-        tryAutoInit();
+        watchForHeader();
     }
 
-    // Expose initHeader so pages can call it after dynamic injection
-    // (already exposed globally via window.initHeader)
+    // ============================================================
+    // FALLBACK: also expose initHeader so pages can call it manually
+    // ============================================================
+    window.initHeader = window.initHeader || function() {};
 })();
