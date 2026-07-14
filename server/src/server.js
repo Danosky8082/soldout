@@ -57,8 +57,6 @@ app.use(cors({
   credentials: true
 }));
 
-app.use('/api/videos', videoRoutes);
-app.use('/api/interactions', interactionRoutes);
 
 // ============================================================
 //  HELPER: Upload to Supabase
