@@ -21,7 +21,6 @@ async function uploadToSupabase(file, folder) {
       contentType: file.mimetype,
     });
   if (error) throw new Error(`Supabase upload error: ${error.message}`);
-  // CORRECT: use publicUrl (lowercase u)
   const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(fileName);
   return publicUrl;
 }
@@ -171,6 +170,95 @@ const getTrendingVideos = async (req, res) => {
   }
 };
 
+// ==================== NEW: Get a single video by ID ====================
+const getVideoById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user ? parseInt(req.user.id) : null;
+
+    const video = await prisma.video.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePicture: true,
+            subscriberCount: true,
+          }
+        },
+        likes: {
+          where: { userId: userId || undefined },
+          select: { id: true }
+        },
+        dislikes: {
+          where: { userId: userId || undefined },
+          select: { id: true }
+        },
+        ratings: {
+          select: { value: true, userId: true }
+        },
+        _count: {
+          select: {
+            likes: true,
+            dislikes: true,
+            comments: true,
+            subscribers: true
+          }
+        }
+      }
+    });
+
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    // Increment view count (optional – do it asynchronously)
+    // We'll increment after sending the response to avoid blocking
+    // await prisma.video.update({ where: { id: parseInt(id) }, data: { views: { increment: 1 } } });
+
+    // Compute average rating
+    const ratings = video.ratings || [];
+    const avgRating = ratings.length > 0
+      ? (ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length).toFixed(1)
+      : null;
+
+    // Determine user's rating (if logged in)
+    const userRating = userId
+      ? ratings.find(r => r.userId === userId)?.value || null
+      : null;
+
+    const response = {
+      ...video,
+      averageRating: avgRating,
+      userRating: userRating,
+      likeCount: video._count.likes,
+      dislikeCount: video._count.dislikes,
+      commentCount: video._count.comments,
+      subscriberCount: video._count.subscribers,
+      isLiked: video.likes.length > 0,
+      isDisliked: video.dislikes.length > 0,
+      // Add subscription status if you have a subscription table – here we just leave as false
+      isSubscribed: false,
+    };
+
+    // Remove internal _count and raw arrays to clean the response
+    delete response._count;
+    delete response.likes;
+    delete response.dislikes;
+    delete response.ratings;
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching video:', error);
+    res.status(500).json({
+      message: 'Failed to fetch video',
+      error: error.message
+    });
+  }
+};
+
 // Get pending videos (admin only)
 const getPendingVideos = async (req, res) => {
   try {
@@ -272,6 +360,7 @@ module.exports = {
   uploadVideo,
   getPremiumVideos,
   getTrendingVideos,
+  getVideoById,          // <-- NEW
   getPendingVideos,
   approveVideo,
   rejectVideo
