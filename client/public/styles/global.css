@@ -1842,3 +1842,593 @@ footer p {
      background: var(--accent-red);
      color: #fff;
  }
+
+ /* ============================================================
+   MOBILE & RESPONSIVE ENHANCEMENTS (without affecting desktop)
+   ============================================================ */
+
+ /* ---------- HAMBURGER MENU (visible on small screens) ---------- */
+ .hamburger {
+     display: none;
+     flex-direction: column;
+     gap: 4px;
+     cursor: pointer;
+     padding: 6px;
+     background: transparent;
+     border: none;
+     outline: none;
+ }
+
+ .hamburger span {
+     display: block;
+     width: 24px;
+     height: 2px;
+     background: var(--text-primary);
+     border-radius: 2px;
+     transition: all 0.3s;
+ }
+
+ /* ---------- MOBILE SIDEBAR (slide-out) ---------- */
+ .sidebar-mobile-overlay {
+     display: none;
+     position: fixed;
+     inset: 0;
+     background: rgba(0, 0, 0, 0.5);
+     z-index: 999;
+     opacity: 0;
+     transition: opacity 0.3s;
+ }
+
+ .sidebar-mobile-overlay.active {
+     display: block;
+     opacity: 1;
+ }
+
+ .sidebar-mobile {
+     position: fixed;
+     top: 0;
+     left: -280px;
+     width: 260px;
+     height: 100%;
+     background: var(--bg-secondary);
+     z-index: 1000;
+     padding: 60px 16px 20px;
+     overflow-y: auto;
+     transition: left 0.3s ease;
+     border-right: 1px solid var(--border-color);
+ }
+
+ .sidebar-mobile.open {
+     left: 0;
+ }
+
+ .sidebar-mobile a {
+     display: flex;
+     align-items: center;
+     gap: 14px;
+     padding: 10px 14px;
+     border-radius: 8px;
+     color: var(--text-secondary);
+     font-size: 14px;
+     transition: all var(--transition);
+ }
+
+ .sidebar-mobile a:hover,
+ .sidebar-mobile a.active {
+     background: var(--bg-tertiary);
+     color: #fff;
+ }
+
+ .sidebar-mobile .sidebar-divider {
+     margin: 10px 14px;
+ }
+
+ .sidebar-mobile .sidebar-label {
+     font-size: 12px;
+     color: var(--text-secondary);
+     padding: 6px 14px;
+ }
+
+ /* ---------- RESPONSIVE BREAKPOINTS ---------- */
+
+ /* Tablets & small laptops */
+ @media (max-width: 992px) {
+     .hamburger {
+         display: flex;
+     }
+
+     .nav-links {
+         display: none;
+     }
+
+     .sidebar {
+         display: none;
+     }
+
+     .sidebar-wrapper {
+         margin-top: 56px;
+     }
+
+     .main-content {
+         margin-top: 0;
+     }
+
+     /* Show mobile overlay and sidebar when toggled */
+     .sidebar-mobile-overlay.active {
+         display: block;
+     }
+ }
+
+ /* Phones */
+ @media (max-width: 768px) {
+     header {
+         padding: 0 8px;
+         height: 48px;
+     }
+
+     .logo span {
+         font-size: 16px;
+     }
+
+     .logo i {
+         font-size: 22px;
+     }
+
+     .user-name {
+         display: none;
+     }
+
+     .user-actions i {
+         font-size: 18px;
+         padding: 4px;
+     }
+
+     .user-avatar-container {
+         width: 28px;
+         height: 28px;
+     }
+
+     .hamburger span {
+         width: 20px;
+         height: 2px;
+     }
+
+     .video-grid {
+         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+         gap: 10px;
+     }
+
+     .video-title {
+         font-size: 13px;
+     }
+
+     .video-meta {
+         font-size: 11px;
+     }
+
+     .movie-poster {
+         flex: 0 0 140px;
+         height: 200px;
+     }
+
+     .movie-title {
+         font-size: 13px;
+     }
+
+     .container {
+         padding: 0 8px;
+     }
+
+     .main-content {
+         gap: 12px;
+         margin-top: 56px;
+     }
+
+     .video-player {
+         aspect-ratio: 16/9;
+     }
+
+     .rating-container {
+         top: 8px;
+         left: 8px;
+         padding: 4px 10px;
+         gap: 6px;
+     }
+
+     .rating-stars label {
+         font-size: 14px;
+     }
+
+     .rating-average {
+         font-size: 12px;
+     }
+
+     .quality-toggle {
+         bottom: 12px;
+         right: 12px;
+         padding: 4px 10px;
+         font-size: 11px;
+     }
+
+     .quality-selector {
+         bottom: 50px;
+         right: 12px;
+         padding: 6px;
+     }
+
+     .quality-option {
+         font-size: 12px;
+         padding: 2px 12px;
+     }
+
+     .video-title {
+         font-size: 18px;
+     }
+
+     .video-stats {
+         font-size: 13px;
+     }
+
+     .action-button {
+         font-size: 13px;
+         padding: 4px 10px;
+     }
+
+     .video-description {
+         font-size: 13px;
+         padding: 10px;
+     }
+
+     .uploader-avatar {
+         width: 40px;
+         height: 40px;
+     }
+
+     .uploader-name {
+         font-size: 14px;
+     }
+
+     .subscribe-button {
+         padding: 6px 16px;
+         font-size: 12px;
+     }
+
+     .comments-title {
+         font-size: 18px;
+     }
+
+     .comment-input {
+         font-size: 13px;
+         padding: 10px 16px;
+     }
+
+     .comment-submit {
+         font-size: 13px;
+         padding: 0 20px;
+     }
+
+     .comment-author {
+         font-size: 13px;
+     }
+
+     .comment-text {
+         font-size: 13px;
+     }
+
+     .comment-actions {
+         font-size: 12px;
+     }
+
+     .replies {
+         margin-left: 30px;
+         padding-left: 10px;
+     }
+
+     .reply-input {
+         font-size: 13px;
+         padding: 6px 12px;
+     }
+
+     .reply-submit {
+         font-size: 13px;
+         padding: 0 14px;
+     }
+
+     .cancel-reply {
+         font-size: 13px;
+         padding: 0 12px;
+     }
+
+     .related-video-item .thumb {
+         width: 120px;
+         height: 67px;
+     }
+
+     .related-title {
+         font-size: 13px;
+     }
+
+     .related-uploader,
+     .related-stats {
+         font-size: 11px;
+     }
+
+     .trivia-container {
+         padding: 12px;
+     }
+
+     .trivia-title {
+         font-size: 14px;
+     }
+
+     .trivia-item {
+         font-size: 13px;
+     }
+
+     .login-modal {
+         padding: 20px;
+         max-width: 95%;
+     }
+
+     .login-header h2 {
+         font-size: 20px;
+     }
+
+     .form-group label {
+         font-size: 13px;
+     }
+
+     .form-group input {
+         font-size: 14px;
+         padding: 10px 12px;
+     }
+
+     .login-modal button {
+         font-size: 14px;
+         padding: 12px;
+     }
+
+     .form-row {
+         flex-direction: column;
+         gap: 0;
+     }
+
+     .footer-links {
+         gap: 10px;
+     }
+
+     .footer-links a {
+         font-size: 12px;
+     }
+
+     footer p {
+         font-size: 12px;
+     }
+ }
+
+ /* Small phones */
+ @media (max-width: 480px) {
+     .video-grid {
+         grid-template-columns: 1fr 1fr;
+         gap: 6px;
+     }
+
+     .video-title {
+         font-size: 12px;
+     }
+
+     .video-meta {
+         font-size: 10px;
+     }
+
+     .movie-poster {
+         flex: 0 0 110px;
+         height: 160px;
+     }
+
+     .movie-title {
+         font-size: 12px;
+     }
+
+     .movie-meta {
+         font-size: 10px;
+     }
+
+     .main-content {
+         margin-top: 48px;
+         padding: 0 4px;
+     }
+
+     .container {
+         padding: 0 4px;
+     }
+
+     .video-player {
+         border-radius: 8px;
+     }
+
+     .rating-container {
+         top: 4px;
+         left: 4px;
+         padding: 3px 8px;
+     }
+
+     .rating-stars label {
+         font-size: 12px;
+     }
+
+     .rating-average {
+         font-size: 11px;
+     }
+
+     .quality-toggle {
+         bottom: 8px;
+         right: 8px;
+         font-size: 10px;
+         padding: 3px 8px;
+     }
+
+     .quality-selector {
+         bottom: 40px;
+         right: 8px;
+     }
+
+     .quality-option {
+         font-size: 11px;
+         padding: 2px 10px;
+     }
+
+     .video-title {
+         font-size: 16px;
+     }
+
+     .video-stats {
+         font-size: 12px;
+     }
+
+     .action-button {
+         font-size: 12px;
+         padding: 3px 8px;
+     }
+
+     .video-description {
+         font-size: 12px;
+         padding: 8px;
+     }
+
+     .uploader-avatar {
+         width: 36px;
+         height: 36px;
+     }
+
+     .uploader-name {
+         font-size: 13px;
+     }
+
+     .subscribe-button {
+         padding: 4px 12px;
+         font-size: 11px;
+     }
+
+     .comments-title {
+         font-size: 16px;
+     }
+
+     .comment-input {
+         font-size: 12px;
+         padding: 8px 12px;
+     }
+
+     .comment-submit {
+         font-size: 12px;
+         padding: 0 16px;
+     }
+
+     .comment-author {
+         font-size: 12px;
+     }
+
+     .comment-text {
+         font-size: 12px;
+     }
+
+     .comment-actions {
+         font-size: 11px;
+     }
+
+     .replies {
+         margin-left: 20px;
+         padding-left: 6px;
+     }
+
+     .reply-input {
+         font-size: 12px;
+         padding: 4px 10px;
+     }
+
+     .reply-submit {
+         font-size: 12px;
+         padding: 0 12px;
+     }
+
+     .cancel-reply {
+         font-size: 12px;
+         padding: 0 10px;
+     }
+
+     .related-video-item .thumb {
+         width: 100px;
+         height: 56px;
+     }
+
+     .related-title {
+         font-size: 12px;
+     }
+
+     .related-uploader,
+     .related-stats {
+         font-size: 10px;
+     }
+
+     .trivia-container {
+         padding: 10px;
+     }
+
+     .trivia-title {
+         font-size: 13px;
+     }
+
+     .trivia-item {
+         font-size: 12px;
+     }
+
+     .login-modal {
+         padding: 16px;
+         max-width: 98%;
+     }
+
+     .login-header h2 {
+         font-size: 18px;
+     }
+
+     .form-group label {
+         font-size: 12px;
+     }
+
+     .form-group input {
+         font-size: 13px;
+         padding: 8px 10px;
+     }
+
+     .login-modal button {
+         font-size: 13px;
+         padding: 10px;
+     }
+
+     .footer-links {
+         gap: 6px;
+         flex-wrap: wrap;
+         justify-content: center;
+     }
+
+     .footer-links a {
+         font-size: 11px;
+     }
+
+     footer p {
+         font-size: 11px;
+     }
+ }
+
+ /* ---------- HAMBURGER ANIMATION (optional) ---------- */
+ .hamburger.active span:nth-child(1) {
+     transform: rotate(45deg) translate(4px, 4px);
+ }
+
+ .hamburger.active span:nth-child(2) {
+     opacity: 0;
+ }
+
+ .hamburger.active span:nth-child(3) {
+     transform: rotate(-45deg) translate(4px, -4px);
+ }

@@ -1,5 +1,12 @@
 <!-- header.html – Shared Header with Global Functions -->
 <header>
+    <!-- Hamburger button (visible on mobile) -->
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
     <div class="logo" id="homeLink">
         <i class="fas fa-ticket-alt"></i>
         <span>Soldout.com</span>
@@ -28,6 +35,28 @@
         </div>
     </div>
 </header>
+
+<!-- Mobile sidebar overlay (hidden on desktop) -->
+<div class="sidebar-mobile-overlay" id="sidebarOverlay"></div>
+
+<!-- Mobile sidebar (slide-out) -->
+<nav class="sidebar-mobile" id="sidebarMobile">
+    <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+    <a href="gallery.html"><i class="fas fa-film"></i> Movies</a>
+    <a href="series.html"><i class="fas fa-tv"></i> TV Shows</a>
+    <a href="#"><i class="fas fa-fire"></i> New Releases</a>
+    <a href="soundtracks.html"><i class="fas fa-music"></i> Soundtracks</a>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Subscriptions</div>
+    <a href="#"><i class="fas fa-user"></i> Your Channel</a>
+    <a href="#"><i class="fas fa-clock"></i> History</a>
+    <a href="#"><i class="fas fa-heart"></i> Liked Videos</a>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Explore</div>
+    <a href="#"><i class="fas fa-gamepad"></i> Gaming</a>
+    <a href="#"><i class="fas fa-microphone"></i> Podcasts</a>
+    <a href="#"><i class="fas fa-newspaper"></i> News</a>
+</nav>
 
 <script>
     (function () {
@@ -117,6 +146,51 @@
                 homeLink.addEventListener('click', function (e) {
                     e.preventDefault();
                     window.location.href = 'index.html';
+                });
+            }
+
+            // ===== MOBILE SIDEBAR TOGGLE =====
+            const hamburger = document.getElementById('hamburgerBtn');
+            const sidebar = document.getElementById('sidebarMobile');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (hamburger && sidebar && overlay) {
+                function toggleSidebar(open) {
+                    const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+                    sidebar.classList.toggle('open', isOpen);
+                    overlay.classList.toggle('active', isOpen);
+                    hamburger.classList.toggle('active', isOpen);
+                    document.body.style.overflow = isOpen ? 'hidden' : '';
+                }
+
+                hamburger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+
+                overlay.addEventListener('click', function () {
+                    toggleSidebar(false);
+                });
+
+                // Close sidebar when a link is clicked
+                sidebar.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        toggleSidebar(false);
+                    });
+                });
+
+                // Close on escape key
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                        toggleSidebar(false);
+                    }
+                });
+
+                // Close when window resizes above breakpoint
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+                        toggleSidebar(false);
+                    }
                 });
             }
         };
