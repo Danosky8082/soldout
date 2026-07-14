@@ -7,6 +7,8 @@
     <title>Soldout.com - SoundTrack Gallery</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
+    <!-- ✅ Include header.js for avatar persistence -->
+    <script src="header.js" defer></script>
 </head>
 
 <body>
@@ -18,39 +20,38 @@
             <div class="spinner" id="videoSpinner"></div>
         </div>
     </div>
+
     <footer>
-        <div class="footer-links"><a href="admin.html">
+        <div class="footer-links">
+            <a href="admin.html">
                 <font color="green">Admin</font>
-            </a> | <a href="#">About Us</a> | <a href="#">Contact</a> | <a href="#">Privacy Policy</a> | <a
-                href="#">Terms of Service</a> | <a href="#">Help Center</a></div>
+            </a> |
+            <a href="#">About Us</a> |
+            <a href="#">Contact</a> |
+            <a href="#">Privacy Policy</a> |
+            <a href="#">Terms of Service</a> |
+            <a href="#">Help Center</a>
+        </div>
         <p>&copy; 2025 Soldout.com. All rights reserved.</p>
     </footer>
 
     <script>
         // ============================================================
-        // 1. LOAD HEADER
+        // 1. LOAD HEADER HTML (simplified)
         // ============================================================
         async function loadHeader() {
             try {
                 const response = await fetch('header.html');
                 const html = await response.text();
-                const container = document.getElementById('header-container');
-                container.innerHTML = html;
-
-                const scriptTags = container.querySelectorAll('script');
-                scriptTags.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    if (oldScript.src) newScript.src = oldScript.src;
-                    else newScript.textContent = oldScript.textContent;
-                    document.head.appendChild(newScript);
-                    oldScript.remove();
-                });
+                document.getElementById('header-container').innerHTML = html;
 
                 if (typeof window.updateUserState === 'function') {
                     const user = window.getCurrentUser ? window.getCurrentUser() : null;
                     window.updateUserState(user);
                 }
-                initializeGallery();
+                if (typeof window.initHeader === 'function') {
+                    window.initHeader();
+                }
             } catch (err) {
                 console.error('Error loading header:', err);
             }
@@ -138,7 +139,9 @@
                         const p = preview.play();
                         if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
                     });
-                    div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
+                    div.addEventListener('mouseleave', () => {
+                        if (!preview.paused) preview.pause();
+                    });
                 }
 
                 div.addEventListener('click', () => {
@@ -175,7 +178,13 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', loadHeader);
+        // ============================================================
+        // 3. START
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadHeader();
+            initializeGallery();
+        });
     </script>
 </body>
 

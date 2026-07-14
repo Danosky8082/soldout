@@ -7,6 +7,8 @@
     <title>Soldout.com - the Entertainment Experience</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
+    <!-- ✅ Include header.js on every page for avatar persistence -->
+    <script src="header.js" defer></script>
 </head>
 
 <body>
@@ -18,13 +20,18 @@
         <div id="loginOverlay" class="login-overlay">
             <div class="login-modal">
                 <div class="login-header">
-                    <h2>Login to Soldout</h2><i class="fas fa-times close-login"></i>
+                    <h2>Login to Soldout</h2>
+                    <i class="fas fa-times close-login"></i>
                 </div>
                 <form id="loginForm">
-                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" required>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
                     </div>
-                    <div class="form-group"><label for="password">Password</label><input type="password" id="password"
-                            required></div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
                     <button type="submit">Login</button>
                     <div class="login-footer">
                         <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
@@ -37,25 +44,39 @@
         <div id="registerOverlay" class="login-overlay">
             <div class="login-modal">
                 <div class="login-header">
-                    <h2>Create Account</h2><i class="fas fa-times close-register"></i>
+                    <h2>Create Account</h2>
+                    <i class="fas fa-times close-register"></i>
                 </div>
                 <form id="registerForm">
                     <div class="form-row">
-                        <div class="form-group"><label for="firstName">First Name</label><input type="text"
-                                id="firstName" required></div>
-                        <div class="form-group"><label for="lastName">Last Name</label><input type="text" id="lastName"
-                                required></div>
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
                     </div>
-                    <div class="form-group"><label for="regEmail">Email</label><input type="email" id="regEmail"
-                            required></div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
                     <div class="form-row">
-                        <div class="form-group"><label for="regPassword">Password</label><input type="password"
-                                id="regPassword" required></div>
-                        <div class="form-group"><label for="confirmPassword">Confirm Password</label><input
-                                type="password" id="confirmPassword" required></div>
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <input type="password" id="regPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
                     </div>
-                    <div class="terms"><input type="checkbox" id="terms" required><label for="terms">I agree to the <a
-                                href="#">Terms</a> and <a href="#">Privacy Policy</a></label></div>
+                    <div class="terms">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">I agree to the <a href="#">Terms</a> and <a href="#">Privacy
+                                Policy</a></label>
+                    </div>
                     <button type="submit">Create Account</button>
                     <div class="login-footer">
                         <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
@@ -92,44 +113,44 @@
         </div>
 
         <footer>
-            <div class="footer-links"><a href="admin.html">
+            <div class="footer-links">
+                <a href="admin.html">
                     <font color="green">Admin</font>
-                </a> | <a href="#">About Us</a> | <a href="#">Contact</a> | <a href="#">Privacy Policy</a> | <a
-                    href="#">Terms of Service</a> | <a href="#">Help Center</a></div>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
             <p>&copy; 2025 Soldout.com. All rights reserved.</p>
             <p style="margin-top:10px; color:#777;">the Entertainment Experience.</p>
         </footer>
 
-        <div class="wishlist-toast" id="wishlistToast"><i class="fas fa-check-circle"></i><span id="toastMessage">Item
-                added to wishlist</span></div>
+        <div class="wishlist-toast" id="wishlistToast">
+            <i class="fas fa-check-circle"></i>
+            <span id="toastMessage">Item added to wishlist</span>
+        </div>
     </div>
 
     <script>
         // ============================================================
-        // 1. LOAD HEADER + EXECUTE ITS SCRIPT
+        // 1. LOAD HEADER HTML (simplified)
         // ============================================================
         async function loadHeader() {
             try {
                 const response = await fetch('header.html');
                 const html = await response.text();
-                const container = document.getElementById('header-container');
-                container.innerHTML = html;
+                document.getElementById('header-container').innerHTML = html;
 
-                const scriptTags = container.querySelectorAll('script');
-                scriptTags.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    if (oldScript.src) {
-                        newScript.src = oldScript.src;
-                    } else {
-                        newScript.textContent = oldScript.textContent;
-                    }
-                    document.head.appendChild(newScript);
-                    oldScript.remove();
-                });
-
+                // After injecting header, update avatar and re-attach events
+                // (header.js already runs, but we need to refresh after DOM change)
                 if (typeof window.updateUserState === 'function') {
                     const user = window.getCurrentUser ? window.getCurrentUser() : null;
                     window.updateUserState(user);
+                }
+                if (typeof window.initHeader === 'function') {
+                    window.initHeader();
                 }
             } catch (err) {
                 console.error('Error loading header:', err);
@@ -161,23 +182,45 @@
             }
         }
 
-        function getAuthToken() { return localStorage.getItem('authToken'); }
-        function setAuthToken(token) { localStorage.setItem('authToken', token); }
-        function removeAuthToken() { localStorage.removeItem('authToken'); }
-        function removeCurrentUser() { localStorage.removeItem('currentUser'); if (typeof window.updateUserState === 'function') window.updateUserState(null); }
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
 
-        // Wishlist
+        function setAuthToken(token) {
+            localStorage.setItem('authToken', token);
+        }
+
+        function removeAuthToken() {
+            localStorage.removeItem('authToken');
+        }
+
+        function removeCurrentUser() {
+            localStorage.removeItem('currentUser');
+            if (typeof window.updateUserState === 'function') {
+                window.updateUserState(null);
+            }
+        }
+
+        // Wishlist functions
         function addToWishlist(video) {
             const user = getCurrentUser();
-            if (!user) { showAlert('Please login to add to wishlist', 'warning'); document.getElementById('loginOverlay').classList.add('active'); return false; }
-            if (!localStorage.getItem('wishlistDB')) localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
+            if (!user) {
+                showAlert('Please login to add to wishlist', 'warning');
+                document.getElementById('loginOverlay').classList.add('active');
+                return false;
+            }
+            if (!localStorage.getItem('wishlistDB')) {
+                localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
+            }
             const db = JSON.parse(localStorage.getItem('wishlistDB'));
             const userId = user.id || user.email;
             const userWishlist = db.users[userId] || [];
             if (!userWishlist.includes(video.id)) {
                 userWishlist.push(video.id);
                 db.users[userId] = userWishlist;
-                if (!db.items[video.id]) db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
+                if (!db.items[video.id]) {
+                    db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
+                }
                 localStorage.setItem('wishlistDB', JSON.stringify(db));
                 showToast('Added to wishlist!');
                 return true;
@@ -202,10 +245,13 @@
             const m = document.getElementById('toastMessage');
             m.textContent = msg;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
         }
 
         function showAlert(msg, type) {
+            const existing = document.querySelector('.alerts-container');
+            if (existing) existing.remove();
             const c = document.createElement('div');
             c.className = 'alerts-container';
             c.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;width:80%;max-width:500px;';
@@ -244,17 +290,24 @@
         function renderVideos(videos) {
             const gallery = document.getElementById('videoGallery');
             gallery.innerHTML = '';
+
             if (!videos || videos.length === 0) {
                 gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
                 return;
             }
+
             videos.forEach(video => {
                 if (!video.id) return;
+
                 const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
                 const vidUrl = getAbsoluteUrl(video.videoUrl);
+
                 let uploaderName = 'Unknown';
-                if (video.user && video.user.firstName) uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
-                else if (video.uploaderName) uploaderName = video.uploaderName;
+                if (video.user && video.user.firstName) {
+                    uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
+                } else if (video.uploaderName) {
+                    uploaderName = video.uploaderName;
+                }
 
                 const div = document.createElement('div');
                 div.className = 'video-item';
@@ -285,7 +338,9 @@
                         const p = preview.play();
                         if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
                     });
-                    div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
+                    div.addEventListener('mouseleave', () => {
+                        if (!preview.paused) preview.pause();
+                    });
                 }
 
                 div.addEventListener('click', (e) => {
@@ -308,6 +363,7 @@
         // 3. INITIALIZATION
         // ============================================================
         document.addEventListener('DOMContentLoaded', async () => {
+            // Load header first
             await loadHeader();
 
             // Load videos
@@ -328,9 +384,14 @@
             const showRegister = document.getElementById('showRegister');
             const showLogin = document.getElementById('showLogin');
 
+            // Login form
             document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); loginOverlay.classList.remove('active'); return; }
+                if (getCurrentUser()) {
+                    showAlert('Already logged in.', 'warning');
+                    loginOverlay.classList.remove('active');
+                    return;
+                }
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
                 try {
@@ -344,26 +405,37 @@
                         throw new Error(err.message || 'Login failed');
                     }
                     const data = await response.json();
-                    if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    if (data.user.profilePicture) {
+                        data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    }
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
                     showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                     loginOverlay.classList.remove('active');
-                    location.reload(); // reload to refresh header
+                    // Reload page to refresh header and video grid
+                    location.reload();
                 } catch (err) {
                     showAlert(err.message || 'Login failed', 'danger');
                 }
             });
 
+            // Register form
             document.getElementById('registerForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); registerOverlay.classList.remove('active'); return; }
+                if (getCurrentUser()) {
+                    showAlert('Already logged in.', 'warning');
+                    registerOverlay.classList.remove('active');
+                    return;
+                }
                 const firstName = document.getElementById('firstName').value;
                 const lastName = document.getElementById('lastName').value;
                 const email = document.getElementById('regEmail').value;
                 const password = document.getElementById('regPassword').value;
                 const confirm = document.getElementById('confirmPassword').value;
-                if (password !== confirm) { showAlert('Passwords do not match!', 'danger'); return; }
+                if (password !== confirm) {
+                    showAlert('Passwords do not match!', 'danger');
+                    return;
+                }
                 try {
                     const response = await fetch(`${API_BASE_URL}/auth/register`, {
                         method: 'POST',
@@ -375,7 +447,9 @@
                         throw new Error(err.message || 'Registration failed');
                     }
                     const data = await response.json();
-                    if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    if (data.user.profilePicture) {
+                        data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    }
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
                     showAlert(`Welcome ${firstName}!`, 'success');
@@ -386,12 +460,37 @@
                 }
             });
 
+            // Modal controls
             closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
             closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
-            showRegister.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } loginOverlay.classList.remove('active'); registerOverlay.classList.add('active'); });
-            showLogin.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } registerOverlay.classList.remove('active'); loginOverlay.classList.add('active'); });
-            loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) loginOverlay.classList.remove('active'); });
-            registerOverlay.addEventListener('click', (e) => { if (e.target === registerOverlay) registerOverlay.classList.remove('active'); });
+
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (getCurrentUser()) {
+                    showAlert('Already logged in.', 'warning');
+                    return;
+                }
+                loginOverlay.classList.remove('active');
+                registerOverlay.classList.add('active');
+            });
+
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (getCurrentUser()) {
+                    showAlert('Already logged in.', 'warning');
+                    return;
+                }
+                registerOverlay.classList.remove('active');
+                loginOverlay.classList.add('active');
+            });
+
+            loginOverlay.addEventListener('click', (e) => {
+                if (e.target === loginOverlay) loginOverlay.classList.remove('active');
+            });
+
+            registerOverlay.addEventListener('click', (e) => {
+                if (e.target === registerOverlay) registerOverlay.classList.remove('active');
+            });
         });
     </script>
 </body>

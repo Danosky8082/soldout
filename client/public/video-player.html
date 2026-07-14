@@ -7,6 +7,8 @@
     <title>Video Player - Soldout.com</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
+    <!-- ✅ Include header.js for avatar persistence -->
+    <script src="header.js" defer></script>
 </head>
 
 <body>
@@ -151,47 +153,44 @@
         </div>
 
         <footer>
-            <div class="footer-links"><a href="admin.html">
+            <div class="footer-links">
+                <a href="admin.html">
                     <font color="green">Admin</font>
-                </a> | <a href="#">About Us</a> | <a href="#">Contact</a> | <a href="#">Privacy Policy</a> | <a
-                    href="#">Terms of Service</a> | <a href="#">Help Center</a></div>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
             <p class="copyright">&copy; 2025 Soldout.com. All rights reserved.</p>
         </footer>
     </div>
 
     <script>
         // ============================================================
-        // 1. LOAD HEADER
+        // 1. LOAD HEADER HTML (simplified)
         // ============================================================
         async function loadHeader() {
             try {
                 const response = await fetch('header.html');
                 const html = await response.text();
-                const container = document.getElementById('header-container');
-                container.innerHTML = html;
-
-                const scriptTags = container.querySelectorAll('script');
-                scriptTags.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    if (oldScript.src) newScript.src = oldScript.src;
-                    else newScript.textContent = oldScript.textContent;
-                    document.head.appendChild(newScript);
-                    oldScript.remove();
-                });
+                document.getElementById('header-container').innerHTML = html;
 
                 if (typeof window.updateUserState === 'function') {
                     const user = window.getCurrentUser ? window.getCurrentUser() : null;
                     window.updateUserState(user);
                 }
-                // After header is ready, initialize video player
-                initializePlayer();
+                if (typeof window.initHeader === 'function') {
+                    window.initHeader();
+                }
             } catch (err) {
                 console.error('Error loading header:', err);
             }
         }
 
         // ============================================================
-        // 2. VIDEO PLAYER LOGIC (full with comments, replies, etc.)
+        // 2. VIDEO PLAYER LOGIC (full with comments, replies, trivia, ratings)
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -210,7 +209,6 @@
 
         function getAuthToken() { return localStorage.getItem('authToken'); }
 
-        let videoData = null;
         let currentVideo = null;
 
         async function initializePlayer() {
@@ -220,6 +218,7 @@
                 window.location.href = 'index.html';
                 return;
             }
+            let videoData;
             try {
                 videoData = JSON.parse(videoDataRaw);
             } catch (e) {
@@ -232,16 +231,15 @@
                 window.location.href = 'index.html';
                 return;
             }
-
-            await loadVideo();
+            await loadVideo(videoData.id);
         }
 
-        async function loadVideo() {
+        async function loadVideo(videoId) {
             try {
                 const token = getAuthToken();
                 const user = getCurrentUser();
                 const userId = user ? user.id : null;
-                let url = `${API_BASE_URL}/videos/${videoData.id}`;
+                let url = `${API_BASE_URL}/videos/${videoId}`;
                 if (userId) url += `?userId=${userId}`;
 
                 const response = await fetch(url, {
@@ -334,7 +332,6 @@
         // ========== INTERACTIONS ==========
         function setupInteractions() {
             const video = currentVideo;
-            const user = getCurrentUser();
 
             // Like / Dislike
             document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
@@ -351,6 +348,7 @@
 
             // Trivia
             document.getElementById('triviaAddBtn').addEventListener('click', () => {
+                const user = getCurrentUser();
                 if (!user) { alert('Please log in to add trivia'); return; }
                 document.getElementById('triviaFormContainer').style.display = 'block';
             });
@@ -430,10 +428,8 @@
                 });
                 if (!res.ok) throw new Error('Failed to update like');
                 const data = await res.json();
-                // Update UI
                 document.getElementById('likeCount').textContent = data.likes || 0;
                 document.getElementById('dislikeCount').textContent = data.dislikes || 0;
-                // Update button states (optimistic, but we can rely on data)
                 if (isDislike) {
                     document.getElementById('dislikeButton').classList.toggle('liked');
                     document.getElementById('likeButton').classList.remove('liked');
@@ -525,10 +521,8 @@
                     body: JSON.stringify({ text, userId: user.id, videoId: currentVideo.id })
                 });
                 if (!res.ok) throw new Error('Failed to post comment');
-                const newComment = await res.json();
                 input.value = '';
-                // Re-fetch video to get updated comments
-                await loadVideo(); // reload all data
+                await loadVideo(currentVideo.id);
             } catch (error) {
                 console.error('Comment error:', error);
                 alert('Failed to post comment');
@@ -563,8 +557,7 @@
                     });
                     if (!res.ok) throw new Error('Failed to post reply');
                     input.value = '';
-                    // Re-fetch video
-                    await loadVideo();
+                    await loadVideo(currentVideo.id);
                 } catch (error) {
                     console.error('Reply error:', error);
                     alert('Failed to post reply');
@@ -615,7 +608,7 @@
                 if (!res.ok) throw new Error('Failed to add trivia');
                 document.getElementById('triviaFormContainer').style.display = 'none';
                 document.getElementById('triviaTextarea').value = '';
-                await loadVideo(); // refresh trivia
+                await loadVideo(currentVideo.id);
             } catch (error) {
                 console.error('Trivia error:', error);
                 alert('Failed to add trivia');
@@ -632,7 +625,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) throw new Error('Failed to delete trivia');
-                await loadVideo();
+                await loadVideo(currentVideo.id);
             } catch (error) {
                 console.error('Delete trivia error:', error);
                 alert('Failed to delete trivia');
@@ -662,7 +655,6 @@
                     comment.replies.forEach(reply => {
                         const replyEl = createCommentElement(reply, true);
                         repliesContainer.appendChild(replyEl);
-                        // Nested replies (second level)
                         if (reply.replies && reply.replies.length > 0) {
                             const nestedContainer = document.createElement('div');
                             nestedContainer.className = 'replies';
@@ -729,7 +721,6 @@
                 let count = parseInt(countEl.textContent);
                 const isLiked = likeBtn.classList.contains('liked');
 
-                // Optimistic update
                 if (isLiked) {
                     likeBtn.classList.remove('liked');
                     countEl.textContent = Math.max(0, count - 1);
@@ -752,7 +743,6 @@
                     if (data.likeCount !== undefined) countEl.textContent = data.likeCount;
                 } catch (error) {
                     console.error('Like error:', error);
-                    // Revert optimistic update
                     if (isLiked) {
                         likeBtn.classList.add('liked');
                         countEl.textContent = count;
@@ -891,7 +881,10 @@
         // ============================================================
         // 3. START
         // ============================================================
-        document.addEventListener('DOMContentLoaded', loadHeader);
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadHeader();
+            await initializePlayer();
+        });
     </script>
 </body>
 
