@@ -9,7 +9,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// Helper to upload to Supabase
 async function uploadToSupabase(file, folder) {
   const fileExt = path.extname(file.originalname);
   const fileName = `${folder}/${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
@@ -46,11 +45,9 @@ const uploadVideo = async (req, res) => {
     const thumbnailFile = req.files.thumbnail[0];
     const videoFile = req.files.video[0];
 
-    // Upload to Supabase
     const thumbnailUrl = await uploadToSupabase(thumbnailFile, 'thumbnails');
     const videoUrl = await uploadToSupabase(videoFile, 'videos');
 
-    // Create video record
     const video = await prisma.video.create({
       data: {
         title,
@@ -90,7 +87,6 @@ const uploadVideo = async (req, res) => {
   }
 };
 
-// Get premium videos (recent 30 days, approved)
 const getPremiumVideos = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -130,7 +126,6 @@ const getPremiumVideos = async (req, res) => {
   }
 };
 
-// Get trending videos (older than 30 days, approved)
 const getTrendingVideos = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -170,12 +165,13 @@ const getTrendingVideos = async (req, res) => {
   }
 };
 
-// ==================== NEW: Get a single video by ID ====================
+// ==================== SAFE GET VIDEO BY ID ====================
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user ? parseInt(req.user.id) : null;
 
+    // 1. Fetch video with user info and counts
     const video = await prisma.video.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -187,17 +183,6 @@ const getVideoById = async (req, res) => {
             profilePicture: true,
             subscriberCount: true,
           }
-        },
-        likes: {
-          where: { userId: userId || undefined },
-          select: { id: true }
-        },
-        dislikes: {
-          where: { userId: userId || undefined },
-          select: { id: true }
-        },
-        ratings: {
-          select: { value: true, userId: true }
         },
         _count: {
           select: {
@@ -214,21 +199,21 @@ const getVideoById = async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
 
-    // Increment view count (optional – do it asynchronously)
-    // We'll increment after sending the response to avoid blocking
-    // await prisma.video.update({ where: { id: parseInt(id) }, data: { views: { increment: 1 } } });
+    // 2. Fetch ratings separately to compute average and user's rating
+    const ratings = await prisma.rating.findMany({
+      where: { videoId: parseInt(id) },
+      select: { value: true, userId: true }
+    });
 
-    // Compute average rating
-    const ratings = video.ratings || [];
     const avgRating = ratings.length > 0
       ? (ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length).toFixed(1)
       : null;
 
-    // Determine user's rating (if logged in)
     const userRating = userId
       ? ratings.find(r => r.userId === userId)?.value || null
       : null;
 
+    // 3. Build response
     const response = {
       ...video,
       averageRating: avgRating,
@@ -237,17 +222,14 @@ const getVideoById = async (req, res) => {
       dislikeCount: video._count.dislikes,
       commentCount: video._count.comments,
       subscriberCount: video._count.subscribers,
-      isLiked: video.likes.length > 0,
-      isDisliked: video.dislikes.length > 0,
-      // Add subscription status if you have a subscription table – here we just leave as false
+      // You can add user-specific like/subscribe status if you have those relations
+      isLiked: false,
+      isDisliked: false,
       isSubscribed: false,
     };
 
-    // Remove internal _count and raw arrays to clean the response
+    // Clean up internal fields
     delete response._count;
-    delete response.likes;
-    delete response.dislikes;
-    delete response.ratings;
 
     res.json(response);
   } catch (error) {
@@ -259,7 +241,6 @@ const getVideoById = async (req, res) => {
   }
 };
 
-// Get pending videos (admin only)
 const getPendingVideos = async (req, res) => {
   try {
     if (!req.user.canApprove) {
@@ -298,7 +279,6 @@ const getPendingVideos = async (req, res) => {
   }
 };
 
-// Approve video
 const approveVideo = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -326,7 +306,6 @@ const approveVideo = async (req, res) => {
   }
 };
 
-// Reject video
 const rejectVideo = async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -360,7 +339,7 @@ module.exports = {
   uploadVideo,
   getPremiumVideos,
   getTrendingVideos,
-  getVideoById,          // <-- NEW
+  getVideoById,
   getPendingVideos,
   approveVideo,
   rejectVideo

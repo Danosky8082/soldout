@@ -194,24 +194,24 @@
         </footer>
     </div>
 
-    <!-- ===== SHARED HEADER SCRIPT (defines globals) ===== -->
+    <!-- ===== SHARED HEADER SCRIPT ===== -->
     <script>
-        (function () {
+        (function() {
             window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-            window.getAbsoluteUrl = function (url) {
+            window.getAbsoluteUrl = function(url) {
                 if (!url) return null;
                 if (url.startsWith('http://') || url.startsWith('https://')) return url;
                 const clean = url.startsWith('/') ? url.slice(1) : url;
                 return `${window.STATIC_BASE_URL}/${clean}`;
             };
 
-            window.getCurrentUser = function () {
+            window.getCurrentUser = function() {
                 const data = localStorage.getItem('currentUser');
                 return data ? JSON.parse(data) : null;
             };
 
-            window.updateUserState = function (user) {
+            window.updateUserState = function(user) {
                 const avatar = document.getElementById('userAvatar');
                 const name = document.getElementById('userNameDisplay');
                 if (user) {
@@ -228,7 +228,7 @@
                 }
             };
 
-            window.initHeader = function () {
+            window.initHeader = function() {
                 const user = window.getCurrentUser();
                 window.updateUserState(user);
 
@@ -238,7 +238,7 @@
                 if (userInfo._listenerAdded) return;
                 userInfo._listenerAdded = true;
 
-                userInfo.addEventListener('click', function (e) {
+                userInfo.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const currentUser = window.getCurrentUser();
                     if (currentUser) {
@@ -250,13 +250,13 @@
                     }
                 });
 
-                document.addEventListener('click', function () {
+                document.addEventListener('click', function() {
                     dropdown.classList.remove('show');
                 });
 
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function (e) {
+                    logoutBtn.addEventListener('click', function(e) {
                         e.preventDefault();
                         localStorage.removeItem('currentUser');
                         localStorage.removeItem('authToken');
@@ -267,7 +267,7 @@
 
                 const homeLink = document.getElementById('homeLink');
                 if (homeLink) {
-                    homeLink.addEventListener('click', function (e) {
+                    homeLink.addEventListener('click', function(e) {
                         e.preventDefault();
                         window.location.href = 'index.html';
                     });
@@ -282,7 +282,7 @@
         })();
     </script>
 
-    <!-- ===== VIDEO PLAYER SPECIFIC JS – FIXED API PATHS ===== -->
+    <!-- ===== VIDEO PLAYER SPECIFIC JS – FIXED ===== -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
@@ -292,8 +292,8 @@
             }
 
             const loggedInUser = window.getCurrentUser();
-
             const videoData = JSON.parse(sessionStorage.getItem('currentVideo'));
+
             if (!videoData || !videoData.id) {
                 alert('No video selected');
                 window.location.href = 'index.html';
@@ -303,25 +303,28 @@
             let video;
             try {
                 const token = getAuthToken();
-                // ✅ FIXED: remove extra '/api' – now correctly uses /videos/{id}
                 const url = `${API_BASE_URL}/videos/${videoData.id}${loggedInUser ? `?userId=${loggedInUser.id}` : ''}`;
                 const res = await fetch(url, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
+
                 if (!res.ok) {
-                    if (res.status === 404) {
-                        alert('Video not found. It may have been deleted.');
-                        window.location.href = 'index.html';
-                        return;
-                    }
-                    throw new Error('Failed to fetch video');
+                    // Try to get error message from server
+                    let errorMsg = `HTTP ${res.status}`;
+                    try {
+                        const errorData = await res.json();
+                        if (errorData.message) errorMsg = errorData.message;
+                        if (errorData.error) errorMsg += `: ${errorData.error}`;
+                    } catch (e) { /* ignore */ }
+                    throw new Error(errorMsg);
                 }
+
                 video = await res.json();
                 if (!video._count) video._count = { likes: 0, subscribers: 0 };
                 if (!video.comments) video.comments = [];
             } catch (error) {
                 console.error('Error loading video:', error);
-                alert('Error loading video. Please try again.');
+                alert(`Error loading video: ${error.message}`);
                 window.location.href = 'index.html';
                 return;
             }
@@ -368,7 +371,6 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    // ✅ FIXED: remove '/api' from path
                     const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                         method: 'POST',
                         headers: {
@@ -388,8 +390,11 @@
                         });
                         video = await updated.json();
                         updateVideoUI(video);
+                    } else {
+                        const err = await res.json();
+                        alert(err.message || 'Failed to update like');
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error(e); alert('Network error'); }
             }
 
             // ---------- Subscribe ----------
@@ -398,7 +403,6 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    // ✅ FIXED
                     const res = await fetch(`${API_BASE_URL}/interactions/subscribe`, {
                         method: 'POST',
                         headers: {
@@ -422,8 +426,11 @@
                         });
                         video = await updated.json();
                         updateVideoUI(video);
+                    } else {
+                        const err = await res.json();
+                        alert(err.message || 'Failed to subscribe');
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error(e); alert('Network error'); }
             });
 
             // ---------- Save ----------
@@ -432,7 +439,6 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    // ✅ FIXED
                     const res = await fetch(`${API_BASE_URL}/interactions/save`, {
                         method: 'POST',
                         headers: {
@@ -451,8 +457,11 @@
                             btn.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
                             btn.classList.remove('saved');
                         }
+                    } else {
+                        const err = await res.json();
+                        alert(err.message || 'Failed to save');
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error(e); alert('Network error'); }
             });
 
             // ---------- Comments ----------
@@ -467,7 +476,6 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    // ✅ FIXED
                     const res = await fetch(`${API_BASE_URL}/interactions/comment`, {
                         method: 'POST',
                         headers: {
@@ -483,8 +491,11 @@
                         });
                         video = await updated.json();
                         renderComments(video.comments || []);
+                    } else {
+                        const err = await res.json();
+                        alert(err.message || 'Failed to post comment');
                     }
-                } catch (e) { console.error(e); alert('Failed to post comment'); }
+                } catch (e) { console.error(e); alert('Network error'); }
             });
 
             // ---------- Trivia ----------
@@ -510,7 +521,6 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
                 try {
-                    // ✅ FIXED
                     const res = await fetch(`${API_BASE_URL}/interactions/trivia`, {
                         method: 'POST',
                         headers: {
@@ -524,15 +534,15 @@
                         triviaTextarea.value = '';
                         loadTrivia(video);
                     } else {
-                        throw new Error('Failed to save trivia');
+                        const err = await res.json();
+                        alert(err.message || 'Failed to save trivia');
                     }
-                } catch (e) { console.error(e); alert('Failed to save trivia'); }
+                } catch (e) { console.error(e); alert('Network error'); }
             });
 
             async function loadTrivia(video) {
                 const token = getAuthToken();
                 try {
-                    // ✅ FIXED
                     const res = await fetch(`${API_BASE_URL}/videos/${video.id}/trivia`, {
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     });
@@ -570,7 +580,6 @@
                                 if (!confirm('Delete this trivia?')) return;
                                 const token = getAuthToken();
                                 try {
-                                    // ✅ FIXED
                                     const del = await fetch(`${API_BASE_URL}/interactions/trivia/${item.id}`, {
                                         method: 'DELETE',
                                         headers: { 'Authorization': `Bearer ${token}` }
@@ -580,8 +589,11 @@
                                         if (triviaContent.children.length === 0) {
                                             triviaContent.appendChild(noTrivia);
                                         }
+                                    } else {
+                                        const err = await del.json();
+                                        alert(err.message || 'Failed to delete');
                                     }
-                                } catch (e) { console.error(e); alert('Failed to delete trivia'); }
+                                } catch (e) { console.error(e); alert('Network error'); }
                             });
                         }
                     });
@@ -593,7 +605,6 @@
                 const container = document.getElementById('relatedVideos');
                 container.innerHTML = '<p class="loading">Loading similar videos...</p>';
                 try {
-                    // ✅ FIXED – already correct, but kept for consistency
                     const res = await fetch(`${API_BASE_URL}/videos/premium`);
                     if (!res.ok) throw new Error('Failed to fetch videos');
                     let all = await res.json();
@@ -666,7 +677,6 @@
                     const token = getAuthToken();
                     if (!token) { alert('Please log in again.'); return; }
                     try {
-                        // ✅ FIXED
                         const res = await fetch(`${API_BASE_URL}/interactions/rate`, {
                             method: 'POST',
                             headers: {
@@ -679,8 +689,11 @@
                             const result = await res.json();
                             avg.textContent = result.average;
                             count.textContent = `(${result.count} ratings)`;
+                        } else {
+                            const err = await res.json();
+                            alert(err.message || 'Failed to rate');
                         }
-                    } catch (e) { console.error(e); }
+                    } catch (e) { console.error(e); alert('Network error'); }
                 });
             }
 
@@ -765,7 +778,6 @@
                         const body = { userId: loggedInUser.id, type: 'LIKE', isLiked: !isLiked };
                         if (isReply) body.replyId = id;
                         else body.commentId = id;
-                        // ✅ FIXED
                         const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -874,7 +886,6 @@
                     formContainer.style.display = 'none';
                     const token = getAuthToken();
                     try {
-                        // ✅ FIXED
                         const res = await fetch(`${API_BASE_URL}/interactions/reply`, {
                             method: 'POST',
                             headers: {

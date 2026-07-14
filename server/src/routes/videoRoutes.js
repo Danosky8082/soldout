@@ -6,7 +6,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const videoUpload = multer({
   storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB limit
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 }
 });
 
 // Upload video (authenticated)
@@ -25,8 +25,7 @@ router.get('/premium', videoController.getPremiumVideos);
 // Get trending videos (approved, older than 30 days)
 router.get('/trending', videoController.getTrendingVideos);
 
-// ==================== NEW: Get single video by ID ====================
-// MUST be placed AFTER the specific routes like /premium and /trending
+// ===== GET SINGLE VIDEO – MUST come after /premium and /trending =====
 router.get('/:id', videoController.getVideoById);
 
 // Admin-only routes
@@ -49,7 +48,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
 
-    // Allow deletion if user owns the video or is admin (canApprove)
     if (video.userId !== userId && !req.user.canApprove) {
       return res.status(403).json({ message: 'Unauthorized to delete this video' });
     }
