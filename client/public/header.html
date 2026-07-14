@@ -1,59 +1,200 @@
-<!-- header.html – Shared Header HTML (no inline script) -->
-<header>
-    <!-- Hamburger button (visible on mobile) -->
-    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
+// header.js – Shared Header Logic (works for both hardcoded and dynamically loaded headers)
+(function() {
+// ============================================================
+// GLOBALS – shared across all pages
+// ============================================================
+window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-    <div class="logo" id="homeLink">
-        <i class="fas fa-ticket-alt"></i>
-        <span>Soldout.com</span>
-    </div>
-    <div class="nav-links">
-        <a href="index.html" class="active home-link">Home</a>
-        <a href="gallery.html">Movies</a>
-        <a href="series.html">TV Shows</a>
-        <a href="#">New Releases</a>
-        <a href="soundtracks.html">Soundtracks</a>
-    </div>
-    <div class="user-actions">
-        <i class="fas fa-search search-icon"></i>
-        <i class="fas fa-bell"></i>
-        <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
-            <div class="user-avatar-container" id="userAvatar">
-                <i class="fas fa-user-circle user-icon"></i>
-            </div>
-            <span class="user-name" id="userNameDisplay"></span>
-            <div class="user-dropdown" id="userDropdown">
-                <a href="profile.html"><i class="fas fa-user"></i> Account</a>
-                <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
-                <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
-                <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </div>
-        </div>
-    </div>
-</header>
+window.getAbsoluteUrl = function(url) {
+if (!url) return null;
+if (url.startsWith('http://') || url.startsWith('https://')) return url;
+const clean = url.startsWith('/') ? url.slice(1) : url;
+return `${window.STATIC_BASE_URL}/${clean}`;
+};
 
-<!-- Mobile sidebar overlay -->
-<div class="sidebar-mobile-overlay" id="sidebarOverlay"></div>
+window.getCurrentUser = function() {
+const data = localStorage.getItem('currentUser');
+return data ? JSON.parse(data) : null;
+};
 
-<!-- Mobile sidebar (slide-out) -->
-<nav class="sidebar-mobile" id="sidebarMobile">
-    <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
-    <a href="gallery.html"><i class="fas fa-film"></i> Movies</a>
-    <a href="series.html"><i class="fas fa-tv"></i> TV Shows</a>
-    <a href="#"><i class="fas fa-fire"></i> New Releases</a>
-    <a href="soundtracks.html"><i class="fas fa-music"></i> Soundtracks</a>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-label">Subscriptions</div>
-    <a href="#"><i class="fas fa-user"></i> Your Channel</a>
-    <a href="#"><i class="fas fa-clock"></i> History</a>
-    <a href="#"><i class="fas fa-heart"></i> Liked Videos</a>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-label">Explore</div>
-    <a href="#"><i class="fas fa-gamepad"></i> Gaming</a>
-    <a href="#"><i class="fas fa-microphone"></i> Podcasts</a>
-    <a href="#"><i class="fas fa-newspaper"></i> News</a>
-</nav>
+// ============================================================
+// UPDATE HEADER AVATAR + NAME
+// ============================================================
+window.updateUserState = function(user) {
+const avatar = document.getElementById('userAvatar');
+const name = document.getElementById('userNameDisplay');
+if (!avatar || !name) return;
+
+if (user && user.firstName) {
+if (user.profilePicture) {
+const pic = window.getAbsoluteUrl(user.profilePicture);
+avatar.innerHTML = `<img src="${pic}" alt="${user.firstName}"
+    style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+} else {
+avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+}
+name.textContent = `${user.firstName} ${user.lastName || ''}`;
+} else {
+avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+name.textContent = '';
+}
+};
+
+// ============================================================
+// INIT HEADER – dropdown, logout, mobile sidebar
+// ============================================================
+let headerInitialized = false;
+
+window.initHeader = function() {
+// Always update avatar first
+const user = window.getCurrentUser();
+window.updateUserState(user);
+
+// If already attached listeners, skip
+if (headerInitialized) return;
+
+const userInfo = document.getElementById('userInfo');
+const dropdown = document.getElementById('userDropdown');
+
+if (!userInfo || !dropdown) {
+// Header not yet in DOM – will try again later via observer
+return;
+}
+
+// ----- Dropdown toggle -----
+userInfo.addEventListener('click', function(e) {
+e.stopPropagation();
+const currentUser = window.getCurrentUser();
+if (currentUser) {
+dropdown.classList.toggle('show');
+} else {
+const loginOverlay = document.getElementById('loginOverlay');
+if (loginOverlay) loginOverlay.classList.add('active');
+else window.location.href = 'index.html';
+}
+});
+
+document.addEventListener('click', function() {
+dropdown.classList.remove('show');
+});
+
+// ----- Logout -----
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+const newBtn = logoutBtn.cloneNode(true);
+logoutBtn.parentNode.replaceChild(newBtn, logoutBtn);
+newBtn.addEventListener('click', function(e) {
+e.preventDefault();
+localStorage.removeItem('currentUser');
+localStorage.removeItem('authToken');
+window.updateUserState(null);
+window.location.href = 'index.html';
+});
+}
+
+// ----- Home link -----
+const homeLink = document.getElementById('homeLink');
+if (homeLink) {
+homeLink.addEventListener('click', function(e) {
+e.preventDefault();
+window.location.href = 'index.html';
+});
+}
+
+// ----- Mobile sidebar -----
+const hamburger = document.getElementById('hamburgerBtn');
+const sidebar = document.getElementById('sidebarMobile');
+const overlay = document.getElementById('sidebarOverlay');
+
+if (hamburger && sidebar && overlay) {
+function toggleSidebar(open) {
+const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+sidebar.classList.toggle('open', isOpen);
+overlay.classList.toggle('active', isOpen);
+hamburger.classList.toggle('active', isOpen);
+document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+hamburger.addEventListener('click', function(e) {
+e.stopPropagation();
+toggleSidebar();
+});
+
+overlay.addEventListener('click', function() {
+toggleSidebar(false);
+});
+
+sidebar.querySelectorAll('a').forEach(function(link) {
+link.addEventListener('click', function() {
+toggleSidebar(false);
+});
+});
+
+document.addEventListener('keydown', function(e) {
+if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+toggleSidebar(false);
+}
+});
+
+window.addEventListener('resize', function() {
+if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+toggleSidebar(false);
+}
+});
+}
+
+headerInitialized = true;
+};
+
+// ============================================================
+// WATCH FOR HEADER APPEARANCE (for dynamically loaded headers)
+// ============================================================
+function watchForHeader() {
+// If header already exists, init immediately
+if (document.getElementById('userInfo')) {
+window.initHeader();
+return;
+}
+
+// Otherwise, observe DOM for changes
+const observer = new MutationObserver(function(mutations) {
+mutations.forEach(function(mutation) {
+mutation.addedNodes.forEach(function(node) {
+if (node.nodeType === 1 && node.querySelector && node.querySelector('#userInfo')) {
+// Header has been added
+observer.disconnect();
+window.initHeader();
+}
+});
+});
+});
+
+observer.observe(document.body, {
+childList: true,
+subtree: true
+});
+
+// Also check periodically in case observer misses it
+const interval = setInterval(function() {
+if (document.getElementById('userInfo')) {
+clearInterval(interval);
+observer.disconnect();
+window.initHeader();
+}
+}, 500);
+}
+
+// ============================================================
+// AUTO-INIT – run when DOM is ready
+// ============================================================
+if (document.readyState === 'loading') {
+document.addEventListener('DOMContentLoaded', watchForHeader);
+} else {
+watchForHeader();
+}
+
+// ============================================================
+// FALLBACK: also expose initHeader so pages can call it manually
+// ============================================================
+window.initHeader = window.initHeader || function() {};
+})();

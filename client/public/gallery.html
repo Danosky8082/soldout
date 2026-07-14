@@ -40,23 +40,15 @@
         // 1. LOAD HEADER HTML (simplified)
         // ============================================================
         async function loadHeader() {
-            try {
-                const response = await fetch('header.html');
-                const html = await response.text();
-                document.getElementById('header-container').innerHTML = html;
-
-                // After injecting header, update avatar and re-attach events
-                if (typeof window.updateUserState === 'function') {
-                    const user = window.getCurrentUser ? window.getCurrentUser() : null;
-                    window.updateUserState(user);
+                try {
+                    const response = await fetch('header.html');
+                    const html = await response.text();
+                    document.getElementById('header-container').innerHTML = html;
+                    // No need to call initHeader – the MutationObserver will handle it.
+                } catch (err) {
+                    console.error('Error loading header:', err);
                 }
-                if (typeof window.initHeader === 'function') {
-                    window.initHeader();
-                }
-            } catch (err) {
-                console.error('Error loading header:', err);
             }
-        }
 
         // ============================================================
         // 2. GALLERY LOGIC
