@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
+const videoRoutes = require('./src/routes/videoRoutes');
+const interactionRoutes = require('./src/routes/interactionRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +56,9 @@ app.use(cors({
   origin: '*',
   credentials: true
 }));
+
+app.use('/api/videos', videoRoutes);
+app.use('/api/interactions', interactionRoutes);
 
 // ============================================================
 //  HELPER: Upload to Supabase

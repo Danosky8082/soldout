@@ -166,14 +166,14 @@ const getTrendingVideos = async (req, res) => {
 };
 
 // ============================================================
-//  getVideoById – FIXED: remove 'dislikes' and invalid fields
+//  getVideoById – ENHANCED (with comments, replies, likes, subscriptions)
 // ============================================================
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user ? parseInt(req.user.id) : null;
 
-    // 1. Fetch video with user info (only valid fields) and counts
+    // 1. Fetch video with user info and counts
     const video = await prisma.video.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -187,10 +187,7 @@ const getVideoById = async (req, res) => {
         },
         _count: {
           select: {
-            likes: true,      // valid
-            comments: true,   // valid
-            // dislikes does NOT exist – removed
-            // subscribers may or may not exist – we'll handle below
+            comments: true,
           }
         }
       }
@@ -200,54 +197,152 @@ const getVideoById = async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
 
-    // 2. Fetch ratings separately to compute average and user's rating
+    // 2. Count likes and dislikes
+    const likeCount = await prisma.like.count({
+      where: { videoId: parseInt(id), type: 'LIKE' }
+    });
+    const dislikeCount = await prisma.like.count({
+      where: { videoId: parseInt(id), type: 'DISLIKE' }
+    });
+
+    // 3. Get ratings
     const ratings = await prisma.rating.findMany({
       where: { videoId: parseInt(id) },
       select: { value: true, userId: true }
     });
-
     const avgRating = ratings.length > 0
       ? (ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length).toFixed(1)
       : null;
-
     const userRating = userId
       ? ratings.find(r => r.userId === userId)?.value || null
       : null;
 
-    // 3. Try to get subscriber count if the relation exists (maybe via a separate query)
-    let subscriberCount = 0;
-    try {
-      // If your Video model has a subscribers relation, count it
-      const count = await prisma.video.findUnique({
-        where: { id: parseInt(id) },
-        select: { _count: { select: { subscribers: true } } }
+    // 4. Get subscriber count for the uploader
+    const subscriberCount = await prisma.subscription.count({
+      where: { creatorId: video.userId }
+    });
+
+    // 5. Check if current user liked/disliked/subscribed
+    let isLiked = false;
+    let isDisliked = false;
+    let isSubscribed = false;
+
+    if (userId) {
+      const userLike = await prisma.like.findFirst({
+        where: {
+          userId,
+          videoId: parseInt(id),
+          type: { in: ['LIKE', 'DISLIKE'] }
+        }
       });
-      if (count) subscriberCount = count._count.subscribers;
-    } catch (e) {
-      // If 'subscribers' doesn't exist, keep 0
-      subscriberCount = 0;
+      if (userLike) {
+        if (userLike.type === 'LIKE') isLiked = true;
+        else isDisliked = true;
+      }
+
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId,
+          creatorId: video.userId
+        }
+      });
+      if (subscription) isSubscribed = true;
     }
 
-    // 4. Build response
+    // 6. Fetch comments with replies and likes (for the frontend)
+    const comments = await prisma.comment.findMany({
+      where: { videoId: parseInt(id) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePicture: true
+          }
+        },
+        likes: true,
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePicture: true
+              }
+            },
+            likes: true,
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    profilePicture: true
+                  }
+                },
+                likes: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Format comments to match frontend expectations
+    const formattedComments = comments.map(comment => {
+      // Format likes count for comment
+      const commentLikes = comment.likes.filter(l => l.type === 'LIKE').length;
+      // Format replies recursively (up to 2 levels deep)
+      const formatReplies = (replies) => {
+        return replies.map(reply => ({
+          id: reply.id,
+          text: reply.text,
+          createdAt: reply.createdAt,
+          user: reply.user,
+          _count: {
+            likes: reply.likes.filter(l => l.type === 'LIKE').length
+          },
+          replies: reply.replies ? formatReplies(reply.replies) : []
+        }));
+      };
+
+      return {
+        id: comment.id,
+        text: comment.text,
+        createdAt: comment.createdAt,
+        user: comment.user,
+        _count: {
+          likes: commentLikes
+        },
+        replies: formatReplies(comment.replies)
+      };
+    });
+
+    // 7. Build response
     const response = {
       ...video,
       averageRating: avgRating,
       userRating: userRating,
-      likeCount: video._count.likes,
-      dislikeCount: 0,                         // no dislikes table – set to 0
+      likeCount,
+      dislikeCount,
       commentCount: video._count.comments,
-      subscriberCount: subscriberCount,        // from the separate query
-      isLiked: false,                          // you can fetch this from a separate query if needed
-      isDisliked: false,
-      isSubscribed: false,
+      subscriberCount,
+      isLiked,
+      isDisliked,
+      isSubscribed,
+      comments: formattedComments,
+      // Ensure user has subscriberCount for frontend
+      user: {
+        ...video.user,
+        subscriberCount
+      }
     };
 
-    // Add subscriberCount to the user object for frontend compatibility
-    if (response.user) {
-      response.user.subscriberCount = subscriberCount;
-    }
-
-    // Clean up internal fields
+    // Remove internal fields
     delete response._count;
 
     res.json(response);
