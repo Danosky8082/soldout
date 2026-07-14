@@ -171,7 +171,7 @@ const getVideoById = async (req, res) => {
     const { id } = req.params;
     const userId = req.user ? parseInt(req.user.id) : null;
 
-    // 1. Fetch video with user info and counts
+    // 1. Fetch video with user info (only valid fields) and counts
     const video = await prisma.video.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -181,7 +181,7 @@ const getVideoById = async (req, res) => {
             firstName: true,
             lastName: true,
             profilePicture: true,
-            subscriberCount: true,
+            // Do NOT include subscriberCount – it's not a direct field
           }
         },
         _count: {
@@ -189,7 +189,7 @@ const getVideoById = async (req, res) => {
             likes: true,
             dislikes: true,
             comments: true,
-            subscribers: true
+            subscribers: true   // if this relation exists on Video
           }
         }
       }
@@ -221,12 +221,16 @@ const getVideoById = async (req, res) => {
       likeCount: video._count.likes,
       dislikeCount: video._count.dislikes,
       commentCount: video._count.comments,
-      subscriberCount: video._count.subscribers,
-      // You can add user-specific like/subscribe status if you have those relations
-      isLiked: false,
+      subscriberCount: video._count.subscribers || 0, // use video's subscriber count if available
+      isLiked: false, // you can fetch this from a separate query if needed
       isDisliked: false,
       isSubscribed: false,
     };
+
+    // Add a subscriberCount field to the user object (for frontend compatibility)
+    if (response.user) {
+      response.user.subscriberCount = video._count.subscribers || 0;
+    }
 
     // Clean up internal fields
     delete response._count;

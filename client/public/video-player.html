@@ -196,22 +196,22 @@
 
     <!-- ===== SHARED HEADER SCRIPT ===== -->
     <script>
-        (function() {
+        (function () {
             window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
-            window.getAbsoluteUrl = function(url) {
+            window.getAbsoluteUrl = function (url) {
                 if (!url) return null;
                 if (url.startsWith('http://') || url.startsWith('https://')) return url;
                 const clean = url.startsWith('/') ? url.slice(1) : url;
                 return `${window.STATIC_BASE_URL}/${clean}`;
             };
 
-            window.getCurrentUser = function() {
+            window.getCurrentUser = function () {
                 const data = localStorage.getItem('currentUser');
                 return data ? JSON.parse(data) : null;
             };
 
-            window.updateUserState = function(user) {
+            window.updateUserState = function (user) {
                 const avatar = document.getElementById('userAvatar');
                 const name = document.getElementById('userNameDisplay');
                 if (user) {
@@ -228,7 +228,7 @@
                 }
             };
 
-            window.initHeader = function() {
+            window.initHeader = function () {
                 const user = window.getCurrentUser();
                 window.updateUserState(user);
 
@@ -238,7 +238,7 @@
                 if (userInfo._listenerAdded) return;
                 userInfo._listenerAdded = true;
 
-                userInfo.addEventListener('click', function(e) {
+                userInfo.addEventListener('click', function (e) {
                     e.stopPropagation();
                     const currentUser = window.getCurrentUser();
                     if (currentUser) {
@@ -250,13 +250,13 @@
                     }
                 });
 
-                document.addEventListener('click', function() {
+                document.addEventListener('click', function () {
                     dropdown.classList.remove('show');
                 });
 
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function(e) {
+                    logoutBtn.addEventListener('click', function (e) {
                         e.preventDefault();
                         localStorage.removeItem('currentUser');
                         localStorage.removeItem('authToken');
@@ -267,7 +267,7 @@
 
                 const homeLink = document.getElementById('homeLink');
                 if (homeLink) {
-                    homeLink.addEventListener('click', function(e) {
+                    homeLink.addEventListener('click', function (e) {
                         e.preventDefault();
                         window.location.href = 'index.html';
                     });
