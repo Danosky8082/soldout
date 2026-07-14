@@ -11,7 +11,7 @@
 
 <body>
     <div class="container">
-        <!-- ===== HEADER LOADED FROM SHARED FILE ===== -->
+        <!-- ===== HEADER CONTAINER (filled by loadHeader) ===== -->
         <div id="header-container"></div>
 
         <!-- Login Overlay -->
@@ -102,403 +102,298 @@
 
         <div class="wishlist-toast" id="wishlistToast"><i class="fas fa-check-circle"></i><span id="toastMessage">Item
                 added to wishlist</span></div>
+    </div>
 
-        <script>
-            // ============================================================
-            // 1. LOAD HEADER HTML + EXECUTE ITS SCRIPT
-            // ============================================================
-            async function loadHeader() {
-                try {
-                    const response = await fetch('header.html');
-                    const html = await response.text();
-                    const container = document.getElementById('header-container');
-                    container.innerHTML = html;
+    <script>
+        // ============================================================
+        // 1. LOAD HEADER + EXECUTE ITS SCRIPT
+        // ============================================================
+        async function loadHeader() {
+            try {
+                const response = await fetch('header.html');
+                const html = await response.text();
+                const container = document.getElementById('header-container');
+                container.innerHTML = html;
 
-                    // Extract and execute all <script> tags from the header
-                    const scriptTags = container.querySelectorAll('script');
-                    scriptTags.forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        if (oldScript.src) {
-                            newScript.src = oldScript.src;
-                        } else {
-                            newScript.textContent = oldScript.textContent;
-                        }
-                        // Append to head to execute (or to body)
-                        document.head.appendChild(newScript);
-                        // Remove the old script from container to avoid duplication
-                        oldScript.remove();
-                    });
-
-                    // After header script runs, its globals (window.initHeader, window.updateUserState) are available.
-                    // The header script will have called initHeader() automatically.
-                    // We also need to update the header with the current user (if any)
-                    if (typeof window.updateUserState === 'function') {
-                        const user = window.getCurrentUser ? window.getCurrentUser() : null;
-                        window.updateUserState(user);
+                const scriptTags = container.querySelectorAll('script');
+                scriptTags.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    if (oldScript.src) {
+                        newScript.src = oldScript.src;
+                    } else {
+                        newScript.textContent = oldScript.textContent;
                     }
+                    document.head.appendChild(newScript);
+                    oldScript.remove();
+                });
 
-                    console.log('Header loaded and initialized.');
-                } catch (err) {
-                    console.error('Error loading header:', err);
-                }
-            }
-
-            // ============================================================
-            // 2. PAGE LOGIC (videos, login, wishlist)
-            // ============================================================
-
-            // Use header's globals if available, otherwise fallback
-            const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
-            const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
-
-            // Ensure getAbsoluteUrl is defined (use header's or our own)
-            if (typeof window.getAbsoluteUrl !== 'function') {
-                window.getAbsoluteUrl = function (url) {
-                    if (!url) return null;
-                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                    const clean = url.startsWith('/') ? url.slice(1) : url;
-                    return `${STATIC_BASE_URL}/${clean}`;
-                };
-            }
-
-            // Auth helpers – use header's if available
-            function getCurrentUser() {
-                return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
-            }
-
-            function setCurrentUser(user) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                // Also update header
                 if (typeof window.updateUserState === 'function') {
+                    const user = window.getCurrentUser ? window.getCurrentUser() : null;
                     window.updateUserState(user);
                 }
+            } catch (err) {
+                console.error('Error loading header:', err);
             }
+        }
 
-            function removeCurrentUser() {
-                localStorage.removeItem('currentUser');
-                if (typeof window.updateUserState === 'function') {
-                    window.updateUserState(null);
-                }
+        // ============================================================
+        // 2. PAGE LOGIC (videos, login, wishlist)
+        // ============================================================
+        const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
+        const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
+
+        function getAbsoluteUrl(url) {
+            if (typeof window.getAbsoluteUrl === 'function') return window.getAbsoluteUrl(url);
+            if (!url) return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            const clean = url.startsWith('/') ? url.slice(1) : url;
+            return `${STATIC_BASE_URL}/${clean}`;
+        }
+
+        function getCurrentUser() {
+            return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
+        }
+
+        function setCurrentUser(user) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            if (typeof window.updateUserState === 'function') {
+                window.updateUserState(user);
             }
+        }
 
-            function setAuthToken(token) { localStorage.setItem('authToken', token); }
+        function getAuthToken() { return localStorage.getItem('authToken'); }
+        function setAuthToken(token) { localStorage.setItem('authToken', token); }
+        function removeAuthToken() { localStorage.removeItem('authToken'); }
+        function removeCurrentUser() { localStorage.removeItem('currentUser'); if (typeof window.updateUserState === 'function') window.updateUserState(null); }
 
-            function getAuthToken() { return localStorage.getItem('authToken'); }
-
-            function removeAuthToken() { localStorage.removeItem('authToken'); }
-
-            // ====== WISHLIST HELPERS ======
-            function getUserWishlist() {
-                const w = localStorage.getItem('userWishlist');
-                return w ? JSON.parse(w) : [];
+        // Wishlist
+        function addToWishlist(video) {
+            const user = getCurrentUser();
+            if (!user) { showAlert('Please login to add to wishlist', 'warning'); document.getElementById('loginOverlay').classList.add('active'); return false; }
+            if (!localStorage.getItem('wishlistDB')) localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            const userId = user.id || user.email;
+            const userWishlist = db.users[userId] || [];
+            if (!userWishlist.includes(video.id)) {
+                userWishlist.push(video.id);
+                db.users[userId] = userWishlist;
+                if (!db.items[video.id]) db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
+                localStorage.setItem('wishlistDB', JSON.stringify(db));
+                showToast('Added to wishlist!');
+                return true;
+            } else {
+                showToast('Already in wishlist');
+                return true;
             }
+        }
 
-            function saveUserWishlist(w) {
-                localStorage.setItem('userWishlist', JSON.stringify(w));
+        function isInWishlist(videoId) {
+            const user = getCurrentUser();
+            if (!user) return false;
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            if (!db) return false;
+            const userId = user.id || user.email;
+            const userWishlist = db.users[userId] || [];
+            return userWishlist.includes(videoId);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('wishlistToast');
+            const m = document.getElementById('toastMessage');
+            m.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function showAlert(msg, type) {
+            const c = document.createElement('div');
+            c.className = 'alerts-container';
+            c.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;width:80%;max-width:500px;';
+            const a = document.createElement('div');
+            a.className = `alert alert-${type} alert-temporary`;
+            a.textContent = msg;
+            c.appendChild(a);
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 5000);
+        }
+
+        async function apiRequest(url, method = 'GET', body = null) {
+            const headers = {};
+            const token = getAuthToken();
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            if (body && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+            const options = { method, headers };
+            if (body) options.body = body instanceof FormData ? body : JSON.stringify(body);
+            const response = await fetch(`${API_BASE_URL}${url}`, options);
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'API request failed');
             }
+            return await response.json();
+        }
 
-            function addToWishlist(video) {
-                const user = getCurrentUser();
-                if (!user) {
-                    showAlert('Please login to add to wishlist', 'warning');
-                    document.getElementById('loginOverlay').classList.add('active');
-                    return false;
-                }
-                if (!localStorage.getItem('wishlistDB')) {
-                    localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
-                }
-                const db = JSON.parse(localStorage.getItem('wishlistDB'));
-                const userId = user.id || user.email;
-                const userWishlist = db.users[userId] || [];
-                if (!userWishlist.includes(video.id)) {
-                    userWishlist.push(video.id);
-                    db.users[userId] = userWishlist;
-                    if (!db.items[video.id]) {
-                        db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
-                    }
-                    localStorage.setItem('wishlistDB', JSON.stringify(db));
-                    showToast('Added to wishlist!');
-                    return true;
-                } else {
-                    showToast('Already in wishlist');
-                    return true;
-                }
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
             }
+            return arr;
+        }
 
-            function isInWishlist(videoId) {
-                const user = getCurrentUser();
-                if (!user) return false;
-                const db = JSON.parse(localStorage.getItem('wishlistDB'));
-                if (!db) return false;
-                const userId = user.id || user.email;
-                const userWishlist = db.users[userId] || [];
-                return userWishlist.includes(videoId);
+        // Render videos
+        function renderVideos(videos) {
+            const gallery = document.getElementById('videoGallery');
+            gallery.innerHTML = '';
+            if (!videos || videos.length === 0) {
+                gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
+                return;
             }
+            videos.forEach(video => {
+                if (!video.id) return;
+                const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
+                const vidUrl = getAbsoluteUrl(video.videoUrl);
+                let uploaderName = 'Unknown';
+                if (video.user && video.user.firstName) uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
+                else if (video.uploaderName) uploaderName = video.uploaderName;
 
-            function showToast(msg) {
-                const t = document.getElementById('wishlistToast');
-                const m = document.getElementById('toastMessage');
-                m.textContent = msg;
-                t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 3000);
-            }
-
-            function updateWishlistButtons() {
-                document.querySelectorAll('.wishlist-btn').forEach(btn => {
-                    const vid = btn.dataset.videoId;
-                    if (isInWishlist(vid)) {
-                        btn.classList.add('active');
-                        btn.innerHTML = '<i class="fas fa-heart"></i>';
-                    } else {
-                        btn.classList.remove('active');
-                        btn.innerHTML = '<i class="far fa-heart"></i>';
-                    }
-                });
-            }
-
-            // ====== API REQUEST ======
-            async function apiRequest(url, method = 'GET', body = null, isFormData = false) {
-                const headers = {};
-                const token = getAuthToken();
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-                if (!isFormData && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
-                const options = { method, headers };
-                if (body) options.body = isFormData ? body : JSON.stringify(body);
-                const response = await fetch(`${API_BASE_URL}${url}`, options);
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'API request failed');
-                }
-                return await response.json();
-            }
-
-            function shuffleArray(arr) {
-                for (let i = arr.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [arr[i], arr[j]] = [arr[j], arr[i]];
-                }
-                return arr;
-            }
-
-            // ====== RENDER VIDEOS ======
-            function renderVideos(videos) {
-                const gallery = document.getElementById('videoGallery');
-                gallery.innerHTML = '';
-
-                if (!videos || videos.length === 0) {
-                    gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
-                    return;
-                }
-
-                videos.forEach((video, index) => {
-                    if (!video.id) return;
-
-                    const thumb = window.getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
-                    const vidUrl = window.getAbsoluteUrl(video.videoUrl);
-
-                    let uploaderName = 'Unknown';
-                    if (video.user && video.user.firstName) {
-                        uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
-                    } else if (video.uploaderName) {
-                        uploaderName = video.uploaderName;
-                    }
-
-                    const div = document.createElement('div');
-                    div.className = 'video-item';
-                    div.innerHTML = `
-                        <div class="thumbnail-container">
-                            <button class="wishlist-btn" data-video-id="${video.id}">
-                                <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
-                            </button>
-                            <img class="video-thumbnail" src="${thumb}" alt="${video.title || 'Video'}">
-                            ${vidUrl ? `<video class="video-preview" muted loop playsinline><source src="${vidUrl}" type="video/mp4"></video>` : ''}
-                        </div>
-                        <div class="video-info">
-                            <div class="channel-icon"><i class="fas fa-user"></i></div>
-                            <div class="video-details">
-                                <h3 class="video-title">${video.title || 'Untitled'}</h3>
-                                <div class="video-meta">
-                                    <span>${video.genre || 'No genre'} • ${video.year || 'N/A'}</span>
-                                    <span class="uploader-name">By: ${uploaderName}</span>
-                                </div>
+                const div = document.createElement('div');
+                div.className = 'video-item';
+                div.innerHTML = `
+                    <div class="thumbnail-container">
+                        <button class="wishlist-btn" data-video-id="${video.id}">
+                            <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
+                        <img class="video-thumbnail" src="${thumb}" alt="${video.title || 'Video'}">
+                        ${vidUrl ? `<video class="video-preview" muted loop playsinline><source src="${vidUrl}" type="video/mp4"></video>` : ''}
+                    </div>
+                    <div class="video-info">
+                        <div class="channel-icon"><i class="fas fa-user"></i></div>
+                        <div class="video-details">
+                            <h3 class="video-title">${video.title || 'Untitled'}</h3>
+                            <div class="video-meta">
+                                <span>${video.genre || 'No genre'} • ${video.year || 'N/A'}</span>
+                                <span class="uploader-name">By: ${uploaderName}</span>
                             </div>
                         </div>
-                    `;
+                    </div>
+                `;
 
-                    const preview = div.querySelector('.video-preview');
-                    if (preview) {
-                        div.addEventListener('mouseenter', () => {
-                            preview.currentTime = 0;
-                            const p = preview.play();
-                            if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
-                        });
-                        div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
-                    }
-
-                    div.addEventListener('click', (e) => {
-                        if (!e.target.closest('.wishlist-btn')) {
-                            playVideo(video);
-                        }
+                const preview = div.querySelector('.video-preview');
+                if (preview) {
+                    div.addEventListener('mouseenter', () => {
+                        preview.currentTime = 0;
+                        const p = preview.play();
+                        if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
                     });
-
-                    div.querySelector('.wishlist-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        addToWishlist(video);
-                    });
-
-                    gallery.appendChild(div);
-                });
-
-                updateWishlistButtons();
-            }
-
-            function playVideo(video) {
-                sessionStorage.setItem('currentVideo', JSON.stringify(video));
-                window.location.href = 'video-player.html';
-            }
-
-            function showAlert(msg, type) {
-                const c = document.createElement('div');
-                c.className = 'alerts-container';
-                c.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;width:80%;max-width:500px;';
-                const a = document.createElement('div');
-                a.className = `alert alert-${type} alert-temporary`;
-                a.textContent = msg;
-                c.appendChild(a);
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 5000);
-            }
-
-            // ============================================================
-            // 3. INITIALIZATION
-            // ============================================================
-            document.addEventListener('DOMContentLoaded', async () => {
-                // Load header first
-                await loadHeader();
-
-                // Now that header is loaded, we can proceed with the page
-                // Load videos
-                try {
-                    const videos = await apiRequest('/videos/premium');
-                    renderVideos(shuffleArray([...videos]));
-                } catch (e) {
-                    console.error('Error loading videos:', e);
-                    document.getElementById('videoGallery').innerHTML =
-                        `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
+                    div.addEventListener('mouseleave', () => { if (!preview.paused) preview.pause(); });
                 }
 
-                // Login/Register modals
-                const loginOverlay = document.getElementById('loginOverlay');
-                const registerOverlay = document.getElementById('registerOverlay');
-                const closeLogin = document.querySelector('.close-login');
-                const closeRegister = document.querySelector('.close-register');
-                const showRegister = document.getElementById('showRegister');
-                const showLogin = document.getElementById('showLogin');
-
-                // Login
-                document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('Already logged in.', 'warning');
-                        loginOverlay.classList.remove('active');
-                        return;
-                    }
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email, password })
-                        });
-                        if (!response.ok) {
-                            const err = await response.json();
-                            throw new Error(err.message || 'Login failed');
-                        }
-                        const data = await response.json();
-                        if (data.user.profilePicture) {
-                            data.user.profilePicture = window.getAbsoluteUrl(data.user.profilePicture);
-                        }
-                        setCurrentUser(data.user);
-                        setAuthToken(data.token);
-                        showAlert(`Welcome back ${data.user.firstName}!`, 'success');
-                        loginOverlay.classList.remove('active');
-                        updateWishlistButtons();
-                    } catch (err) {
-                        showAlert(err.message || 'Login failed', 'danger');
+                div.addEventListener('click', (e) => {
+                    if (!e.target.closest('.wishlist-btn')) {
+                        sessionStorage.setItem('currentVideo', JSON.stringify(video));
+                        window.location.href = 'video-player.html';
                     }
                 });
 
-                // Register
-                document.getElementById('registerForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('Already logged in.', 'warning');
-                        registerOverlay.classList.remove('active');
-                        return;
-                    }
-                    const firstName = document.getElementById('firstName').value;
-                    const lastName = document.getElementById('lastName').value;
-                    const email = document.getElementById('regEmail').value;
-                    const password = document.getElementById('regPassword').value;
-                    const confirm = document.getElementById('confirmPassword').value;
-                    if (password !== confirm) {
-                        showAlert('Passwords do not match!', 'danger');
-                        return;
-                    }
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ firstName, lastName, email, password })
-                        });
-                        if (!response.ok) {
-                            const err = await response.json();
-                            throw new Error(err.message || 'Registration failed');
-                        }
-                        const data = await response.json();
-                        if (data.user.profilePicture) {
-                            data.user.profilePicture = window.getAbsoluteUrl(data.user.profilePicture);
-                        }
-                        setCurrentUser(data.user);
-                        setAuthToken(data.token);
-                        showAlert(`Welcome ${firstName}!`, 'success');
-                        registerOverlay.classList.remove('active');
-                        updateWishlistButtons();
-                    } catch (err) {
-                        showAlert(err.message || 'Registration failed', 'danger');
-                    }
+                div.querySelector('.wishlist-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    addToWishlist(video);
                 });
 
-                // Close modals
-                closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
-                closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
-                showRegister.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('Already logged in.', 'warning');
-                        return;
-                    }
-                    loginOverlay.classList.remove('active');
-                    registerOverlay.classList.add('active');
-                });
-                showLogin.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (getCurrentUser()) {
-                        showAlert('Already logged in.', 'warning');
-                        return;
-                    }
-                    registerOverlay.classList.remove('active');
-                    loginOverlay.classList.add('active');
-                });
-                loginOverlay.addEventListener('click', (e) => {
-                    if (e.target === loginOverlay) loginOverlay.classList.remove('active');
-                });
-                registerOverlay.addEventListener('click', (e) => {
-                    if (e.target === registerOverlay) registerOverlay.classList.remove('active');
-                });
+                gallery.appendChild(div);
             });
-        </script>
+        }
+
+        // ============================================================
+        // 3. INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadHeader();
+
+            // Load videos
+            try {
+                const videos = await apiRequest('/videos/premium');
+                renderVideos(shuffleArray([...videos]));
+            } catch (e) {
+                console.error('Error loading videos:', e);
+                document.getElementById('videoGallery').innerHTML =
+                    `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
+            }
+
+            // Login/Register modals
+            const loginOverlay = document.getElementById('loginOverlay');
+            const registerOverlay = document.getElementById('registerOverlay');
+            const closeLogin = document.querySelector('.close-login');
+            const closeRegister = document.querySelector('.close-register');
+            const showRegister = document.getElementById('showRegister');
+            const showLogin = document.getElementById('showLogin');
+
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); loginOverlay.classList.remove('active'); return; }
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Login failed');
+                    }
+                    const data = await response.json();
+                    if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    setCurrentUser(data.user);
+                    setAuthToken(data.token);
+                    showAlert(`Welcome back ${data.user.firstName}!`, 'success');
+                    loginOverlay.classList.remove('active');
+                    location.reload(); // reload to refresh header
+                } catch (err) {
+                    showAlert(err.message || 'Login failed', 'danger');
+                }
+            });
+
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); registerOverlay.classList.remove('active'); return; }
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const confirm = document.getElementById('confirmPassword').value;
+                if (password !== confirm) { showAlert('Passwords do not match!', 'danger'); return; }
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ firstName, lastName, email, password })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Registration failed');
+                    }
+                    const data = await response.json();
+                    if (data.user.profilePicture) data.user.profilePicture = getAbsoluteUrl(data.user.profilePicture);
+                    setCurrentUser(data.user);
+                    setAuthToken(data.token);
+                    showAlert(`Welcome ${firstName}!`, 'success');
+                    registerOverlay.classList.remove('active');
+                    location.reload();
+                } catch (err) {
+                    showAlert(err.message || 'Registration failed', 'danger');
+                }
+            });
+
+            closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
+            closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
+            showRegister.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } loginOverlay.classList.remove('active'); registerOverlay.classList.add('active'); });
+            showLogin.addEventListener('click', (e) => { e.preventDefault(); if (getCurrentUser()) { showAlert('Already logged in.', 'warning'); return; } registerOverlay.classList.remove('active'); loginOverlay.classList.add('active'); });
+            loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) loginOverlay.classList.remove('active'); });
+            registerOverlay.addEventListener('click', (e) => { if (e.target === registerOverlay) registerOverlay.classList.remove('active'); });
+        });
+    </script>
 </body>
 
 </html>

@@ -36,7 +36,7 @@
     </div>
 </header>
 
-<!-- Mobile sidebar overlay (hidden on desktop) -->
+<!-- Mobile sidebar overlay -->
 <div class="sidebar-mobile-overlay" id="sidebarOverlay"></div>
 
 <!-- Mobile sidebar (slide-out) -->
@@ -98,7 +98,7 @@
         };
 
         // ============================================================
-        // INIT HEADER – dropdown toggle + logout
+        // INIT HEADER – dropdown toggle + logout + mobile sidebar
         // ============================================================
         window.initHeader = function () {
             const user = window.getCurrentUser();
@@ -128,7 +128,6 @@
 
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                // Remove old listeners to avoid duplicates
                 const newBtn = logoutBtn.cloneNode(true);
                 logoutBtn.parentNode.replaceChild(newBtn, logoutBtn);
                 newBtn.addEventListener('click', function (e) {
@@ -140,7 +139,6 @@
                 });
             }
 
-            // Home link
             const homeLink = document.getElementById('homeLink');
             if (homeLink) {
                 homeLink.addEventListener('click', function (e) {
@@ -149,7 +147,7 @@
                 });
             }
 
-            // ===== MOBILE SIDEBAR TOGGLE =====
+            // ----- Mobile sidebar -----
             const hamburger = document.getElementById('hamburgerBtn');
             const sidebar = document.getElementById('sidebarMobile');
             const overlay = document.getElementById('sidebarOverlay');
@@ -172,21 +170,18 @@
                     toggleSidebar(false);
                 });
 
-                // Close sidebar when a link is clicked
                 sidebar.querySelectorAll('a').forEach(function (link) {
                     link.addEventListener('click', function () {
                         toggleSidebar(false);
                     });
                 });
 
-                // Close on escape key
                 document.addEventListener('keydown', function (e) {
                     if (e.key === 'Escape' && sidebar.classList.contains('open')) {
                         toggleSidebar(false);
                     }
                 });
 
-                // Close when window resizes above breakpoint
                 window.addEventListener('resize', function () {
                     if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
                         toggleSidebar(false);
@@ -195,7 +190,6 @@
             }
         };
 
-        // Auto‑init when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', window.initHeader);
         } else {
