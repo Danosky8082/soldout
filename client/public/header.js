@@ -42,20 +42,25 @@
     // ============================================================
     // INIT HEADER – dropdown, logout, mobile sidebar
     // ============================================================
-    function initHeader() {
+    let headerInitialized = false;
+
+    window.initHeader = function() {
+        // Always update avatar first (in case user changed)
         const user = window.getCurrentUser();
         window.updateUserState(user);
+
+        // If already attached listeners, skip
+        if (headerInitialized) return;
 
         const userInfo = document.getElementById('userInfo');
         const dropdown = document.getElementById('userDropdown');
 
-        if (!userInfo || !dropdown) return;
+        if (!userInfo || !dropdown) {
+            // Elements not yet in DOM – will try again later
+            return;
+        }
 
-        // Prevent duplicate listeners
-        if (userInfo._listenerAdded) return;
-        userInfo._listenerAdded = true;
-
-        // Dropdown toggle
+        // ----- Dropdown toggle -----
         userInfo.addEventListener('click', function(e) {
             e.stopPropagation();
             const currentUser = window.getCurrentUser();
@@ -72,7 +77,7 @@
             dropdown.classList.remove('show');
         });
 
-        // Logout
+        // ----- Logout -----
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             const newBtn = logoutBtn.cloneNode(true);
@@ -86,7 +91,7 @@
             });
         }
 
-        // Home link
+        // ----- Home link -----
         const homeLink = document.getElementById('homeLink');
         if (homeLink) {
             homeLink.addEventListener('click', function(e) {
@@ -95,7 +100,7 @@
             });
         }
 
-        // Mobile sidebar
+        // ----- Mobile sidebar -----
         const hamburger = document.getElementById('hamburgerBtn');
         const sidebar = document.getElementById('sidebarMobile');
         const overlay = document.getElementById('sidebarOverlay');
@@ -136,17 +141,27 @@
                 }
             });
         }
-    }
+
+        headerInitialized = true;
+    };
 
     // ============================================================
-    // AUTO-INIT
+    // AUTO-INIT – only if header elements already exist (e.g., profile page)
     // ============================================================
+    function tryAutoInit() {
+        // Check if header elements are already in the DOM (hardcoded header)
+        if (document.getElementById('userInfo') && document.getElementById('userDropdown')) {
+            window.initHeader();
+        }
+        // For dynamically loaded headers, pages will call initHeader() after injection.
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeader);
+        document.addEventListener('DOMContentLoaded', tryAutoInit);
     } else {
-        initHeader();
+        tryAutoInit();
     }
 
-    // Expose initHeader so pages can call it if needed
-    window.initHeader = initHeader;
+    // Expose initHeader so pages can call it after dynamic injection
+    // (already exposed globally via window.initHeader)
 })();
