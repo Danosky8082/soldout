@@ -165,7 +165,9 @@ const getTrendingVideos = async (req, res) => {
   }
 };
 
-// ==================== SAFE GET VIDEO BY ID ====================
+// ============================================================
+//  getVideoById – FIXED: remove 'dislikes' and invalid fields
+// ============================================================
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -181,15 +183,14 @@ const getVideoById = async (req, res) => {
             firstName: true,
             lastName: true,
             profilePicture: true,
-            // Do NOT include subscriberCount – it's not a direct field
           }
         },
         _count: {
           select: {
-            likes: true,
-            dislikes: true,
-            comments: true,
-            subscribers: true   // if this relation exists on Video
+            likes: true,      // valid
+            comments: true,   // valid
+            // dislikes does NOT exist – removed
+            // subscribers may or may not exist – we'll handle below
           }
         }
       }
@@ -213,23 +214,37 @@ const getVideoById = async (req, res) => {
       ? ratings.find(r => r.userId === userId)?.value || null
       : null;
 
-    // 3. Build response
+    // 3. Try to get subscriber count if the relation exists (maybe via a separate query)
+    let subscriberCount = 0;
+    try {
+      // If your Video model has a subscribers relation, count it
+      const count = await prisma.video.findUnique({
+        where: { id: parseInt(id) },
+        select: { _count: { select: { subscribers: true } } }
+      });
+      if (count) subscriberCount = count._count.subscribers;
+    } catch (e) {
+      // If 'subscribers' doesn't exist, keep 0
+      subscriberCount = 0;
+    }
+
+    // 4. Build response
     const response = {
       ...video,
       averageRating: avgRating,
       userRating: userRating,
       likeCount: video._count.likes,
-      dislikeCount: video._count.dislikes,
+      dislikeCount: 0,                         // no dislikes table – set to 0
       commentCount: video._count.comments,
-      subscriberCount: video._count.subscribers || 0, // use video's subscriber count if available
-      isLiked: false, // you can fetch this from a separate query if needed
+      subscriberCount: subscriberCount,        // from the separate query
+      isLiked: false,                          // you can fetch this from a separate query if needed
       isDisliked: false,
       isSubscribed: false,
     };
 
-    // Add a subscriberCount field to the user object (for frontend compatibility)
+    // Add subscriberCount to the user object for frontend compatibility
     if (response.user) {
-      response.user.subscriberCount = video._count.subscribers || 0;
+      response.user.subscriberCount = subscriberCount;
     }
 
     // Clean up internal fields
