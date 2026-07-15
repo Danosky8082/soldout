@@ -591,6 +591,24 @@
 
                 xhr.send(formData);
             });
+
+            document.getElementById('uploadForm').addEventListener('submit', function (e) {
+                const videoInput = document.getElementById('videoFile'); // id of your video file input
+                const file = videoInput.files[0];
+                if (!file) {
+                    alert('Please select a video file.');
+                    e.preventDefault();
+                    return;
+                }
+
+                // Supabase free tier limit is 50 MB (52,428,800 bytes)
+                const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+                if (file.size > MAX_SIZE) {
+                    alert(`Your video is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please use a video under 50 MB, or compress your video before uploading.`);
+                    e.preventDefault();
+                    return false;
+                }
+            });
         });
     </script>
 </body>

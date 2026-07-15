@@ -2434,3 +2434,11 @@ footer p {
  .hamburger.active span:nth-child(3) {
      transform: rotate(-45deg) translate(4px, -4px);
  }
+
+ /* Force video grid to multi-column on desktop */
+ .video-grid {
+     display: grid !important;
+     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+     gap: 18px !important;
+     width: 100% !important;
+ }
