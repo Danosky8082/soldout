@@ -7,13 +7,49 @@
     <title>Soldout.com - Video Gallery</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- ✅ Include header.js for avatar persistence -->
     <script src="header.js" defer></script>
 </head>
 
 <body>
     <div class="container">
-        <div id="header-container"></div>
+        <!-- ===== HARDCODED HEADER ===== -->
+        <header>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="logo" id="homeLink">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="#">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
+                    <div class="user-avatar-container" id="userAvatar">
+                        <i class="fas fa-user-circle user-icon"></i>
+                    </div>
+                    <span class="user-name" id="userNameDisplay"></span>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="#"><i class="fas fa-tv"></i> My Watchlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== SIDEBAR CONTAINER ===== -->
+        <div id="sidebar-container"></div>
+
+        <!-- Page content -->
         <input type="text" id="videoSearch" placeholder="Search in Video Gallery by Title or Genre...">
         <h2 class="section-title"><i class="fas fa-video"></i> Video Gallery</h2>
         <div class="video-grid" id="videoGallery">
@@ -37,32 +73,56 @@
 
     <script>
         // ============================================================
-        // 1. LOAD HEADER HTML (simplified)
+        // LOAD SIDEBAR
         // ============================================================
-        async function loadHeader() {
-                try {
-                    const response = await fetch('header.html');
-                    const html = await response.text();
-                    document.getElementById('header-container').innerHTML = html;
+        async function loadSidebar() {
+            try {
+                const response = await fetch('sidebar.html');
+                const html = await response.text();
+                document.getElementById('sidebar-container').innerHTML = html;
 
-                    // After injection, force header setup and avatar update
-                    if (typeof window.initHeader === 'function') {
-                        window.initHeader();
+                const hamburger = document.getElementById('hamburgerBtn');
+                const sidebar = document.getElementById('sidebarMobile');
+                const overlay = document.getElementById('sidebarOverlay');
+
+                if (hamburger && sidebar && overlay) {
+                    function toggleSidebar(open) {
+                        const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+                        sidebar.classList.toggle('open', isOpen);
+                        overlay.classList.toggle('active', isOpen);
+                        hamburger.classList.toggle('active', isOpen);
+                        document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    // Force the avatar update (this resets the retry counter)
-                    if (typeof window.forceHeaderUpdate === 'function') {
-                        window.forceHeaderUpdate();
-                    } else if (typeof window.updateUserState === 'function') {
-                        const user = window.getCurrentUser ? window.getCurrentUser() : null;
-                        window.updateUserState(user);
-                    }
-                } catch (err) {
-                    console.error('Error loading header:', err);
+                    hamburger.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggleSidebar();
+                    });
+                    overlay.addEventListener('click', function () {
+                        toggleSidebar(false);
+                    });
+                    sidebar.querySelectorAll('a').forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            toggleSidebar(false);
+                        });
+                    });
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
+                    window.addEventListener('resize', function () {
+                        if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
                 }
+            } catch (err) {
+                console.error('Error loading sidebar:', err);
             }
+        }
 
         // ============================================================
-        // 2. GALLERY LOGIC
+        // GALLERY LOGIC (unchanged)
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -183,10 +243,11 @@
         }
 
         // ============================================================
-        // 3. START
+        // START
         // ============================================================
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadHeader();
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadSidebar();
+            if (typeof window.initHeader === 'function') window.initHeader();
             initializeGallery();
         });
     </script>

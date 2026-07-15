@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <script src="header.js" defer></script>
     <style>
         /* (same as before – no changes) */
         .profile-container {
@@ -352,8 +353,13 @@
 
 <body>
     <div class="container">
-        <!-- HEADER -->
+        <!-- ===== HEADER (hardcoded, with hamburger) ===== -->
         <header>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div class="logo" id="homeLink">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Soldout.com</span>
@@ -383,7 +389,10 @@
             </div>
         </header>
 
-        <!-- PROFILE CONTENT -->
+        <!-- ===== SIDEBAR CONTAINER (loaded dynamically) ===== -->
+        <div id="sidebar-container"></div>
+
+        <!-- PROFILE CONTENT (unchanged) -->
         <div class="profile-container">
             <div class="profile-header">
                 <div class="profile-picture-wrapper" id="profilePicWrapper">
@@ -472,6 +481,55 @@
     </div>
 
     <script>
+        // ============================================================
+        // LOAD MOBILE SIDEBAR
+        // ============================================================
+        async function loadSidebar() {
+            try {
+                const response = await fetch('sidebar.html');
+                const html = await response.text();
+                document.getElementById('sidebar-container').innerHTML = html;
+
+                const hamburger = document.getElementById('hamburgerBtn');
+                const sidebar = document.getElementById('sidebarMobile');
+                const overlay = document.getElementById('sidebarOverlay');
+
+                if (hamburger && sidebar && overlay) {
+                    function toggleSidebar(open) {
+                        const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+                        sidebar.classList.toggle('open', isOpen);
+                        overlay.classList.toggle('active', isOpen);
+                        hamburger.classList.toggle('active', isOpen);
+                        document.body.style.overflow = isOpen ? 'hidden' : '';
+                    }
+                    hamburger.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggleSidebar();
+                    });
+                    overlay.addEventListener('click', function () {
+                        toggleSidebar(false);
+                    });
+                    sidebar.querySelectorAll('a').forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            toggleSidebar(false);
+                        });
+                    });
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
+                    window.addEventListener('resize', function () {
+                        if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading sidebar:', err);
+            }
+        }
+
         // ====== API BASE URL ======
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
 
@@ -724,34 +782,67 @@
             }
         }
 
-        // ====== Event listeners ======
-        document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // INITIALIZATION – with sidebar and header init
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async function () {
+            // 1. Load mobile sidebar
+            await loadSidebar();
+
+            // 2. Initialize header events (dropdown, logout, etc.)
+            if (typeof window.initHeader === 'function') {
+                window.initHeader();
+            }
+
+            // 3. Existing profile logic
             const token = getAuthToken();
             if (!token) { window.location.href = 'index.html'; return; }
             loadProfile();
 
-            // Dropdown
+            // Dropdown (already handled by header.js, but we keep it for safety)
             const userInfo = document.getElementById('userInfo');
             const dropdown = document.getElementById('userDropdown');
-            userInfo.addEventListener('click', function (e) {
-                e.stopPropagation();
-                const currentUser = getCurrentUser();
-                if (currentUser) dropdown.classList.toggle('show');
-                else window.location.href = 'index.html';
-            });
-            document.addEventListener('click', function () { dropdown.classList.remove('show'); });
+            if (userInfo && dropdown) {
+                // Remove any old listeners to avoid duplicates
+                userInfo.removeEventListener('click', userInfo._clickHandler);
+                userInfo._clickHandler = function (e) {
+                    e.stopPropagation();
+                    const currentUser = getCurrentUser();
+                    if (currentUser) {
+                        dropdown.classList.toggle('show');
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                };
+                userInfo.addEventListener('click', userInfo._clickHandler);
+                document.addEventListener('click', function () {
+                    dropdown.classList.remove('show');
+                });
+            }
 
-            document.getElementById('logoutBtn').addEventListener('click', function (e) {
-                e.preventDefault();
-                removeAuthToken();
-                removeCurrentUser();
-                window.location.href = 'index.html';
-            });
+            // Logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.removeEventListener('click', logoutBtn._clickHandler);
+                logoutBtn._clickHandler = function (e) {
+                    e.preventDefault();
+                    removeAuthToken();
+                    removeCurrentUser();
+                    window.location.href = 'index.html';
+                };
+                logoutBtn.addEventListener('click', logoutBtn._clickHandler);
+            }
 
-            document.getElementById('homeLink').addEventListener('click', function (e) {
-                e.preventDefault();
-                window.location.href = 'index.html';
-            });
+            // Home link
+            const homeLink = document.getElementById('homeLink');
+            if (homeLink) {
+                homeLink.removeEventListener('click', homeLink._clickHandler);
+                homeLink._clickHandler = function (e) {
+                    e.preventDefault();
+                    window.location.href = 'index.html';
+                };
+                homeLink.addEventListener('click', homeLink._clickHandler);
+            }
 
             // Profile picture upload
             profilePicWrapper.addEventListener('click', function () { profilePicInput.click(); });
