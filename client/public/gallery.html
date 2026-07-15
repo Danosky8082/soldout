@@ -45,12 +45,14 @@
                     const html = await response.text();
                     document.getElementById('header-container').innerHTML = html;
 
-                    // After injecting the header, ensure avatar and events are set up
+                    // After injection, force header setup and avatar update
                     if (typeof window.initHeader === 'function') {
                         window.initHeader();
                     }
-                    // Force update avatar from localStorage
-                    if (typeof window.updateUserState === 'function') {
+                    // Force the avatar update (this resets the retry counter)
+                    if (typeof window.forceHeaderUpdate === 'function') {
+                        window.forceHeaderUpdate();
+                    } else if (typeof window.updateUserState === 'function') {
                         const user = window.getCurrentUser ? window.getCurrentUser() : null;
                         window.updateUserState(user);
                     }
