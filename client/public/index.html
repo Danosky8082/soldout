@@ -7,15 +7,21 @@
     <title>Soldout.com - the Entertainment Experience</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- We'll use the hardcoded header, so no header.js needed -->
-    <!-- ✅ Include header.js for avatar persistence -->
+    <!-- ✅ Include header.js for avatar persistence & dropdown -->
     <script src="header.js" defer></script>
 </head>
 
 <body>
     <div class="container">
-        <!-- ===== HARDCODED HEADER (copied from profile page) ===== -->
+        <!-- ===== HARDCODED HEADER (with hamburger) ===== -->
         <header>
+            <!-- ✅ Hamburger button for mobile -->
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
             <div class="logo" id="homeLink">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Soldout.com</span>
@@ -45,25 +51,8 @@
             </div>
         </header>
 
-        <!-- Mobile sidebar overlay -->
-        <div class="sidebar-mobile-overlay" id="sidebarOverlay"></div>
-        <nav class="sidebar-mobile" id="sidebarMobile">
-            <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
-            <a href="gallery.html"><i class="fas fa-film"></i> Movies</a>
-            <a href="series.html"><i class="fas fa-tv"></i> TV Shows</a>
-            <a href="#"><i class="fas fa-fire"></i> New Releases</a>
-            <a href="soundtracks.html"><i class="fas fa-music"></i> Soundtracks</a>
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-label">Subscriptions</div>
-            <a href="#"><i class="fas fa-user"></i> Your Channel</a>
-            <a href="#"><i class="fas fa-clock"></i> History</a>
-            <a href="#"><i class="fas fa-heart"></i> Liked Videos</a>
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-label">Explore</div>
-            <a href="#"><i class="fas fa-gamepad"></i> Gaming</a>
-            <a href="#"><i class="fas fa-microphone"></i> Podcasts</a>
-            <a href="#"><i class="fas fa-newspaper"></i> News</a>
-        </nav>
+        <!-- ===== MOBILE SIDEBAR (loaded dynamically) ===== -->
+        <div id="sidebar-container"></div>
 
         <!-- Login Overlay -->
         <div id="loginOverlay" class="login-overlay">
@@ -134,7 +123,7 @@
             </div>
         </div>
 
-        <!-- SIDEBAR + MAIN CONTENT -->
+        <!-- SIDEBAR + MAIN CONTENT (desktop) -->
         <div class="sidebar-wrapper">
             <div class="sidebar">
                 <a href="#" class="active"><i class="fas fa-home"></i> Home</a>
@@ -184,7 +173,62 @@
 
     <script>
         // ============================================================
-        // 0. HELPER FUNCTIONS (with console logs)
+        // 0. LOAD MOBILE SIDEBAR
+        // ============================================================
+        async function loadSidebar() {
+            try {
+                const response = await fetch('sidebar.html');
+                const html = await response.text();
+                document.getElementById('sidebar-container').innerHTML = html;
+
+                // Attach toggle logic after injection
+                const hamburger = document.getElementById('hamburgerBtn');
+                const sidebar = document.getElementById('sidebarMobile');
+                const overlay = document.getElementById('sidebarOverlay');
+
+                if (hamburger && sidebar && overlay) {
+                    function toggleSidebar(open) {
+                        const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+                        sidebar.classList.toggle('open', isOpen);
+                        overlay.classList.toggle('active', isOpen);
+                        hamburger.classList.toggle('active', isOpen);
+                        document.body.style.overflow = isOpen ? 'hidden' : '';
+                    }
+
+                    hamburger.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggleSidebar();
+                    });
+
+                    overlay.addEventListener('click', function () {
+                        toggleSidebar(false);
+                    });
+
+                    sidebar.querySelectorAll('a').forEach(function (link) {
+                        link.addEventListener('click', function () {
+                            toggleSidebar(false);
+                        });
+                    });
+
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
+
+                    window.addEventListener('resize', function () {
+                        if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+                            toggleSidebar(false);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading sidebar:', err);
+            }
+        }
+
+        // ============================================================
+        // 1. HELPER FUNCTIONS
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -227,7 +271,7 @@
         }
 
         // ============================================================
-        // 1. UPDATE HEADER AVATAR (with fallback to server)
+        // 2. UPDATE HEADER AVATAR (with fallback to server)
         // ============================================================
         async function updateHeaderAvatar(user) {
             const avatarContainer = document.getElementById('userAvatar');
@@ -290,90 +334,13 @@
         }
 
         // ============================================================
-        // 2. HEADER INIT (dropdown, logout, mobile sidebar)
+        // 3. HEADER INIT (dropdown, logout – from header.js)
         // ============================================================
-        function initHeader() {
-            const userInfo = document.getElementById('userInfo');
-            const dropdown = document.getElementById('userDropdown');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const homeLink = document.getElementById('homeLink');
-
-            if (!userInfo || !dropdown) {
-                console.error('Header elements missing!');
-                return;
-            }
-
-            userInfo.addEventListener('click', function (e) {
-                e.stopPropagation();
-                const currentUser = getCurrentUser();
-                if (currentUser) {
-                    dropdown.classList.toggle('show');
-                } else {
-                    const loginOverlay = document.getElementById('loginOverlay');
-                    if (loginOverlay) loginOverlay.classList.add('active');
-                    else window.location.href = 'index.html';
-                }
-            });
-
-            document.addEventListener('click', function () {
-                dropdown.classList.remove('show');
-            });
-
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    removeAuthToken();
-                    removeCurrentUser();
-                    window.location.href = 'index.html';
-                });
-            }
-
-            if (homeLink) {
-                homeLink.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    window.location.href = 'index.html';
-                });
-            }
-
-            // Mobile sidebar
-            const hamburger = document.getElementById('hamburgerBtn');
-            const sidebar = document.getElementById('sidebarMobile');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (hamburger && sidebar && overlay) {
-                function toggleSidebar(open) {
-                    const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
-                    sidebar.classList.toggle('open', isOpen);
-                    overlay.classList.toggle('active', isOpen);
-                    hamburger.classList.toggle('active', isOpen);
-                    document.body.style.overflow = isOpen ? 'hidden' : '';
-                }
-                hamburger.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    toggleSidebar();
-                });
-                overlay.addEventListener('click', function () {
-                    toggleSidebar(false);
-                });
-                sidebar.querySelectorAll('a').forEach(function (link) {
-                    link.addEventListener('click', function () {
-                        toggleSidebar(false);
-                    });
-                });
-                document.addEventListener('keydown', function (e) {
-                    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-                        toggleSidebar(false);
-                    }
-                });
-                window.addEventListener('resize', function () {
-                    if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
-                        toggleSidebar(false);
-                    }
-                });
-            }
-        }
+        // We rely on header.js for dropdown and logout.
+        // It's already loaded via the <script> tag.
 
         // ============================================================
-        // 3. PAGE LOGIC (videos, login, wishlist)
+        // 4. PAGE LOGIC (videos, login, wishlist)
         // ============================================================
 
         // Wishlist helpers
@@ -533,27 +500,32 @@
         }
 
         // ============================================================
-        // 4. INITIALIZATION
+        // 5. INITIALIZATION
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM ready – initializing...');
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('DOM ready – loading sidebar...');
 
-            initHeader();
+            // Load the mobile sidebar first
+            await loadSidebar();
 
-            // Update avatar from localStorage (and fallback to server)
-            updateHeaderAvatar();
+            // Now initialise header (avatar, dropdown, logout) – header.js already runs,
+            // but we call it again to ensure it's ready (it's idempotent).
+            if (typeof window.initHeader === 'function') {
+                window.initHeader();
+            }
+
+            // Update avatar
+            await updateHeaderAvatar();
 
             // Load videos
-            (async function loadVideos() {
-                try {
-                    const videos = await apiRequest('/videos/premium');
-                    renderVideos(shuffleArray([...videos]));
-                } catch (e) {
-                    console.error('Error loading videos:', e);
-                    document.getElementById('videoGallery').innerHTML =
-                        `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
-                }
-            })();
+            try {
+                const videos = await apiRequest('/videos/premium');
+                renderVideos(shuffleArray([...videos]));
+            } catch (e) {
+                console.error('Error loading videos:', e);
+                document.getElementById('videoGallery').innerHTML =
+                    `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
+            }
 
             // Login/Register modals
             const loginOverlay = document.getElementById('loginOverlay');
