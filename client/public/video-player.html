@@ -252,7 +252,7 @@
         }
 
         // ============================================================
-        // VIDEO PLAYER LOGIC (unchanged)
+        // VIDEO PLAYER LOGIC (full – comments, replies, trivia, ratings)
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -326,6 +326,7 @@
             }
         }
 
+        // ========== Populate & Interact ==========
         function populatePlayer() {
             const video = currentVideo;
             const player = document.getElementById('mainPlayer');
@@ -338,7 +339,6 @@
                 document.getElementById('playerDescription').textContent = video.description;
             }
 
-            // Uploader avatar
             const avatarImg = document.getElementById('uploaderAvatarImg');
             const avatarIcon = document.getElementById('uploaderAvatarIcon');
             if (video.user?.profilePicture) {
@@ -351,14 +351,11 @@
                 avatarIcon.style.display = 'block';
             }
 
-            // Update like/dislike counts and button states
             document.getElementById('likeCount').textContent = video.likeCount || 0;
             document.getElementById('dislikeCount').textContent = video.dislikeCount || 0;
-
             if (video.isLiked) document.getElementById('likeButton').classList.add('liked');
             if (video.isDisliked) document.getElementById('dislikeButton').classList.add('liked');
 
-            // Subscribe button
             const subBtn = document.getElementById('subscribeButton');
             if (video.isSubscribed) {
                 subBtn.classList.add('subscribed');
@@ -369,7 +366,6 @@
             }
             document.getElementById('subscribersCount').textContent = (video.subscriberCount || 0) + ' subscribers';
 
-            // Ratings
             const avgEl = document.querySelector('.average-value');
             const countEl = document.querySelector('.rating-count');
             if (video.averageRating) {
@@ -380,34 +376,19 @@
                 }
             }
 
-            // Comments
             renderComments(video.comments || []);
-
-            // Related videos
             loadRelatedVideos(video);
-
-            // Trivia
             loadTrivia(video);
         }
 
-        // ========== INTERACTIONS ==========
         function setupInteractions() {
             const video = currentVideo;
-
-            // Like / Dislike
             document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
             document.getElementById('dislikeButton').addEventListener('click', () => toggleLike(true));
-
-            // Subscribe
             document.getElementById('subscribeButton').addEventListener('click', toggleSubscribe);
-
-            // Save
             document.getElementById('saveButton').addEventListener('click', toggleSave);
-
-            // Comment
             document.getElementById('commentForm').addEventListener('submit', addComment);
 
-            // Trivia
             document.getElementById('triviaAddBtn').addEventListener('click', () => {
                 const user = getCurrentUser();
                 if (!user) { alert('Please log in to add trivia'); return; }
@@ -419,12 +400,10 @@
             });
             document.getElementById('triviaSaveBtn').addEventListener('click', addTrivia);
 
-            // Rating stars
             document.querySelectorAll('#ratingStars input').forEach(input => {
                 input.addEventListener('change', rateVideo);
             });
 
-            // Quality selector
             document.getElementById('qualityToggle').addEventListener('click', () => {
                 const qs = document.getElementById('qualitySelector');
                 qs.style.display = qs.style.display === 'block' ? 'none' : 'block';
@@ -437,7 +416,6 @@
                 });
             });
 
-            // Share
             document.getElementById('shareButton').addEventListener('click', () => {
                 document.getElementById('shareLink').value = window.location.href;
                 document.getElementById('shareModal').style.display = 'flex';
@@ -476,16 +454,11 @@
             if (!user) { alert('Please log in to like/dislike'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        userId: user.id,
-                        videoId: currentVideo.id,
-                        isDislike
-                    })
+                    body: JSON.stringify({ userId: user.id, videoId: currentVideo.id, isDislike })
                 });
                 if (!res.ok) throw new Error('Failed to update like');
                 const data = await res.json();
@@ -510,7 +483,6 @@
             if (!user) { alert('Please log in to subscribe'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/subscribe`, {
                     method: 'POST',
@@ -540,7 +512,6 @@
             if (!user) { alert('Please log in to save'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/save`, {
                     method: 'POST',
@@ -570,11 +541,9 @@
             if (!user) { alert('Please log in to comment'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-
             const input = document.getElementById('commentInput');
             const text = input.value.trim();
             if (!text) return;
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/comment`, {
                     method: 'POST',
@@ -609,11 +578,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({
-                            text,
-                            userId: user.id,
-                            commentId,
-                            videoId: currentVideo.id,
-                            parentReplyId
+                            text, userId: user.id, commentId, videoId: currentVideo.id, parentReplyId
                         })
                     });
                     if (!res.ok) throw new Error('Failed to post reply');
@@ -634,7 +599,6 @@
             if (!token) { alert('Please log in again.'); return; }
             const value = parseInt(e.target.value);
             if (value < 1 || value > 10) return;
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/rate`, {
                     method: 'POST',
@@ -659,7 +623,6 @@
             if (!token) { alert('Please log in again.'); return; }
             const text = document.getElementById('triviaTextarea').value.trim();
             if (!text) { alert('Please enter trivia text'); return; }
-
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia`, {
                     method: 'POST',
@@ -766,7 +729,7 @@
                 </div>
             `;
 
-            // Like button for comment/reply
+            // Like button
             const likeBtn = div.querySelector('.like-comment');
             likeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -940,10 +903,11 @@
         }
 
         // ============================================================
-        // 3. START
+        // START
         // ============================================================
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadHeader();
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadSidebar();
+            if (typeof window.initHeader === 'function') window.initHeader();
             await initializePlayer();
         });
     </script>
