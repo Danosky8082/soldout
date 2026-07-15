@@ -7,21 +7,361 @@
     <title>Soldout.com - the Entertainment Experience</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- ✅ Include header.js for avatar persistence & dropdown -->
     <script src="header.js" defer></script>
+
+    <style>
+        /* ===== LOADING OVERLAY (add to global.css later) ===== */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            animation: fadeInOverlay 0.3s ease forwards;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-overlay.fade-out {
+            animation: fadeOutOverlay 0.5s ease forwards;
+        }
+
+        @keyframes fadeInOverlay {
+            from {
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+
+            to {
+                opacity: 1;
+                backdrop-filter: blur(12px);
+            }
+        }
+
+        @keyframes fadeOutOverlay {
+            from {
+                opacity: 1;
+                backdrop-filter: blur(12px);
+            }
+
+            to {
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+        }
+
+        .loading-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            animation: slideUp 0.5s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .loading-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loading-spinner .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(1) {
+            border-top-color: var(--accent-red);
+            animation-delay: 0s;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(2) {
+            border-right-color: var(--accent-blue);
+            animation-delay: 0.2s;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(3) {
+            border-bottom-color: #fbbf24;
+            animation-delay: 0.4s;
+        }
+
+        .loading-spinner .spinner-ring:nth-child(4) {
+            border-left-color: #a78bfa;
+            animation-delay: 0.6s;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-spinner .spinner-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.3), transparent);
+            animation: pulseGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.4;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .loading-spinner .spinner-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            color: #fff;
+            opacity: 0.8;
+            animation: pulseIcon 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseIcon {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .loading-text .dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 2px;
+        }
+
+        .loading-text .dots span {
+            animation: dotBounce 1.4s ease-in-out infinite;
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .loading-text .dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-text .dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotBounce {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+
+            40% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        .loading-subtext {
+            color: var(--text-secondary);
+            font-size: 14px;
+            opacity: 0.7;
+            margin-top: -10px;
+            animation: pulseSubtext 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseSubtext {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 3px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .loading-progress .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-blue), #fbbf24, #a78bfa);
+            background-size: 300% 100%;
+            animation: progressMove 2s ease-in-out infinite, progressFill 3s ease-in-out infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes progressMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes progressFill {
+            0% {
+                width: 0%;
+            }
+
+            30% {
+                width: 25%;
+            }
+
+            60% {
+                width: 65%;
+            }
+
+            90% {
+                width: 90%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        .loading-brand {
+            font-size: 14px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        .loading-brand i {
+            color: var(--accent-red);
+            margin-right: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .loading-spinner {
+                width: 60px;
+                height: 60px;
+            }
+
+            .loading-spinner .spinner-glow {
+                width: 35px;
+                height: 35px;
+            }
+
+            .loading-spinner .spinner-icon {
+                font-size: 20px;
+            }
+
+            .loading-text {
+                font-size: 17px;
+            }
+
+            .loading-progress {
+                width: 150px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .loading-spinner {
+                width: 50px;
+                height: 50px;
+            }
+
+            .loading-spinner .spinner-glow {
+                width: 28px;
+                height: 28px;
+            }
+
+            .loading-spinner .spinner-icon {
+                font-size: 16px;
+            }
+
+            .loading-text {
+                font-size: 15px;
+            }
+
+            .loading-progress {
+                width: 120px;
+            }
+
+            .loading-subtext {
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- ===== HARDCODED HEADER (with hamburger) ===== -->
+        <!-- ===== HARDCODED HEADER ===== -->
         <header>
-            <!-- ✅ Hamburger button for mobile -->
             <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
             </button>
-
             <div class="logo" id="homeLink">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Soldout.com</span>
@@ -51,7 +391,7 @@
             </div>
         </header>
 
-        <!-- ===== MOBILE SIDEBAR (loaded dynamically) ===== -->
+        <!-- ===== MOBILE SIDEBAR ===== -->
         <div id="sidebar-container"></div>
 
         <!-- Login Overlay -->
@@ -123,7 +463,7 @@
             </div>
         </div>
 
-        <!-- SIDEBAR + MAIN CONTENT (desktop) -->
+        <!-- SIDEBAR + MAIN CONTENT -->
         <div class="sidebar-wrapper">
             <div class="sidebar">
                 <a href="#" class="active"><i class="fas fa-home"></i> Home</a>
@@ -171,9 +511,59 @@
         </div>
     </div>
 
+    <!-- ===== LOADING OVERLAY ===== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-container">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-glow"></div>
+                <div class="spinner-icon"><i class="fas fa-ticket-alt"></i></div>
+            </div>
+            <div class="loading-text">
+                <span id="loadingMessage">Loading</span>
+                <span class="dots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
+            <div class="loading-subtext" id="loadingSubtext">Please wait while we process your request</div>
+            <div class="loading-progress">
+                <div class="progress-bar"></div>
+            </div>
+            <div class="loading-brand"><i class="fas fa-ticket-alt"></i> Soldout.com</div>
+        </div>
+    </div>
+
     <script>
         // ============================================================
-        // 0. LOAD MOBILE SIDEBAR
+        // 0. LOADING OVERLAY CONTROLS
+        // ============================================================
+        function showLoading(message, subtext) {
+            const overlay = document.getElementById('loadingOverlay');
+            const msg = document.getElementById('loadingMessage');
+            const sub = document.getElementById('loadingSubtext');
+            if (!overlay) return;
+            msg.textContent = message || 'Loading';
+            sub.textContent = subtext || 'Please wait while we process your request';
+            overlay.classList.remove('fade-out');
+            overlay.style.display = 'flex';
+            void overlay.offsetWidth; // force reflow
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (!overlay) return;
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+                overlay.classList.remove('fade-out');
+            }, 500);
+        }
+
+        // ============================================================
+        // 1. LOAD MOBILE SIDEBAR
         // ============================================================
         async function loadSidebar() {
             try {
@@ -181,7 +571,6 @@
                 const html = await response.text();
                 document.getElementById('sidebar-container').innerHTML = html;
 
-                // Attach toggle logic after injection
                 const hamburger = document.getElementById('hamburgerBtn');
                 const sidebar = document.getElementById('sidebarMobile');
                 const overlay = document.getElementById('sidebarOverlay');
@@ -194,28 +583,23 @@
                         hamburger.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-
                     hamburger.addEventListener('click', function (e) {
                         e.stopPropagation();
                         toggleSidebar();
                     });
-
                     overlay.addEventListener('click', function () {
                         toggleSidebar(false);
                     });
-
                     sidebar.querySelectorAll('a').forEach(function (link) {
                         link.addEventListener('click', function () {
                             toggleSidebar(false);
                         });
                     });
-
                     document.addEventListener('keydown', function (e) {
                         if (e.key === 'Escape' && sidebar.classList.contains('open')) {
                             toggleSidebar(false);
                         }
                     });
-
                     window.addEventListener('resize', function () {
                         if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
                             toggleSidebar(false);
@@ -228,7 +612,7 @@
         }
 
         // ============================================================
-        // 1. HELPER FUNCTIONS
+        // 2. HELPER FUNCTIONS
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -242,13 +626,10 @@
 
         function getCurrentUser() {
             const data = localStorage.getItem('currentUser');
-            const user = data ? JSON.parse(data) : null;
-            console.log('getCurrentUser() ->', user);
-            return user;
+            return data ? JSON.parse(data) : null;
         }
 
         function setCurrentUser(user) {
-            console.log('setCurrentUser() called with:', user);
             localStorage.setItem('currentUser', JSON.stringify(user));
             updateHeaderAvatar(user);
         }
@@ -271,23 +652,15 @@
         }
 
         // ============================================================
-        // 2. UPDATE HEADER AVATAR (with fallback to server)
+        // 3. UPDATE HEADER AVATAR (with fallback to server)
         // ============================================================
         async function updateHeaderAvatar(user) {
             const avatarContainer = document.getElementById('userAvatar');
             const userNameSpan = document.getElementById('userNameDisplay');
-            if (!avatarContainer || !userNameSpan) {
-                console.error('Header elements not found!');
-                return;
-            }
+            if (!avatarContainer || !userNameSpan) return;
 
-            if (!user) {
-                user = getCurrentUser();
-            }
+            if (!user) user = getCurrentUser();
 
-            console.log('updateHeaderAvatar() received user:', user);
-
-            // If user is null or missing profilePicture, attempt to fetch from server
             if (!user || !user.profilePicture) {
                 const token = getAuthToken();
                 if (token) {
@@ -303,7 +676,6 @@
                             });
                             if (response.ok) {
                                 const freshUser = await response.json();
-                                console.log('Fetched fresh user data from server:', freshUser);
                                 localStorage.setItem('currentUser', JSON.stringify(freshUser));
                                 user = freshUser;
                             }
@@ -314,30 +686,20 @@
                 }
             }
 
-            // Now render
             if (user && user.firstName) {
                 if (user.profilePicture) {
                     const picUrl = getAbsoluteUrl(user.profilePicture);
-                    console.log('Setting avatar image to:', picUrl);
                     avatarContainer.innerHTML =
                         `<img src="${picUrl}" alt="${user.firstName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
                 } else {
-                    console.log('No profile picture, showing default icon');
                     avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
                 }
                 userNameSpan.textContent = `${user.firstName} ${user.lastName || ''}`;
             } else {
-                console.log('User not logged in, showing default icon');
                 avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
                 userNameSpan.textContent = '';
             }
         }
-
-        // ============================================================
-        // 3. HEADER INIT (dropdown, logout – from header.js)
-        // ============================================================
-        // We rely on header.js for dropdown and logout.
-        // It's already loaded via the <script> tag.
 
         // ============================================================
         // 4. PAGE LOGIC (videos, login, wishlist)
@@ -505,16 +867,12 @@
         document.addEventListener('DOMContentLoaded', async function () {
             console.log('DOM ready – loading sidebar...');
 
-            // Load the mobile sidebar first
             await loadSidebar();
 
-            // Now initialise header (avatar, dropdown, logout) – header.js already runs,
-            // but we call it again to ensure it's ready (it's idempotent).
             if (typeof window.initHeader === 'function') {
                 window.initHeader();
             }
 
-            // Update avatar
             await updateHeaderAvatar();
 
             // Load videos
@@ -535,6 +893,7 @@
             const showRegister = document.getElementById('showRegister');
             const showLogin = document.getElementById('showLogin');
 
+            // ----- LOGIN WITH LOADING -----
             document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (getCurrentUser()) {
@@ -544,6 +903,9 @@
                 }
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
+
+                showLoading('Logging In', 'Please wait while we authenticate you...');
+
                 try {
                     const response = await fetch(`${API_BASE_URL}/auth/login`, {
                         method: 'POST',
@@ -561,14 +923,21 @@
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
                     await updateHeaderAvatar(data.user);
-                    showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                     loginOverlay.classList.remove('active');
-                    location.reload();
+                    // Redirect after a moment to show the loading
+                    setTimeout(() => {
+                        hideLoading();
+                        showAlert(`Welcome back ${data.user.firstName}!`, 'success');
+                        // Reload to refresh the page with the user logged in
+                        location.reload();
+                    }, 600);
                 } catch (err) {
+                    hideLoading();
                     showAlert(err.message || 'Login failed', 'danger');
                 }
             });
 
+            // ----- REGISTER WITH LOADING -----
             document.getElementById('registerForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (getCurrentUser()) {
@@ -585,6 +954,9 @@
                     showAlert('Passwords do not match!', 'danger');
                     return;
                 }
+
+                showLoading('Creating Account', 'Setting up your profile...');
+
                 try {
                     const response = await fetch(`${API_BASE_URL}/auth/register`, {
                         method: 'POST',
@@ -602,14 +974,19 @@
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
                     await updateHeaderAvatar(data.user);
-                    showAlert(`Welcome ${firstName}!`, 'success');
                     registerOverlay.classList.remove('active');
-                    location.reload();
+                    setTimeout(() => {
+                        hideLoading();
+                        showAlert(`Welcome ${firstName}!`, 'success');
+                        location.reload();
+                    }, 600);
                 } catch (err) {
+                    hideLoading();
                     showAlert(err.message || 'Registration failed', 'danger');
                 }
             });
 
+            // Modal controls
             closeLogin.addEventListener('click', () => loginOverlay.classList.remove('active'));
             closeRegister.addEventListener('click', () => registerOverlay.classList.remove('active'));
             showRegister.addEventListener('click', (e) => {
@@ -630,6 +1007,30 @@
             registerOverlay.addEventListener('click', (e) => {
                 if (e.target === registerOverlay) registerOverlay.classList.remove('active');
             });
+
+            // ===== LOGOUT WITH LOADING =====
+            // Override the logout button from header.js
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                // Remove any existing listener (set by header.js)
+                logoutBtn.removeEventListener('click', logoutBtn._customHandler);
+                logoutBtn._customHandler = function (e) {
+                    e.preventDefault();
+                    showLoading('Logging Out', 'See you soon!');
+                    setTimeout(() => {
+                        removeAuthToken();
+                        removeCurrentUser();
+                        if (typeof window.updateUserState === 'function') {
+                            window.updateUserState(null);
+                        }
+                        // Redirect after a short delay so the user sees the loading
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 400);
+                    }, 300);
+                };
+                logoutBtn.addEventListener('click', logoutBtn._customHandler);
+            }
         });
     </script>
 </body>
