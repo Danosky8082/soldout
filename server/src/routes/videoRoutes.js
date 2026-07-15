@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// ===== Multer (disk storage – writes files to /tmp) =====
+// ===== Multer (disk storage) =====
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = '/tmp/uploads';
@@ -35,24 +35,27 @@ const videoUpload = multer({
   limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB
 });
 
-// ===== Helper: Upload to Supabase from disk =====
-async function uploadToSupabase(filePath, folder) {
+// ===== Helper: Upload to Supabase using STREAM (memory efficient) =====
+async function uploadToSupabase(filePath, folder, contentType) {
   const fileName = `${folder}/${path.basename(filePath)}`;
-  const fileBuffer = fs.readFileSync(filePath);
+  const fileStream = fs.createReadStream(filePath);
+
   const { data, error } = await supabase.storage
     .from('uploads')
-    .upload(fileName, fileBuffer, {
+    .upload(fileName, fileStream, {
       cacheControl: '3600',
       upsert: false,
-      contentType: 'application/octet-stream',
+      contentType: contentType || 'application/octet-stream',
     });
+
   if (error) throw new Error(`Supabase upload error: ${error.message}`);
+
   const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(fileName);
   return publicUrl;
 }
 
 // ============================================================
-//  UPLOAD VIDEO (with disk storage and cleanup)
+//  UPLOAD VIDEO (with streaming and cleanup)
 // ============================================================
 router.post('/',
   authMiddleware,
@@ -64,7 +67,6 @@ router.post('/',
     let thumbnailPath, videoPath;
     try {
       console.log('Upload request received');
-      console.log('Files:', req.files);
       console.log('Body:', req.body);
 
       if (!req.files || !req.files.thumbnail || !req.files.video) {
@@ -84,9 +86,9 @@ router.post('/',
       thumbnailPath = thumbnailFile.path;
       videoPath = videoFile.path;
 
-      // Upload to Supabase
-      const thumbnailUrl = await uploadToSupabase(thumbnailPath, 'thumbnails');
-      const videoUrl = await uploadToSupabase(videoPath, 'videos');
+      // Upload to Supabase using streams
+      const thumbnailUrl = await uploadToSupabase(thumbnailPath, 'thumbnails', thumbnailFile.mimetype);
+      const videoUrl = await uploadToSupabase(videoPath, 'videos', videoFile.mimetype);
 
       // Create video record in DB
       const video = await prisma.video.create({
