@@ -7,6 +7,7 @@
     <title>Soldout.com - the Entertainment Experience</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
+    <!-- We'll use the hardcoded header, so no header.js needed -->
 </head>
 
 <body>
@@ -42,7 +43,7 @@
             </div>
         </header>
 
-        <!-- Mobile sidebar (same as before) -->
+        <!-- Mobile sidebar overlay -->
         <div class="sidebar-mobile-overlay" id="sidebarOverlay"></div>
         <nav class="sidebar-mobile" id="sidebarMobile">
             <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
@@ -160,9 +161,7 @@
 
         <footer>
             <div class="footer-links">
-                <a href="admin.html">
-                    <font color="green">Admin</font>
-                </a> |
+                <a href="admin.html"><font color="green">Admin</font></a> |
                 <a href="#">About Us</a> |
                 <a href="#">Contact</a> |
                 <a href="#">Privacy Policy</a> |
@@ -181,7 +180,7 @@
 
     <script>
         // ============================================================
-        // 0. HELPER FUNCTIONS (with console logs for debugging)
+        // 0. HELPER FUNCTIONS (with console logs)
         // ============================================================
         const API_BASE_URL = 'https://soldout-jh33.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
@@ -234,7 +233,6 @@
                 return;
             }
 
-            // If no user is passed, try to get from localStorage
             if (!user) {
                 user = getCurrentUser();
             }
@@ -246,13 +244,11 @@
                 const token = getAuthToken();
                 if (token) {
                     try {
-                        // Try to fetch the user's profile from the server
-                        const userId = user?.id || (() => {
-                            try {
-                                const decoded = jwt_decode(token);
-                                return decoded.id || decoded.userId;
-                            } catch (e) { return null; }
-                        })();
+                        let userId = user?.id;
+                        if (!userId) {
+                            const decoded = jwt_decode(token);
+                            userId = decoded.id || decoded.userId;
+                        }
                         if (userId) {
                             const response = await fetch(`${API_BASE_URL}/users/${userId}/profile`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
@@ -260,7 +256,6 @@
                             if (response.ok) {
                                 const freshUser = await response.json();
                                 console.log('Fetched fresh user data from server:', freshUser);
-                                // Update localStorage with fresh data
                                 localStorage.setItem('currentUser', JSON.stringify(freshUser));
                                 user = freshUser;
                             }
@@ -271,7 +266,7 @@
                 }
             }
 
-            // Now render the avatar
+            // Now render
             if (user && user.firstName) {
                 if (user.profilePicture) {
                     const picUrl = getAbsoluteUrl(user.profilePicture);
@@ -304,8 +299,7 @@
                 return;
             }
 
-            // Dropdown
-            userInfo.addEventListener('click', function (e) {
+            userInfo.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const currentUser = getCurrentUser();
                 if (currentUser) {
@@ -317,13 +311,12 @@
                 }
             });
 
-            document.addEventListener('click', function () {
+            document.addEventListener('click', function() {
                 dropdown.classList.remove('show');
             });
 
-            // Logout
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', function (e) {
+                logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     removeAuthToken();
                     removeCurrentUser();
@@ -331,9 +324,8 @@
                 });
             }
 
-            // Home link
             if (homeLink) {
-                homeLink.addEventListener('click', function (e) {
+                homeLink.addEventListener('click', function(e) {
                     e.preventDefault();
                     window.location.href = 'index.html';
                 });
@@ -351,24 +343,24 @@
                     hamburger.classList.toggle('active', isOpen);
                     document.body.style.overflow = isOpen ? 'hidden' : '';
                 }
-                hamburger.addEventListener('click', function (e) {
+                hamburger.addEventListener('click', function(e) {
                     e.stopPropagation();
                     toggleSidebar();
                 });
-                overlay.addEventListener('click', function () {
+                overlay.addEventListener('click', function() {
                     toggleSidebar(false);
                 });
-                sidebar.querySelectorAll('a').forEach(function (link) {
-                    link.addEventListener('click', function () {
+                sidebar.querySelectorAll('a').forEach(function(link) {
+                    link.addEventListener('click', function() {
                         toggleSidebar(false);
                     });
                 });
-                document.addEventListener('keydown', function (e) {
+                document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape' && sidebar.classList.contains('open')) {
                         toggleSidebar(false);
                     }
                 });
-                window.addEventListener('resize', function () {
+                window.addEventListener('resize', function() {
                     if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
                         toggleSidebar(false);
                     }
@@ -380,16 +372,168 @@
         // 3. PAGE LOGIC (videos, login, wishlist)
         // ============================================================
 
-        // (Add the same functions as before: addToWishlist, isInWishlist, showToast, showAlert, apiRequest, shuffleArray, renderVideos)
-        // I'll include them but keep them concise.
+        // Wishlist helpers
+        function addToWishlist(video) {
+            const user = getCurrentUser();
+            if (!user) {
+                showAlert('Please login to add to wishlist', 'warning');
+                document.getElementById('loginOverlay').classList.add('active');
+                return false;
+            }
+            if (!localStorage.getItem('wishlistDB')) {
+                localStorage.setItem('wishlistDB', JSON.stringify({ users: {}, items: {} }));
+            }
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            const userId = user.id || user.email;
+            const userWishlist = db.users[userId] || [];
+            if (!userWishlist.includes(video.id)) {
+                userWishlist.push(video.id);
+                db.users[userId] = userWishlist;
+                if (!db.items[video.id]) {
+                    db.items[video.id] = { ...video, addedDate: new Date().toISOString() };
+                }
+                localStorage.setItem('wishlistDB', JSON.stringify(db));
+                showToast('Added to wishlist!');
+                return true;
+            } else {
+                showToast('Already in wishlist');
+                return true;
+            }
+        }
+
+        function isInWishlist(videoId) {
+            const user = getCurrentUser();
+            if (!user) return false;
+            const db = JSON.parse(localStorage.getItem('wishlistDB'));
+            if (!db) return false;
+            const userId = user.id || user.email;
+            const userWishlist = db.users[userId] || [];
+            return userWishlist.includes(videoId);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('wishlistToast');
+            const m = document.getElementById('toastMessage');
+            m.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function showAlert(msg, type) {
+            const existing = document.querySelector('.alerts-container');
+            if (existing) existing.remove();
+            const c = document.createElement('div');
+            c.className = 'alerts-container';
+            c.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;width:80%;max-width:500px;';
+            const a = document.createElement('div');
+            a.className = `alert alert-${type} alert-temporary`;
+            a.textContent = msg;
+            c.appendChild(a);
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 5000);
+        }
+
+        async function apiRequest(url, method = 'GET', body = null) {
+            const headers = {};
+            const token = getAuthToken();
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            if (body && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+            const options = { method, headers };
+            if (body) options.body = body instanceof FormData ? body : JSON.stringify(body);
+            const response = await fetch(`${API_BASE_URL}${url}`, options);
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'API request failed');
+            }
+            return await response.json();
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Render videos
+        function renderVideos(videos) {
+            const gallery = document.getElementById('videoGallery');
+            gallery.innerHTML = '';
+
+            if (!videos || videos.length === 0) {
+                gallery.innerHTML = '<div class="alert alert-info">No premium videos found</div>';
+                return;
+            }
+
+            videos.forEach(video => {
+                if (!video.id) return;
+                const thumb = getAbsoluteUrl(video.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
+                const vidUrl = getAbsoluteUrl(video.videoUrl);
+                let uploaderName = 'Unknown';
+                if (video.user && video.user.firstName) {
+                    uploaderName = `${video.user.firstName} ${video.user.lastName || ''}`.trim();
+                } else if (video.uploaderName) {
+                    uploaderName = video.uploaderName;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'video-item';
+                div.innerHTML = `
+                    <div class="thumbnail-container">
+                        <button class="wishlist-btn" data-video-id="${video.id}">
+                            <i class="${isInWishlist(video.id) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
+                        <img class="video-thumbnail" src="${thumb}" alt="${video.title || 'Video'}">
+                        ${vidUrl ? `<video class="video-preview" muted loop playsinline><source src="${vidUrl}" type="video/mp4"></video>` : ''}
+                    </div>
+                    <div class="video-info">
+                        <div class="channel-icon"><i class="fas fa-user"></i></div>
+                        <div class="video-details">
+                            <h3 class="video-title">${video.title || 'Untitled'}</h3>
+                            <div class="video-meta">
+                                <span>${video.genre || 'No genre'} • ${video.year || 'N/A'}</span>
+                                <span class="uploader-name">By: ${uploaderName}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const preview = div.querySelector('.video-preview');
+                if (preview) {
+                    div.addEventListener('mouseenter', () => {
+                        preview.currentTime = 0;
+                        const p = preview.play();
+                        if (p) p.catch(e => { if (e.name !== 'AbortError') console.warn(e); });
+                    });
+                    div.addEventListener('mouseleave', () => {
+                        if (!preview.paused) preview.pause();
+                    });
+                }
+
+                div.addEventListener('click', (e) => {
+                    if (!e.target.closest('.wishlist-btn')) {
+                        sessionStorage.setItem('currentVideo', JSON.stringify(video));
+                        window.location.href = 'video-player.html';
+                    }
+                });
+
+                div.querySelector('.wishlist-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    addToWishlist(video);
+                });
+
+                gallery.appendChild(div);
+            });
+        }
 
         // ============================================================
         // 4. INITIALIZATION
         // ============================================================
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM ready – initializing...');
 
-            // Init header events
             initHeader();
 
             // Update avatar from localStorage (and fallback to server)
@@ -407,7 +551,7 @@
                 }
             })();
 
-            // Login/Register modals (same as before)
+            // Login/Register modals
             const loginOverlay = document.getElementById('loginOverlay');
             const registerOverlay = document.getElementById('registerOverlay');
             const closeLogin = document.querySelector('.close-login');
@@ -440,13 +584,9 @@
                     }
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
-
-                    // Explicitly update avatar again (just in case)
                     await updateHeaderAvatar(data.user);
-
                     showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                     loginOverlay.classList.remove('active');
-                    // Reload to refresh everything
                     location.reload();
                 } catch (err) {
                     showAlert(err.message || 'Login failed', 'danger');
