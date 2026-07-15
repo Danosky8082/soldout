@@ -135,7 +135,7 @@
 
     <script>
         // ============================================================
-        // 1. LOAD HEADER HTML (simplified)
+        // 1. LOAD HEADER HTML (UPDATED with setTimeout and setAvatar)
         // ============================================================
         async function loadHeader() {
             try {
@@ -143,17 +143,18 @@
                 const html = await response.text();
                 document.getElementById('header-container').innerHTML = html;
 
-                // After injection, force header setup and avatar update
-                if (typeof window.initHeader === 'function') {
-                    window.initHeader();
-                }
-                // Force the avatar update (this resets the retry counter)
-                if (typeof window.forceHeaderUpdate === 'function') {
-                    window.forceHeaderUpdate();
-                } else if (typeof window.updateUserState === 'function') {
-                    const user = window.getCurrentUser ? window.getCurrentUser() : null;
-                    window.updateUserState(user);
-                }
+                // Wait a fraction of a second for the DOM to update
+                setTimeout(function () {
+                    // Initialize header events (dropdown, logout, etc.)
+                    if (typeof window.initHeader === 'function') {
+                        window.initHeader();
+                    }
+                    // Directly set the avatar using the current user
+                    if (typeof window.setAvatar === 'function') {
+                        const user = window.getCurrentUser ? window.getCurrentUser() : null;
+                        window.setAvatar(user);
+                    }
+                }, 50);
             } catch (err) {
                 console.error('Error loading header:', err);
             }
@@ -413,14 +414,13 @@
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
 
-                    // ✅ Force header update immediately
+                    // Force header to update immediately
                     if (typeof window.forceHeaderUpdate === 'function') {
                         window.forceHeaderUpdate();
                     }
 
                     showAlert(`Welcome back ${data.user.firstName}!`, 'success');
                     loginOverlay.classList.remove('active');
-                    // Reload page to refresh header and video grid
                     location.reload();
                 } catch (err) {
                     showAlert(err.message || 'Login failed', 'danger');
@@ -461,7 +461,7 @@
                     setCurrentUser(data.user);
                     setAuthToken(data.token);
 
-                    // ✅ Force header update immediately
+                    // Force header to update immediately
                     if (typeof window.forceHeaderUpdate === 'function') {
                         window.forceHeaderUpdate();
                     }

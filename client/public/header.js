@@ -1,4 +1,4 @@
-// header.js – Ultimate Shared Header Logic
+// header.js – Shared Header Logic (with public setAvatar)
 (function() {
     // ============================================================
     // GLOBALS
@@ -18,38 +18,18 @@
     };
 
     // ============================================================
-    // UPDATE HEADER AVATAR + NAME (with aggressive retry)
+    // PUBLIC: Set avatar directly (can be called from any page)
     // ============================================================
-    let pendingUser = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 50;
-    let retryTimer = null;
-
-    function applyUserState(user) {
+    window.setAvatar = function(user) {
         const avatar = document.getElementById('userAvatar');
         const name = document.getElementById('userNameDisplay');
-
         if (!avatar || !name) {
-            // Header not loaded yet – retry up to 50 times (5 seconds)
-            if (retryCount < MAX_RETRIES) {
-                pendingUser = user;
-                retryCount++;
-                if (retryTimer) clearTimeout(retryTimer);
-                retryTimer = setTimeout(function() {
-                    applyUserState(pendingUser);
-                }, 100);
-            } else {
-                console.warn('Header not found after 5 seconds, giving up.');
-            }
+            // If header not yet rendered, retry in 100ms
+            setTimeout(function() {
+                window.setAvatar(user);
+            }, 100);
             return;
         }
-
-        // Found the header – apply the avatar
-        retryCount = 0;
-        if (retryTimer) clearTimeout(retryTimer);
-        retryTimer = null;
-        pendingUser = null;
-
         if (user && user.firstName) {
             if (user.profilePicture) {
                 const pic = window.getAbsoluteUrl(user.profilePicture);
@@ -62,22 +42,13 @@
             avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
             name.textContent = '';
         }
-    }
-
-    window.updateUserState = function(user) {
-        // Reset retry count so it starts fresh
-        retryCount = 0;
-        applyUserState(user);
     };
 
     // ============================================================
-    // FORCE UPDATE (exposed for manual calls)
+    // UPDATE HEADER STATE (calls setAvatar)
     // ============================================================
-    window.forceHeaderUpdate = function() {
-        const user = window.getCurrentUser();
-        retryCount = 0;
-        applyUserState(user);
-        if (!headerInitialized) window.initHeader();
+    window.updateUserState = function(user) {
+        window.setAvatar(user);
     };
 
     // ============================================================
@@ -86,9 +57,9 @@
     let headerInitialized = false;
 
     window.initHeader = function() {
-        // Apply avatar first
+        // First, set avatar
         const user = window.getCurrentUser();
-        applyUserState(user);
+        window.setAvatar(user);
 
         if (headerInitialized) return;
 
@@ -122,7 +93,7 @@
                 e.preventDefault();
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('authToken');
-                window.updateUserState(null);
+                window.setAvatar(null);
                 window.location.href = 'index.html';
             });
         }
@@ -182,50 +153,37 @@
     };
 
     // ============================================================
-    // WATCH FOR HEADER APPEARANCE (MutationObserver)
+    // AUTO-INIT – if header already exists, init immediately
     // ============================================================
-    function watchForHeader() {
+    function autoInit() {
         if (document.getElementById('userInfo')) {
             window.initHeader();
-            return;
-        }
-
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === 1 && node.querySelector && node.querySelector('#userInfo')) {
-                        observer.disconnect();
-                        window.initHeader();
-                    }
+        } else {
+            // Watch for header injection
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.querySelector && node.querySelector('#userInfo')) {
+                            observer.disconnect();
+                            window.initHeader();
+                        }
+                    });
                 });
             });
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-
-        // Fallback interval
-        const interval = setInterval(function() {
-            if (document.getElementById('userInfo')) {
-                clearInterval(interval);
-                observer.disconnect();
-                window.initHeader();
-            }
-        }, 200);
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
     }
 
-    // ============================================================
-    // AUTO-INIT
-    // ============================================================
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', watchForHeader);
+        document.addEventListener('DOMContentLoaded', autoInit);
     } else {
-        watchForHeader();
+        autoInit();
     }
 
-    // Expose methods globally
-    window.initHeader = window.initHeader || function() {};
-    window.forceHeaderUpdate = window.forceHeaderUpdate || function() {};
+    // Expose a helper for pages to call after login
+    window.forceHeaderUpdate = function() {
+        const user = window.getCurrentUser();
+        window.setAvatar(user);
+        if (!headerInitialized) window.initHeader();
+    };
 })();
