@@ -83,12 +83,17 @@
                         <i class="fas fa-home"></i> Home
                     </button>
                 </div>
+                <!-- ===== UPDATED ADMIN USER AREA WITH PROFILE UPLOAD ===== -->
                 <div class="admin-user">
-                    <img src="https://via.placeholder.com/40" alt="Admin User">
+                    <img id="adminAvatar" src="https://via.placeholder.com/40" alt="Admin User">
                     <div class="admin-user-info">
                         <div class="admin-user-name" id="adminUserName">Super Admin</div>
                         <div class="admin-user-role">Administrator</div>
                     </div>
+                    <input type="file" id="adminProfilePicInput" accept="image/*" style="display:none;">
+                    <button id="uploadProfilePicBtn" class="action-btn btn-edit" style="margin-left: 10px;">
+                        <i class="fas fa-camera"></i>
+                    </button>
                     <button id="logoutBtn" class="action-btn btn-delete" style="margin-left: 15px;">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
@@ -467,6 +472,49 @@
             document.getElementById('tableLoading').style.display = 'none';
         }
 
+        // ============================================================
+        //  SETUP ADMIN PROFILE UPLOAD
+        // ============================================================
+        function setupAdminProfileUpload() {
+            const uploadBtn = document.getElementById('uploadProfilePicBtn');
+            const fileInput = document.getElementById('adminProfilePicInput');
+            const avatarImg = document.getElementById('adminAvatar');
+
+            if (!uploadBtn || !fileInput) return;
+
+            // Remove old listeners to avoid duplicates
+            const newUploadBtn = uploadBtn.cloneNode(true);
+            uploadBtn.parentNode.replaceChild(newUploadBtn, uploadBtn);
+
+            newUploadBtn.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async function () {
+                const file = this.files[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('profilePicture', file);
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/profile-picture`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+                        body: formData
+                    });
+                    if (!response.ok) throw new Error('Upload failed');
+                    const data = await response.json();
+                    if (avatarImg) {
+                        avatarImg.src = getAdminAbsoluteUrl(data.profilePictureUrl);
+                    }
+                    showAlert('Profile picture updated!');
+                } catch (error) {
+                    showAlert(error.message || 'Failed to upload picture', 'danger');
+                }
+                this.value = '';
+            });
+        }
+
         // ----- Admin Login -----
         document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -501,11 +549,15 @@
                     `${currentAdmin.firstName} ${currentAdmin.lastName}`;
 
                 // Profile picture
+                const avatarImg = document.getElementById('adminAvatar');
                 if (currentAdmin.profilePicture) {
-                    document.querySelector('.admin-user img').src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
+                    avatarImg.src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
                 } else {
-                    document.querySelector('.admin-user img').src = 'https://via.placeholder.com/40';
+                    avatarImg.src = 'https://via.placeholder.com/40';
                 }
+
+                // Setup upload after login
+                setupAdminProfileUpload();
 
                 loadDashboardData();
                 initDataTables();
@@ -581,9 +633,16 @@
                     document.getElementById('adminDashboard').style.display = 'grid';
                     document.getElementById('adminUserName').textContent =
                         `${currentAdmin.firstName} ${currentAdmin.lastName}`;
+                    const avatarImg = document.getElementById('adminAvatar');
                     if (currentAdmin.profilePicture) {
-                        document.querySelector('.admin-user img').src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
+                        avatarImg.src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
+                    } else {
+                        avatarImg.src = 'https://via.placeholder.com/40';
                     }
+
+                    // Setup upload after session restore
+                    setupAdminProfileUpload();
+
                     loadDashboardData();
                     initDataTables();
                     return true;
