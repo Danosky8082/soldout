@@ -18,12 +18,25 @@
     };
 
     // ============================================================
-    // UPDATE HEADER AVATAR + NAME
+    // UPDATE HEADER AVATAR + NAME (with retry if header missing)
     // ============================================================
-    window.updateUserState = function(user) {
+    let pendingUser = null;
+    let retryTimer = null;
+
+    function applyUserState(user) {
         const avatar = document.getElementById('userAvatar');
         const name = document.getElementById('userNameDisplay');
-        if (!avatar || !name) return;
+        if (!avatar || !name) {
+            // Header not loaded yet – store and retry later
+            pendingUser = user;
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(function() {
+                applyUserState(pendingUser);
+            }, 200);
+            return;
+        }
+        retryTimer = null;
+        pendingUser = null;
 
         if (user && user.firstName) {
             if (user.profilePicture) {
@@ -37,6 +50,10 @@
             avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
             name.textContent = '';
         }
+    }
+
+    window.updateUserState = function(user) {
+        applyUserState(user);
     };
 
     // ============================================================
@@ -47,18 +64,13 @@
     window.initHeader = function() {
         // Always update avatar first
         const user = window.getCurrentUser();
-        window.updateUserState(user);
+        applyUserState(user);
 
-        // If already attached listeners, skip
         if (headerInitialized) return;
 
         const userInfo = document.getElementById('userInfo');
         const dropdown = document.getElementById('userDropdown');
-
-        if (!userInfo || !dropdown) {
-            // Header not yet in DOM – will try again later via observer
-            return;
-        }
+        if (!userInfo || !dropdown) return;
 
         // ----- Dropdown toggle -----
         userInfo.addEventListener('click', function(e) {
@@ -160,7 +172,6 @@
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1 && node.querySelector && node.querySelector('#userInfo')) {
-                        // Header has been added
                         observer.disconnect();
                         window.initHeader();
                     }
