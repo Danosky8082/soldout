@@ -6,6 +6,8 @@ const multer = require('multer');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+const jwt = require('jsonwebtoken'); // ✅ needed for delete route
+const authMiddleware = require('../middleware/auth'); // ✅ import auth middleware
 
 // ===== Supabase =====
 const supabase = createClient(
@@ -36,8 +38,9 @@ async function uploadToSupabase(file, folder) {
   return publicUrl;
 }
 
-// ===== UPLOAD VIDEO =====
+// ===== UPLOAD VIDEO – with authMiddleware =====
 router.post('/',
+  authMiddleware, // ✅ FIX: ensures req.user is set
   videoUpload.fields([
     { name: 'thumbnail', maxCount: 1 },
     { name: 'video', maxCount: 1 }
@@ -53,7 +56,7 @@ router.post('/',
       }
 
       const { title, description, genre, releaseDate } = req.body;
-      const userId = req.user.id; // Must have auth middleware (we'll assume it's set)
+      const userId = req.user.id; // ✅ now safe because authMiddleware runs first
 
       const releaseYear = new Date(releaseDate).getFullYear();
       if (isNaN(releaseYear)) {

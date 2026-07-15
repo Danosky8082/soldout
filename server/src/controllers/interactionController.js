@@ -157,7 +157,7 @@ const addComment = async (req, res) => {
   }
 };
 
-// ========== ADD REPLY (to a comment or another reply) ==========
+// ========== ADD REPLY (with validation) ==========
 const addReply = async (req, res) => {
   try {
     const { text, userId, commentId, videoId, parentReplyId } = req.body;
@@ -165,7 +165,46 @@ const addReply = async (req, res) => {
       return res.status(400).json({ message: 'text, userId, commentId, videoId are required' });
     }
 
-    // parentReplyId can be null for reply to a comment
+    // ✅ 1. Check that the comment exists
+    const comment = await prisma.comment.findUnique({
+      where: { id: parseInt(commentId) }
+    });
+    if (!comment) {
+      return res.status(404).json({
+        error: 'COMMENT_NOT_FOUND',
+        message: 'The comment you are replying to does not exist'
+      });
+    }
+
+    // ✅ 2. Verify the comment belongs to the video
+    if (comment.videoId !== parseInt(videoId)) {
+      return res.status(400).json({
+        error: 'VIDEO_MISMATCH',
+        message: 'The comment does not belong to this video'
+      });
+    }
+
+    // ✅ 3. If replying to a reply, verify that parent reply exists and belongs to the same comment
+    if (parentReplyId) {
+      const parentReply = await prisma.reply.findUnique({
+        where: { id: parseInt(parentReplyId) },
+        select: { commentId: true, videoId: true }
+      });
+      if (!parentReply) {
+        return res.status(404).json({
+          error: 'PARENT_REPLY_NOT_FOUND',
+          message: 'The reply you are responding to does not exist'
+        });
+      }
+      if (parentReply.commentId !== parseInt(commentId) || parentReply.videoId !== parseInt(videoId)) {
+        return res.status(400).json({
+          error: 'PARENT_MISMATCH',
+          message: 'The parent reply does not belong to this comment or video'
+        });
+      }
+    }
+
+    // ✅ 4. Create the reply
     const reply = await prisma.reply.create({
       data: {
         text,
