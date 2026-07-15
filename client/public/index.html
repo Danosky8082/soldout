@@ -142,7 +142,16 @@
                     const response = await fetch('header.html');
                     const html = await response.text();
                     document.getElementById('header-container').innerHTML = html;
-                    // No need to call initHeader – the MutationObserver will handle it.
+
+                    // After injecting the header, ensure avatar and events are set up
+                    if (typeof window.initHeader === 'function') {
+                        window.initHeader();
+                    }
+                    // Force update avatar from localStorage
+                    if (typeof window.updateUserState === 'function') {
+                        const user = window.getCurrentUser ? window.getCurrentUser() : null;
+                        window.updateUserState(user);
+                    }
                 } catch (err) {
                     console.error('Error loading header:', err);
                 }

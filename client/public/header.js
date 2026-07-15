@@ -1,7 +1,7 @@
-// header.js – Shared Header Logic (works for both hardcoded and dynamically loaded headers)
+// header.js – Shared Header Logic (with aggressive retry)
 (function() {
     // ============================================================
-    // GLOBALS – shared across all pages
+    // GLOBALS
     // ============================================================
     window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
 
@@ -18,24 +18,27 @@
     };
 
     // ============================================================
-    // UPDATE HEADER AVATAR + NAME (with retry if header missing)
+    // UPDATE HEADER AVATAR + NAME (with aggressive retry)
     // ============================================================
     let pendingUser = null;
-    let retryTimer = null;
+    let applyTimer = null;
 
     function applyUserState(user) {
         const avatar = document.getElementById('userAvatar');
         const name = document.getElementById('userNameDisplay');
+
         if (!avatar || !name) {
-            // Header not loaded yet – store and retry later
+            // Header not loaded yet – store and retry in 100ms
             pendingUser = user;
-            if (retryTimer) clearTimeout(retryTimer);
-            retryTimer = setTimeout(function() {
+            if (applyTimer) clearTimeout(applyTimer);
+            applyTimer = setTimeout(function() {
                 applyUserState(pendingUser);
-            }, 200);
+            }, 100);
             return;
         }
-        retryTimer = null;
+
+        // Found the header – apply the avatar
+        applyTimer = null;
         pendingUser = null;
 
         if (user && user.firstName) {
@@ -52,6 +55,7 @@
         }
     }
 
+    // Expose updateUserState so pages can call it after login
     window.updateUserState = function(user) {
         applyUserState(user);
     };
@@ -62,7 +66,7 @@
     let headerInitialized = false;
 
     window.initHeader = function() {
-        // Always update avatar first
+        // Apply avatar first
         const user = window.getCurrentUser();
         applyUserState(user);
 
@@ -70,7 +74,10 @@
 
         const userInfo = document.getElementById('userInfo');
         const dropdown = document.getElementById('userDropdown');
-        if (!userInfo || !dropdown) return;
+        if (!userInfo || !dropdown) {
+            // Header not ready – will retry via observer or manual call
+            return;
+        }
 
         // ----- Dropdown toggle -----
         userInfo.addEventListener('click', function(e) {
@@ -167,7 +174,7 @@
             return;
         }
 
-        // Otherwise, observe DOM for changes
+        // Use MutationObserver
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
@@ -184,14 +191,14 @@
             subtree: true
         });
 
-        // Also check periodically in case observer misses it
+        // Fallback: check every 200ms
         const interval = setInterval(function() {
             if (document.getElementById('userInfo')) {
                 clearInterval(interval);
                 observer.disconnect();
                 window.initHeader();
             }
-        }, 500);
+        }, 200);
     }
 
     // ============================================================
@@ -203,8 +210,10 @@
         watchForHeader();
     }
 
-    // ============================================================
-    // FALLBACK: also expose initHeader so pages can call it manually
-    // ============================================================
-    window.initHeader = window.initHeader || function() {};
+    // Expose a method to force a retry from outside (e.g., after login)
+    window.forceHeaderUpdate = function() {
+        const user = window.getCurrentUser();
+        applyUserState(user);
+        if (!headerInitialized) window.initHeader();
+    };
 })();
