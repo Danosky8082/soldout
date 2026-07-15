@@ -4,10 +4,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const multer = require('multer');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
-const jwt = require('jsonwebtoken'); // ✅ needed for delete route
-const authMiddleware = require('../middleware/auth'); // ✅ import auth middleware
+const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/auth');
 
 // ===== Supabase =====
 const supabase = createClient(
@@ -15,37 +15,53 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// ===== Multer (memory storage) =====
-const storage = multer.memoryStorage();
+// ===== Multer (disk storage – writes files to /tmp) =====
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = '/tmp/uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 const videoUpload = multer({
   storage: storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB
 });
 
-// ===== Helper: Upload to Supabase =====
-async function uploadToSupabase(file, folder) {
-  const fileExt = path.extname(file.originalname);
-  const fileName = `${folder}/${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+// ===== Helper: Upload to Supabase from disk =====
+async function uploadToSupabase(filePath, folder) {
+  const fileName = `${folder}/${path.basename(filePath)}`;
+  const fileBuffer = fs.readFileSync(filePath);
   const { data, error } = await supabase.storage
     .from('uploads')
-    .upload(fileName, file.buffer, {
+    .upload(fileName, fileBuffer, {
       cacheControl: '3600',
       upsert: false,
-      contentType: file.mimetype,
+      contentType: 'application/octet-stream',
     });
   if (error) throw new Error(`Supabase upload error: ${error.message}`);
   const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(fileName);
   return publicUrl;
 }
 
-// ===== UPLOAD VIDEO – with authMiddleware =====
+// ============================================================
+//  UPLOAD VIDEO (with disk storage and cleanup)
+// ============================================================
 router.post('/',
-  authMiddleware, // ✅ FIX: ensures req.user is set
+  authMiddleware,
   videoUpload.fields([
     { name: 'thumbnail', maxCount: 1 },
     { name: 'video', maxCount: 1 }
   ]),
   async (req, res) => {
+    let thumbnailPath, videoPath;
     try {
       console.log('Upload request received');
       console.log('Files:', req.files);
@@ -56,7 +72,7 @@ router.post('/',
       }
 
       const { title, description, genre, releaseDate } = req.body;
-      const userId = req.user.id; // ✅ now safe because authMiddleware runs first
+      const userId = req.user.id;
 
       const releaseYear = new Date(releaseDate).getFullYear();
       if (isNaN(releaseYear)) {
@@ -65,10 +81,14 @@ router.post('/',
 
       const thumbnailFile = req.files.thumbnail[0];
       const videoFile = req.files.video[0];
+      thumbnailPath = thumbnailFile.path;
+      videoPath = videoFile.path;
 
-      const thumbnailUrl = await uploadToSupabase(thumbnailFile, 'thumbnails');
-      const videoUrl = await uploadToSupabase(videoFile, 'videos');
+      // Upload to Supabase
+      const thumbnailUrl = await uploadToSupabase(thumbnailPath, 'thumbnails');
+      const videoUrl = await uploadToSupabase(videoPath, 'videos');
 
+      // Create video record in DB
       const video = await prisma.video.create({
         data: {
           title,
@@ -103,11 +123,21 @@ router.post('/',
         message: 'Video upload failed',
         error: error.message
       });
+    } finally {
+      // Clean up temporary files
+      try {
+        if (thumbnailPath && fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+        if (videoPath && fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+      } catch (cleanupError) {
+        console.error('Cleanup error:', cleanupError);
+      }
     }
   }
 );
 
-// ===== GET PREMIUM VIDEOS (last 30 days, approved) =====
+// ============================================================
+//  GET PREMIUM VIDEOS (last 30 days, approved)
+// ============================================================
 router.get('/premium', async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -142,7 +172,9 @@ router.get('/premium', async (req, res) => {
   }
 });
 
-// ===== GET TRENDING VIDEOS (older than 30 days, approved) =====
+// ============================================================
+//  GET TRENDING VIDEOS (older than 30 days, approved)
+// ============================================================
 router.get('/trending', async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -365,7 +397,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ===== DELETE VIDEO (with cascade and ownership check) =====
+// ============================================================
+//  DELETE VIDEO (with cascade and ownership check)
+// ============================================================
 router.delete('/:id', async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
