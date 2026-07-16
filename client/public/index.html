@@ -7,12 +7,11 @@
     <title>Soldout.com - the Entertainment Experience</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- ✅ Add favicon here -->
     <link rel="icon" type="image/png" href="/soldout.png">
     <script src="header.js" defer></script>
 
     <style>
-        /* ===== LOADING OVERLAY (add to global.css later) ===== */
+        /* ===== LOADING OVERLAY ===== */
         .loading-overlay {
             position: fixed;
             inset: 0;
@@ -150,15 +149,25 @@
             }
         }
 
+        /* Center logo image inside the spinner */
         .loading-spinner .spinner-icon {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 28px;
-            color: #fff;
-            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
             animation: pulseIcon 1.5s ease-in-out infinite;
+        }
+
+        .loading-spinner .spinner-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.3));
         }
 
         @keyframes pulseIcon {
@@ -166,7 +175,7 @@
             0%,
             100% {
                 transform: translate(-50%, -50%) scale(1);
-                opacity: 0.6;
+                opacity: 0.7;
             }
 
             50% {
@@ -290,12 +299,22 @@
             }
         }
 
+        /* Updated brand area with logo */
         .loading-brand {
             font-size: 14px;
             color: var(--text-muted);
             letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading-brand img {
+            height: 24px;
+            width: auto;
+            vertical-align: middle;
         }
 
         .loading-brand i {
@@ -315,7 +334,8 @@
             }
 
             .loading-spinner .spinner-icon {
-                font-size: 20px;
+                width: 30px;
+                height: 30px;
             }
 
             .loading-text {
@@ -324,6 +344,10 @@
 
             .loading-progress {
                 width: 150px;
+            }
+
+            .loading-brand img {
+                height: 18px;
             }
         }
 
@@ -339,7 +363,8 @@
             }
 
             .loading-spinner .spinner-icon {
-                font-size: 16px;
+                width: 24px;
+                height: 24px;
             }
 
             .loading-text {
@@ -353,9 +378,13 @@
             .loading-subtext {
                 font-size: 12px;
             }
+
+            .loading-brand img {
+                height: 16px;
+            }
         }
 
-        /* Logo styling: image + text */
+        /* Logo styling for header */
         .logo {
             display: flex;
             align-items: center;
@@ -542,7 +571,9 @@
                 <div class="spinner-ring"></div>
                 <div class="spinner-ring"></div>
                 <div class="spinner-glow"></div>
-                <div class="spinner-icon"><i class="fas fa-ticket-alt"></i></div>
+                <div class="spinner-icon">
+                    <img src="/soldout.png" alt="Soldout">
+                </div>
             </div>
             <div class="loading-text">
                 <span id="loadingMessage">Loading</span>
@@ -552,7 +583,10 @@
             <div class="loading-progress">
                 <div class="progress-bar"></div>
             </div>
-            <div class="loading-brand"><i class="fas fa-ticket-alt"></i> Soldout.com</div>
+            <div class="loading-brand">
+                <img src="/soldout.png" alt="Soldout">
+                Soldout.com
+            </div>
         </div>
     </div>
 
@@ -569,7 +603,7 @@
             sub.textContent = subtext || 'Please wait while we process your request';
             overlay.classList.remove('fade-out');
             overlay.style.display = 'flex';
-            void overlay.offsetWidth; // force reflow
+            void overlay.offsetWidth;
             overlay.classList.add('active');
         }
 
@@ -946,11 +980,9 @@
                     setAuthToken(data.token);
                     await updateHeaderAvatar(data.user);
                     loginOverlay.classList.remove('active');
-                    // Redirect after a moment to show the loading
                     setTimeout(() => {
                         hideLoading();
                         showAlert(`Welcome back ${data.user.firstName}!`, 'success');
-                        // Reload to refresh the page with the user logged in
                         location.reload();
                     }, 600);
                 } catch (err) {
@@ -1031,10 +1063,8 @@
             });
 
             // ===== LOGOUT WITH LOADING =====
-            // Override the logout button from header.js
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                // Remove any existing listener (set by header.js)
                 logoutBtn.removeEventListener('click', logoutBtn._customHandler);
                 logoutBtn._customHandler = function (e) {
                     e.preventDefault();
@@ -1045,7 +1075,6 @@
                         if (typeof window.updateUserState === 'function') {
                             window.updateUserState(null);
                         }
-                        // Redirect after a short delay so the user sees the loading
                         setTimeout(() => {
                             window.location.href = 'index.html';
                         }, 400);
