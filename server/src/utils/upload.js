@@ -1,4 +1,3 @@
-// utils/upload.js
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 

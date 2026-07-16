@@ -7,8 +7,6 @@ const path = require('path');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
-
-// ✅ Correct import – `auth` is the generic authentication middleware
 const { auth } = require('../middleware/auth');
 
 // ===== Supabase =====
@@ -29,15 +27,15 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  },
+  }
 });
 
 const videoUpload = multer({
   storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2GB
 });
 
-// ===== Helper: Upload to Supabase using streaming =====
+// ===== Helper: Upload to Supabase using STREAM =====
 async function uploadToSupabase(filePath, folder, contentType) {
   const fileName = `${folder}/${path.basename(filePath)}`;
   const fileStream = fs.createReadStream(filePath);
@@ -56,15 +54,12 @@ async function uploadToSupabase(filePath, folder, contentType) {
   return publicUrl;
 }
 
-// ============================================================
-//  UPLOAD VIDEO – requires authentication (auth middleware)
-// ============================================================
-router.post(
-  '/',
-  auth, // ✅ now a proper middleware function
+// ===== UPLOAD VIDEO =====
+router.post('/',
+  auth,
   videoUpload.fields([
     { name: 'thumbnail', maxCount: 1 },
-    { name: 'video', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
   ]),
   async (req, res) => {
     let thumbnailPath, videoPath;
@@ -77,7 +72,7 @@ router.post(
       }
 
       const { title, description, genre, releaseDate } = req.body;
-      const userId = req.user.id; // populated by `auth`
+      const userId = req.user.id;
 
       const releaseYear = new Date(releaseDate).getFullYear();
       if (isNaN(releaseYear)) {
@@ -89,11 +84,9 @@ router.post(
       thumbnailPath = thumbnailFile.path;
       videoPath = videoFile.path;
 
-      // Upload to Supabase using streams
       const thumbnailUrl = await uploadToSupabase(thumbnailPath, 'thumbnails', thumbnailFile.mimetype);
       const videoUrl = await uploadToSupabase(videoPath, 'videos', videoFile.mimetype);
 
-      // Create video record in DB
       const video = await prisma.video.create({
         data: {
           title,
@@ -103,10 +96,10 @@ router.post(
           thumbnail: thumbnailUrl,
           videoUrl: videoUrl,
           user: {
-            connect: { id: parseInt(userId) },
+            connect: { id: parseInt(userId) }
           },
-          status: 'PENDING',
-        },
+          status: 'PENDING'
+        }
       });
 
       console.log('Video created:', video);
@@ -119,17 +112,16 @@ router.post(
           videoUrl: video.videoUrl,
           year: video.year,
           genre: video.genre,
-          status: video.status,
-        },
+          status: video.status
+        }
       });
     } catch (error) {
       console.error('Upload error:', error);
       res.status(500).json({
         message: 'Video upload failed',
-        error: error.message,
+        error: error.message
       });
     } finally {
-      // Clean up temporary files
       try {
         if (thumbnailPath && fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
         if (videoPath && fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
@@ -140,9 +132,7 @@ router.post(
   }
 );
 
-// ============================================================
-//  GET PREMIUM VIDEOS (last 30 days, approved)
-// ============================================================
+// ===== GET PREMIUM VIDEOS =====
 router.get('/premium', async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -151,20 +141,20 @@ router.get('/premium', async (req, res) => {
     const videos = await prisma.video.findMany({
       where: {
         createdAt: { gte: thirtyDaysAgo },
-        status: 'APPROVED',
+        status: 'APPROVED'
       },
       include: {
         user: {
-          select: { firstName: true, lastName: true },
-        },
+          select: { firstName: true, lastName: true }
+        }
       },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 20
     });
 
-    const formattedVideos = videos.map((video) => ({
+    const formattedVideos = videos.map(video => ({
       ...video,
-      uploaderName: `${video.user.firstName} ${video.user.lastName}`,
+      uploaderName: `${video.user.firstName} ${video.user.lastName}`
     }));
 
     res.json(formattedVideos);
@@ -172,14 +162,12 @@ router.get('/premium', async (req, res) => {
     console.error('Premium videos error:', error);
     res.status(500).json({
       message: 'Failed to fetch videos',
-      error: error.message,
+      error: error.message
     });
   }
 });
 
-// ============================================================
-//  GET TRENDING VIDEOS (older than 30 days, approved)
-// ============================================================
+// ===== GET TRENDING VIDEOS =====
 router.get('/trending', async (req, res) => {
   try {
     const thirtyDaysAgo = new Date();
@@ -188,20 +176,20 @@ router.get('/trending', async (req, res) => {
     const videos = await prisma.video.findMany({
       where: {
         createdAt: { lt: thirtyDaysAgo },
-        status: 'APPROVED',
+        status: 'APPROVED'
       },
       include: {
         user: {
-          select: { firstName: true, lastName: true },
-        },
+          select: { firstName: true, lastName: true }
+        }
       },
       orderBy: { views: 'desc' },
-      take: 20,
+      take: 20
     });
 
-    const formattedVideos = videos.map((video) => ({
+    const formattedVideos = videos.map(video => ({
       ...video,
-      uploaderName: `${video.user.firstName} ${video.user.lastName}`,
+      uploaderName: `${video.user.firstName} ${video.user.lastName}`
     }));
 
     res.json(formattedVideos);
@@ -209,14 +197,12 @@ router.get('/trending', async (req, res) => {
     console.error('Trending videos error:', error);
     res.status(500).json({
       message: 'Failed to fetch videos',
-      error: error.message,
+      error: error.message
     });
   }
 });
 
-// ============================================================
-//  GET VIDEO BY ID – enhanced with comments, replies, likes, subscriptions
-// ============================================================
+// ===== GET VIDEO BY ID (enhanced) =====
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -232,12 +218,12 @@ router.get('/:id', async (req, res) => {
             firstName: true,
             lastName: true,
             profilePicture: true,
-          },
+          }
         },
         _count: {
-          select: { comments: true },
-        },
-      },
+          select: { comments: true }
+        }
+      }
     });
 
     if (!video) {
@@ -246,27 +232,27 @@ router.get('/:id', async (req, res) => {
 
     // 2. Count likes and dislikes
     const likeCount = await prisma.like.count({
-      where: { videoId: parseInt(id), type: 'LIKE' },
+      where: { videoId: parseInt(id), type: 'LIKE' }
     });
     const dislikeCount = await prisma.like.count({
-      where: { videoId: parseInt(id), type: 'DISLIKE' },
+      where: { videoId: parseInt(id), type: 'DISLIKE' }
     });
 
     // 3. Get ratings
     const ratings = await prisma.rating.findMany({
       where: { videoId: parseInt(id) },
-      select: { value: true, userId: true },
+      select: { value: true, userId: true }
     });
     const avgRating = ratings.length > 0
       ? (ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length).toFixed(1)
       : null;
     const userRating = userId
-      ? ratings.find((r) => r.userId === userId)?.value || null
+      ? ratings.find(r => r.userId === userId)?.value || null
       : null;
 
     // 4. Get subscriber count for the uploader
     const subscriberCount = await prisma.subscription.count({
-      where: { creatorId: video.userId },
+      where: { creatorId: video.userId }
     });
 
     // 5. Check if current user liked/disliked/subscribed
@@ -279,8 +265,8 @@ router.get('/:id', async (req, res) => {
         where: {
           userId,
           videoId: parseInt(id),
-          type: { in: ['LIKE', 'DISLIKE'] },
-        },
+          type: { in: ['LIKE', 'DISLIKE'] }
+        }
       });
       if (userLike) {
         if (userLike.type === 'LIKE') isLiked = true;
@@ -290,8 +276,8 @@ router.get('/:id', async (req, res) => {
       const subscription = await prisma.subscription.findFirst({
         where: {
           userId,
-          creatorId: video.userId,
-        },
+          creatorId: video.userId
+        }
       });
       if (subscription) isSubscribed = true;
     }
@@ -305,8 +291,8 @@ router.get('/:id', async (req, res) => {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
-          },
+            profilePicture: true
+          }
         },
         likes: true,
         replies: {
@@ -316,8 +302,8 @@ router.get('/:id', async (req, res) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                profilePicture: true,
-              },
+                profilePicture: true
+              }
             },
             likes: true,
             replies: {
@@ -327,31 +313,31 @@ router.get('/:id', async (req, res) => {
                     id: true,
                     firstName: true,
                     lastName: true,
-                    profilePicture: true,
-                  },
+                    profilePicture: true
+                  }
                 },
-                likes: true,
-              },
-            },
-          },
-        },
+                likes: true
+              }
+            }
+          }
+        }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }
     });
 
     // Format comments to match frontend expectations
-    const formattedComments = comments.map((comment) => {
-      const commentLikes = comment.likes.filter((l) => l.type === 'LIKE').length;
+    const formattedComments = comments.map(comment => {
+      const commentLikes = comment.likes.filter(l => l.type === 'LIKE').length;
       const formatReplies = (replies) => {
-        return replies.map((reply) => ({
+        return replies.map(reply => ({
           id: reply.id,
           text: reply.text,
           createdAt: reply.createdAt,
           user: reply.user,
           _count: {
-            likes: reply.likes.filter((l) => l.type === 'LIKE').length,
+            likes: reply.likes.filter(l => l.type === 'LIKE').length
           },
-          replies: reply.replies ? formatReplies(reply.replies) : [],
+          replies: reply.replies ? formatReplies(reply.replies) : []
         }));
       };
 
@@ -361,9 +347,9 @@ router.get('/:id', async (req, res) => {
         createdAt: comment.createdAt,
         user: comment.user,
         _count: {
-          likes: commentLikes,
+          likes: commentLikes
         },
-        replies: formatReplies(comment.replies),
+        replies: formatReplies(comment.replies)
       };
     });
 
@@ -382,8 +368,8 @@ router.get('/:id', async (req, res) => {
       comments: formattedComments,
       user: {
         ...video.user,
-        subscriberCount,
-      },
+        subscriberCount
+      }
     };
 
     delete response._count;
@@ -393,14 +379,12 @@ router.get('/:id', async (req, res) => {
     console.error('Error fetching video:', error);
     res.status(500).json({
       message: 'Failed to fetch video',
-      error: error.message,
+      error: error.message
     });
   }
 });
 
-// ============================================================
-//  DELETE VIDEO (with cascade and ownership check)
-// ============================================================
+// ===== DELETE VIDEO =====
 router.delete('/:id', async (req, res) => {
   try {
     const videoId = parseInt(req.params.id);
@@ -427,7 +411,7 @@ router.delete('/:id', async (req, res) => {
 
     const video = await prisma.video.findUnique({
       where: { id: videoId },
-      select: { userId: true },
+      select: { userId: true }
     });
     if (!video) {
       return res.status(404).json({ message: 'Video not found' });
@@ -438,7 +422,6 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ message: 'Permission denied' });
     }
 
-    // Transaction to delete all related records
     await prisma.$transaction(async (prisma) => {
       await prisma.reply.deleteMany({ where: { videoId } });
       await prisma.comment.deleteMany({ where: { videoId } });
@@ -454,7 +437,7 @@ router.delete('/:id', async (req, res) => {
     console.error('Delete error:', error);
     res.status(500).json({
       message: 'Failed to delete video',
-      error: error.message,
+      error: error.message
     });
   }
 });

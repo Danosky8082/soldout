@@ -6,9 +6,6 @@ const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/email');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ============================================================
-// REGISTER – with email verification
-// ============================================================
 const register = async (req, res) => {
   try {
     const prisma = new PrismaClient();
@@ -40,7 +37,6 @@ const register = async (req, res) => {
       }
     });
 
-    // Send verification email (non‑blocking)
     sendVerificationEmail(user.email, user.firstName, verificationToken)
       .catch(console.error);
     
@@ -64,9 +60,6 @@ const register = async (req, res) => {
   }
 };
 
-// ============================================================
-// LOGIN
-// ============================================================
 const login = async (req, res) => {
   try {
     const prisma = new PrismaClient();
@@ -86,7 +79,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials. Check your input.' });
     }
 
-    // Optional: check isVerified
+    // Optional: check if user is verified
     // if (!user.isVerified) {
     //   return res.status(403).json({ message: 'Please verify your email first.' });
     // }
@@ -110,9 +103,6 @@ const login = async (req, res) => {
   }
 };
 
-// ============================================================
-// VERIFY EMAIL
-// ============================================================
 const verifyEmail = async (req, res) => {
   const { token } = req.query;
 
@@ -154,9 +144,6 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-// ============================================================
-// RESEND VERIFICATION EMAIL
-// ============================================================
 const resendVerification = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });

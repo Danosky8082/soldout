@@ -14,7 +14,26 @@ const { createClient } = require('@supabase/supabase-js');
 const videoRoutes = require('./routes/videoRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
 const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes'); // NEW
+
+// ===== DIAGNOSTIC: List all files in the routes folder =====
+console.log('\n=== ROUTES FOLDER CONTENTS ===');
+try {
+    const routeFiles = fs.readdirSync(path.join(__dirname, 'routes'));
+    console.log('Files in routes folder:', routeFiles);
+} catch (err) {
+    console.error('ERROR reading routes folder:', err.message);
+}
+console.log('================================\n');
+
+// ===== NOW try to load adminRoutes =====
+let adminRoutes;
+try {
+    adminRoutes = require('./routes/adminRoutes');
+    console.log('✅ adminRoutes loaded successfully.');
+} catch (err) {
+    console.error('❌ Failed to load adminRoutes:', err.message);
+    adminRoutes = null;
+}
 
 // Load environment variables
 dotenv.config();
@@ -184,9 +203,14 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // ============================================================
-//  ADMIN ROUTES – Mount the modular admin routes
+//  ADMIN ROUTES – Mount the modular admin routes (if loaded)
 // ============================================================
-app.use('/api/admin', adminRoutes);
+if (adminRoutes) {
+  app.use('/api/admin', adminRoutes);
+  console.log('✅ Admin routes mounted.');
+} else {
+  console.warn('⚠️ Admin routes NOT mounted because adminRoutes could not be loaded.');
+}
 
 // ============================================================
 //  ADDITIONAL ADMIN ENDPOINT: /me (session check)

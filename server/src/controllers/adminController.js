@@ -1,4 +1,3 @@
-// controllers/adminController.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
@@ -20,7 +19,6 @@ const getAdminDashboard = async (req, res) => {
   }
 };
 
-// ===== PENDING VIDEOS =====
 const getPendingVideos = async (req, res) => {
   try {
     const videos = await prisma.video.findMany({
@@ -35,7 +33,6 @@ const getPendingVideos = async (req, res) => {
   }
 };
 
-// ===== APPROVED VIDEOS =====
 const getApprovedVideos = async (req, res) => {
   try {
     const videos = await prisma.video.findMany({
@@ -50,7 +47,6 @@ const getApprovedVideos = async (req, res) => {
   }
 };
 
-// ===== REJECTED VIDEOS =====
 const getRejectedVideos = async (req, res) => {
   try {
     const videos = await prisma.video.findMany({
@@ -65,7 +61,6 @@ const getRejectedVideos = async (req, res) => {
   }
 };
 
-// ===== GET SINGLE VIDEO =====
 const getVideoById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -81,7 +76,6 @@ const getVideoById = async (req, res) => {
   }
 };
 
-// ===== APPROVE VIDEO =====
 const approveVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,7 +90,6 @@ const approveVideo = async (req, res) => {
   }
 };
 
-// ===== REJECT VIDEO =====
 const rejectVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -112,7 +105,6 @@ const rejectVideo = async (req, res) => {
   }
 };
 
-// ===== UNPUBLISH VIDEO =====
 const unpublishVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,7 +119,6 @@ const unpublishVideo = async (req, res) => {
   }
 };
 
-// ===== DELETE VIDEO =====
 const deleteVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,7 +130,6 @@ const deleteVideo = async (req, res) => {
   }
 };
 
-// ===== USERS =====
 const getUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -163,7 +153,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-// ===== GET SINGLE USER =====
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -188,7 +177,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-// ===== UPDATE USER =====
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -204,7 +192,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-// ===== BAN USER =====
 const banUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -219,7 +206,6 @@ const banUser = async (req, res) => {
   }
 };
 
-// ===== UNBAN USER =====
 const unbanUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -234,7 +220,6 @@ const unbanUser = async (req, res) => {
   }
 };
 
-// ===== ADMINS LIST =====
 const getAdmins = async (req, res) => {
   try {
     const admins = await prisma.user.findMany({
@@ -258,7 +243,6 @@ const getAdmins = async (req, res) => {
   }
 };
 
-// ===== GET SINGLE ADMIN =====
 const getAdminById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -283,7 +267,6 @@ const getAdminById = async (req, res) => {
   }
 };
 
-// ===== DELETE ADMIN =====
 const deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -303,7 +286,6 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
-// ===== CHANGE PASSWORD =====
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -330,7 +312,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-// ===== REGISTER ADMIN =====
 const registerAdmin = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
