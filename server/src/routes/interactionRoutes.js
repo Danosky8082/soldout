@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const interactionController = require('../controllers/interactionController');
-
-// ✅ Correct import – `auth` is the generic authentication middleware
-const { auth } = require('../middleware/auth');
+const { auth } = require('../middleware/auth'); // ✅ destructure auth
 
 // All interaction endpoints require authentication
 router.post('/like', auth, interactionController.toggleLike);

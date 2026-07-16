@@ -1,20 +1,11 @@
-// server/src/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
+const authController = require('../controllers/authController'); // ✅ import the entire controller
 
-// Register route
-router.post('/register', (req, res) => {
-  const authController = require('../controllers/authController');
-  authController.register(req, res);
-});
-
-// Login route
-router.post('/login', (req, res) => {
-  const authController = require('../controllers/authController');
-  authController.login(req, res);
-});
-
-router.get('/verify', verifyEmail);
-router.post('/resend-verification', resendVerification);
+// Public auth routes
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.get('/verify-email', authController.verifyEmail);      // ✅ note: use verify-email, not verify
+router.post('/resend-verification', authController.resendVerification);
 
 module.exports = router;
