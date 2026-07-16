@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
 const interactionController = require('../controllers/interactionController');
 
+// ✅ Correct import – `auth` is the generic authentication middleware
+const { auth } = require('../middleware/auth');
+
 // All interaction endpoints require authentication
-router.post('/like', authMiddleware, interactionController.toggleLike);
-router.post('/subscribe', authMiddleware, interactionController.toggleSubscribe);
-router.post('/comment', authMiddleware, interactionController.addComment);
-router.post('/reply', authMiddleware, interactionController.addReply);
-router.post('/trivia', authMiddleware, interactionController.addTrivia);
-router.delete('/trivia/:id', authMiddleware, interactionController.deleteTrivia);
-router.post('/rate', authMiddleware, interactionController.rateVideo);
+router.post('/like', auth, interactionController.toggleLike);
+router.post('/subscribe', auth, interactionController.toggleSubscribe);
+router.post('/comment', auth, interactionController.addComment);
+router.post('/reply', auth, interactionController.addReply);
+router.post('/trivia', auth, interactionController.addTrivia);
+router.delete('/trivia/:id', auth, interactionController.deleteTrivia);
+router.post('/rate', auth, interactionController.rateVideo);
 
 module.exports = router;
