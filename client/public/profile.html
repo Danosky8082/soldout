@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
-    <!-- ✅ Add favicon here -->
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/png" href="/soldout.png">
     <script src="header.js" defer></script>
     <style>
-        /* (same as before – no changes) */
+        /* ---------- Profile page styles (unchanged) ---------- */
         .profile-container {
             margin-top: 80px;
         }
@@ -284,6 +283,8 @@
             margin: 0;
             background: var(--gradient-main);
             -webkit-background-clip: text;
+            background-clip: text;
+            /* ✅ Standard property added */
             -webkit-text-fill-color: transparent;
         }
 
@@ -349,6 +350,26 @@
         .fallback-icon {
             font-size: 40px;
             color: #555;
+        }
+
+        /* ---------- LOGO STYLING (matches index page) ---------- */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo img {
+            height: 32px;
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .logo span {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
         }
     </style>
 </head>
@@ -539,7 +560,6 @@
         function getAbsoluteUrl(url) {
             if (!url) return null;
             if (url.startsWith('http://') || url.startsWith('https://')) return url;
-            // If it starts with '/', remove the leading slash to avoid double slashes
             const clean = url.startsWith('/') ? url.slice(1) : url;
             return `https://soldout-jh33.onrender.com/${clean}`;
         }
@@ -604,7 +624,6 @@
                 }
                 const userData = await response.json();
 
-                // Log the video data to see thumbnails
                 console.log('User videos:', userData.videos);
 
                 profileName.textContent = `${userData.firstName} ${userData.lastName}`;
@@ -648,12 +667,10 @@
         function renderVideos(videos) {
             let html = '<div class="videos-grid">';
             videos.forEach(video => {
-                // Determine thumbnail URL
                 let thumbUrl = null;
                 if (video.thumbnail) {
                     thumbUrl = getAbsoluteUrl(video.thumbnail);
                 }
-                // If we couldn't get a valid URL, use a fallback SVG data URI
                 const fallbackSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='169'%3E%3Crect width='300' height='169' fill='%23222222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23888888' font-size='16' font-family='sans-serif'%3ENo Thumbnail%3C/text%3E%3C/svg%3E`;
                 const imgSrc = thumbUrl || fallbackSvg;
 
@@ -788,24 +805,19 @@
         // INITIALIZATION – with sidebar and header init
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function () {
-            // 1. Load mobile sidebar
             await loadSidebar();
 
-            // 2. Initialize header events (dropdown, logout, etc.)
             if (typeof window.initHeader === 'function') {
                 window.initHeader();
             }
 
-            // 3. Existing profile logic
             const token = getAuthToken();
             if (!token) { window.location.href = 'index.html'; return; }
             loadProfile();
 
-            // Dropdown (already handled by header.js, but we keep it for safety)
             const userInfo = document.getElementById('userInfo');
             const dropdown = document.getElementById('userDropdown');
             if (userInfo && dropdown) {
-                // Remove any old listeners to avoid duplicates
                 userInfo.removeEventListener('click', userInfo._clickHandler);
                 userInfo._clickHandler = function (e) {
                     e.stopPropagation();
@@ -822,7 +834,6 @@
                 });
             }
 
-            // Logout
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.removeEventListener('click', logoutBtn._clickHandler);
@@ -835,7 +846,6 @@
                 logoutBtn.addEventListener('click', logoutBtn._clickHandler);
             }
 
-            // Home link
             const homeLink = document.getElementById('homeLink');
             if (homeLink) {
                 homeLink.removeEventListener('click', homeLink._clickHandler);
@@ -846,7 +856,6 @@
                 homeLink.addEventListener('click', homeLink._clickHandler);
             }
 
-            // Profile picture upload
             profilePicWrapper.addEventListener('click', function () { profilePicInput.click(); });
             profilePicInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
@@ -862,7 +871,6 @@
                 this.value = '';
             });
 
-            // Edit modal
             editProfileBtn.addEventListener('click', function () {
                 const nameParts = profileName.textContent.split(' ');
                 document.getElementById('editFirstName').value = nameParts[0] || '';
