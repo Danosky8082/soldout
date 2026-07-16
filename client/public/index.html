@@ -923,6 +923,36 @@
         document.addEventListener('DOMContentLoaded', async function () {
             console.log('DOM ready – loading sidebar...');
 
+            // ✅ Check for verification token in URL
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            if (token) {
+                // Show loading overlay while verifying
+                showLoading('Verifying Email', 'Please wait...');
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/verify-email?token=${token}`);
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert(data.message || 'Email verified successfully! You can now log in.');
+                    } else {
+                        alert(data.error || 'Verification failed. Please try again.');
+                    }
+                } catch (err) {
+                    alert('Verification failed: ' + err.message);
+                } finally {
+                    hideLoading();
+                    // Remove token from URL to avoid re-verification on refresh
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Redirect to login or home after a moment
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+                // Stop further execution – don't load page content until after redirect
+                return;
+            }
+
+            // ✅ Continue with normal page load
             await loadSidebar();
 
             if (typeof window.initHeader === 'function') {
@@ -941,7 +971,7 @@
                     `<div class="alert alert-danger">Error loading videos: ${e.message}</div>`;
             }
 
-            // Login/Register modals
+            // Login/Register modals (unchanged)
             const loginOverlay = document.getElementById('loginOverlay');
             const registerOverlay = document.getElementById('registerOverlay');
             const closeLogin = document.querySelector('.close-login');

@@ -1,10 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // ✅ Added
 const { PrismaClient } = require('@prisma/client');
+// ✅ Import both email utilities (or rename one)
+const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/email');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Register
+// ============================================================
+// REGISTER – with email verification
+// ============================================================
 const register = async (req, res) => {
   try {
     const prisma = new PrismaClient();
@@ -23,30 +28,43 @@ const register = async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Generate verification token (24h expiry)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     
-    // Create user
+    // ✅ Create user with verification fields
     const user = await prisma.user.create({
       data: { 
         firstName, 
         lastName, 
         email, 
-        password: hashedPassword 
+        password: hashedPassword,
+        isVerified: false,
+        verificationToken,
+        verificationExpires
       }
     });
+
+    // ✅ Send verification email (non‑blocking)
+    sendVerificationEmail(user.email, user.firstName, verificationToken)
+      .catch(console.error);
     
-    // Generate token
+    // Generate JWT token (user can still log in, but we indicate unverified)
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1d' });
     
-    // Return user without password
+    // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
     res.status(201).json({ 
       user: {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        isVerified: user.isVerified // ✅ tell the client they are unverified
       },
-      token 
+      token,
+      message: 'Verification email sent. Please check your inbox.'
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -54,42 +72,43 @@ const register = async (req, res) => {
   }
 };
 
-// Login
+// ============================================================
+// LOGIN – (no change, but you may later check isVerified)
+// ============================================================
 const login = async (req, res) => {
   try {
     const prisma = new PrismaClient();
     const { email, password } = req.body;
     
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Find user
     const user = await prisma.user.findUnique({ where: { email } });
-    
-    // Check user exists
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials. Check your input.' });
     }
 
-    // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(400).json({ message: 'Invalid credentials. Check your input.' });
     }
 
-    // Generate token
+    // Optional: check if user is verified
+    // if (!user.isVerified) {
+    //   return res.status(403).json({ message: 'Please verify your email first.' });
+    // }
+
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1d' });
     
-    // Return user without password
     const { password: _, ...userWithoutPassword } = user;
     res.json({ 
       user: {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        isVerified: user.isVerified
       },
       token 
     });
@@ -99,7 +118,87 @@ const login = async (req, res) => {
   }
 };
 
+// ============================================================
+// VERIFY EMAIL
+// ============================================================
+const verifyEmail = async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Verification token missing' });
+  }
+
+  try {
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findFirst({
+      where: {
+        verificationToken: token,
+        verificationExpires: { gt: new Date() }, // not expired
+        isVerified: false,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        error: 'Invalid or expired verification token. Please request a new one.' 
+      });
+    }
+
+    // Mark as verified
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+        verificationExpires: null,
+      },
+    });
+
+    // ✅ Send welcome email after verification (optional)
+    sendWelcomeEmail(user.email, user.firstName).catch(console.error);
+
+    res.json({ message: 'Email verified successfully! You can now log in.' });
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({ error: 'Failed to verify email' });
+  }
+};
+
+// ============================================================
+// RESEND VERIFICATION EMAIL
+// ============================================================
+const resendVerification = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+
+  try {
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ error: 'Email already verified' });
+
+    const newToken = crypto.randomBytes(32).toString('hex');
+    const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken: newToken,
+        verificationExpires: newExpires,
+      },
+    });
+
+    await sendVerificationEmail(user.email, user.firstName, newToken);
+    res.json({ message: 'Verification email resent. Check your inbox.' });
+  } catch (error) {
+    console.error('Resend error:', error);
+    res.status(500).json({ error: 'Failed to resend verification' });
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  verifyEmail,
+  resendVerification
 };

@@ -14,4 +14,7 @@ router.post('/login', (req, res) => {
   authController.login(req, res);
 });
 
+router.get('/verify', verifyEmail);
+router.post('/resend-verification', resendVerification);
+
 module.exports = router;

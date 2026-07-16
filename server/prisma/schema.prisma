@@ -46,9 +46,14 @@ model User {
   creatorSubscriptions Subscription[] @relation("CreatorSubscriptions")
   ratings             Rating[]
   trivia              Trivia[]
-  wishlist            Wishlist[]      // ✅ relation to wishlist
+  wishlist            Wishlist[]
   role                Role            @default(USER)
   isBanned            Boolean         @default(false)
+
+  // ✅ NEW FIELDS FOR EMAIL VERIFICATION
+  isVerified          Boolean         @default(false)
+  verificationToken   String?         @unique
+  verificationExpires DateTime?
 }
 
 model Video {
@@ -74,7 +79,7 @@ model Video {
   replies         Reply[]
   ratings         Rating[]
   trivia          Trivia[]
-  wishlists       Wishlist[]     // ✅ relation to wishlist
+  wishlists       Wishlist[]
 
   @@index([userId])
   @@index([genre])
@@ -192,7 +197,7 @@ model Wishlist {
   user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   video     Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, videoId]) // prevent same video twice
+  @@unique([userId, videoId])
   @@index([userId])
   @@index([videoId])
 }
