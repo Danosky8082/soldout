@@ -4,13 +4,13 @@ const multer = require('multer');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { verifyAdmin, verifySuperAdmin } = require('../middleware/auth');
-const adminController = require('../controllers/adminController');
+const adminController = require('../controllers/adminController'); // ✅ import the whole controller
 const { uploadToSupabase } = require('../utils/upload');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ===== PUBLIC =====
-router.post('/login', adminController.adminLogin);  // ✅ now uses adminController
+router.post('/login', adminController.adminLogin); // ✅ now a function
 
 // ===== PROTECTED (all require admin token) =====
 router.use(verifyAdmin);
