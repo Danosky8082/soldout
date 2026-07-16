@@ -108,6 +108,20 @@
             font-weight: 600;
             color: var(--text-primary);
         }
+
+        /* ---- Logo image size ---- */
+        .logo img {
+            height: 32px;
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .logo span {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
     </style>
 </head>
 
@@ -570,7 +584,7 @@
                         try {
                             const err = JSON.parse(xhr.responseText);
                             errorMsg = err.message || errorMsg;
-                        } catch (e) {}
+                        } catch (e) { }
                         showAlert(errorMsg, 'danger');
                     }
                 };
