@@ -354,6 +354,19 @@
                 font-size: 12px;
             }
         }
+
+        /* Optional: adjust logo image height */
+        .logo img {
+            height: 32px;
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 
@@ -365,8 +378,7 @@
                 <span></span><span></span><span></span>
             </button>
             <div class="logo" id="homeLink">
-                <i class="fas fa-ticket-alt"></i>
-                <span>Soldout.com</span>
+                <img src="/soldout.png" alt="Soldout.com">
             </div>
             <div class="nav-links">
                 <a href="index.html">Home</a>
