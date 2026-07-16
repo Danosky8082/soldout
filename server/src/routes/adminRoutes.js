@@ -1,4 +1,3 @@
-// server/src/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -6,13 +5,12 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { verifyAdmin, verifySuperAdmin } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
-const { adminLogin } = require('../controllers/authController');
 const { uploadToSupabase } = require('../utils/upload');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ===== PUBLIC =====
-router.post('/login', adminLogin);
+router.post('/login', adminController.adminLogin);  // ✅ now uses adminController
 
 // ===== PROTECTED (all require admin token) =====
 router.use(verifyAdmin);
