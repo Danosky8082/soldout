@@ -355,17 +355,24 @@
             }
         }
 
-        /* Optional: adjust logo image height */
+        /* Logo styling: image + text */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .logo img {
             height: 32px;
             width: auto;
             vertical-align: middle;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .logo span {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
         }
     </style>
 </head>
@@ -379,6 +386,7 @@
             </button>
             <div class="logo" id="homeLink">
                 <img src="/soldout.png" alt="Soldout.com">
+                <span>Soldout.com</span>
             </div>
             <div class="nav-links">
                 <a href="index.html">Home</a>
