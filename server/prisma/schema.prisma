@@ -1,4 +1,4 @@
-// schema.prisma
+// Updated: email verification fields added
 generator client {
   provider = "prisma-client-js"
 }
