@@ -10,36 +10,13 @@ const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
 
-// ✅ Corrected paths
+// ✅ Routes
 const videoRoutes = require('./routes/videoRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
-// ===== DIAGNOSTIC: List all files in the routes folder =====
-console.log('Serving static files from:', CLIENT_PUBLIC_DIR);
-console.log('\n=== ROUTES FOLDER CONTENTS ===');
-try {
-    const routeFiles = fs.readdirSync(path.join(__dirname, 'routes'));
-    console.log('Files in routes folder:', routeFiles);
-} catch (err) {
-    console.error('ERROR reading routes folder:', err.message);
-}
-console.log('================================\n');
-
-// ===== NOW try to load adminRoutes =====
-let adminRoutes;
-try {
-    adminRoutes = require('./routes/adminRoutes');
-    console.log('✅ adminRoutes loaded successfully.');
-} catch (err) {
-    console.error('❌ Failed to load adminRoutes:', err.message);
-    adminRoutes = null;
-}
-
-// Load environment variables
 dotenv.config();
-
-// Connect to database
 connectDB();
 
 const prisma = new PrismaClient();
@@ -66,16 +43,30 @@ const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// ✅ FIXED CORS – robust configuration
-const corsOptions = {
-    origin: true, // reflects the request origin
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-};
-app.use(cors(corsOptions));
-// Explicitly handle OPTIONS preflight for all routes
-app.options('*', cors(corsOptions));
+// ✅ EXPLICIT CORS – guaranteed to work
+app.use((req, res, next) => {
+    const allowedOrigins = [
+        'https://soldout-murex.vercel.app',
+        'http://localhost:5000',
+        'http://localhost:3000',
+        'http://localhost:5173'
+    ];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        // fallback: allow the specific Vercel URL
+        res.setHeader('Access-Control-Allow-Origin', 'https://soldout-murex.vercel.app');
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 // ============================================================
 //  HELPER: Upload to Supabase
@@ -214,39 +205,10 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // ============================================================
-//  ADMIN ROUTES – Mount the modular admin routes (if loaded)
+//  ADMIN ROUTES
 // ============================================================
-if (adminRoutes) {
-    app.use('/api/admin', adminRoutes);
-    console.log('✅ Admin routes mounted.');
-} else {
-    console.warn('⚠️ Admin routes NOT mounted because adminRoutes could not be loaded.');
-}
-
-// ============================================================
-//  ADDITIONAL ADMIN ENDPOINT: /me (session check)
-// ============================================================
-app.get('/api/auth/admin/me', adminAuth, async (req, res) => {
-    try {
-        const user = await prisma.user.findUnique({
-            where: { id: req.admin.id },
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-                profilePicture: true,
-                isAdmin: true,
-            }
-        });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(user);
-    } catch (error) {
-        console.error('Admin /me error:', error);
-        res.status(500).json({ error: 'Failed to fetch admin data' });
-    }
-});
+app.use('/api/admin', adminRoutes);
+console.log('✅ Admin routes mounted.');
 
 // ============================================================
 //  VIDEO & INTERACTION ROUTES
@@ -255,7 +217,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/interactions', interactionRoutes);
 
 // ============================================================
-//  USER ROUTES (profile, update, picture) – keep these
+//  USER ROUTES (profile, update, picture)
 // ============================================================
 app.get('/api/users/:id/profile', async (req, res) => {
     try {
@@ -366,6 +328,33 @@ app.post('/api/users/:id/profile-picture', upload.single('profilePicture'), asyn
         res.status(500).json({ error: 'Failed to upload profile picture' });
     }
 });
+
+app.get('/api/auth/admin/me', adminAuth, async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.admin.id },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+                profilePicture: true,
+                isAdmin: true,
+            }
+        });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (error) {
+        console.error('Admin /me error:', error);
+        res.status(500).json({ error: 'Failed to fetch admin data' });
+    }
+});
+
+// ============================================================
+//  HEALTH CHECK (for Render)
+// ============================================================
+app.get('/health', (req, res) => res.send('OK'));
 
 // ============================================================
 //  STATIC FILES & CATCH-ALL
