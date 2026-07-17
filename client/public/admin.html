@@ -568,7 +568,7 @@
                     throw new Error(data.message || 'Login failed');
                 }
 
-                currentAdmin = data;
+                currentAdmin = data.user;
                 localStorage.setItem('adminToken', data.token);
 
                 document.getElementById('adminLoginOverlay').style.display = 'none';
@@ -677,6 +677,8 @@
                 }
             } catch (error) {
                 console.error('Session check error:', error);
+                console.error('Login error:', error);
+                showAlert(error.message || 'Admin login failed. Please check your credentials.', 'danger');
             }
             return false;
         }
