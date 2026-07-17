@@ -65,29 +65,16 @@ const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// ✅ CORS configuration – allow your Vercel frontend
-const allowedOrigins = [
-    'https://soldout-murex.vercel.app',
-    'https://soldout-murex.vercel.app',
-    'http://localhost:5000',
-    'http://localhost:3000',
-    'http://localhost:5173'
-];
-app.use(cors({
-    origin: function(origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
-        } else {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-    },
+// ✅ FIXED CORS – robust configuration
+const corsOptions = {
+    origin: true, // reflects the request origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+// Explicitly handle OPTIONS preflight for all routes
+app.options('*', cors(corsOptions));
 
 // ============================================================
 //  HELPER: Upload to Supabase
@@ -306,7 +293,6 @@ app.get('/api/users/:id/profile', async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        // Calculate stats
         const totalViews = user.videos.reduce((sum, v) => sum + v.views, 0);
         const totalLikes = user.videos.reduce((sum, v) => sum + v._count.likes, 0);
         const totalSubscribers = await prisma.subscription.count({
