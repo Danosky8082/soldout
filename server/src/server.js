@@ -16,6 +16,7 @@ const interactionRoutes = require('./routes/interactionRoutes');
 const authRoutes = require('./routes/authRoutes');
 
 // ===== DIAGNOSTIC: List all files in the routes folder =====
+console.log('Serving static files from:', CLIENT_PUBLIC_DIR);
 console.log('\n=== ROUTES FOLDER CONTENTS ===');
 try {
     const routeFiles = fs.readdirSync(path.join(__dirname, 'routes'));
