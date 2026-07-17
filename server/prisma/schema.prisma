@@ -49,11 +49,6 @@ model User {
   wishlist            Wishlist[]
   role                Role            @default(USER)
   isBanned            Boolean         @default(false)
-
-  // ✅ NEW FIELDS FOR EMAIL VERIFICATION
-  isVerified          Boolean         @default(false)
-  verificationToken   String?         @unique
-  verificationExpires DateTime?
 }
 
 model Video {
