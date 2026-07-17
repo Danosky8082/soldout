@@ -642,21 +642,28 @@
             }
         }
 
-        // ----- Reply (with payload logging & better error handling) -----
+        // ----- Reply (with fixed double submission) -----
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
+                e.stopPropagation(); // prevent any bubbling that might trigger double submit
+
                 const form = e.target.closest('.reply-form');
+                if (!form) return;
                 const input = form.querySelector('.reply-input');
+                if (!input) return;
                 const text = input.value.trim();
                 if (!text) return;
+
+                // Disable submit button to prevent double submission
+                const submitBtn = form.querySelector('.reply-submit');
+                if (submitBtn) submitBtn.disabled = true;
 
                 const user = getCurrentUser();
                 if (!user) { alert('Please log in to reply'); return; }
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
 
-                // commentId should be the top-level comment id (already passed)
                 const payload = {
                     text,
                     userId: user.id,
@@ -674,25 +681,29 @@
                         body: JSON.stringify(payload)
                     });
 
+                    let errorMsg = 'Failed to post reply';
                     if (!res.ok) {
-                        let errorMsg = 'Failed to post reply';
                         try {
                             const errData = await res.json();
                             console.error('[addReply] Server error response:', errData);
                             errorMsg = errData.message || errData.error || errorMsg;
-                        } catch (e) {
-                            // ignore
-                        }
+                        } catch (e) { /* ignore */ }
                         throw new Error(errorMsg);
                     }
 
                     const reply = await res.json();
                     console.log('[addReply] Reply created:', reply);
                     input.value = '';
+                    // Close the reply form
+                    const formContainer = form.closest('.reply-form-container');
+                    if (formContainer) formContainer.style.display = 'none';
+                    // Reload comments to show the new reply
                     await loadVideo(currentVideo.id);
                 } catch (error) {
                     console.error('Reply error:', error);
                     alert(error.message || 'Failed to post reply');
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
                 }
             };
         }
@@ -721,7 +732,7 @@
             }
         }
 
-        // ----- Trivia – add without reload -----
+        // ----- Trivia – add without reload (with noTrivia fix) -----
         async function addTrivia() {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to add trivia'); return; }
@@ -729,6 +740,11 @@
             if (!token) { alert('Please log in again.'); return; }
             const text = document.getElementById('triviaTextarea').value.trim();
             if (!text) { alert('Please enter trivia text'); return; }
+
+            // Disable save button to prevent double submission
+            const saveBtn = document.getElementById('triviaSaveBtn');
+            if (saveBtn) saveBtn.disabled = true;
+
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia`, {
                     method: 'POST',
@@ -740,38 +756,52 @@
 
                 // Append new trivia to the list
                 const container = document.getElementById('triviaContent');
+                if (!container) throw new Error('Trivia container not found');
+
+                // Remove 'no trivia' message if it exists
                 const noTrivia = document.getElementById('noTrivia');
-                if (noTrivia.parentNode === container) container.removeChild(noTrivia);
+                if (noTrivia && noTrivia.parentNode === container) {
+                    container.removeChild(noTrivia);
+                }
 
                 const div = document.createElement('div');
                 div.className = 'trivia-item';
                 div.dataset.id = newTrivia.id;
                 div.innerHTML = `
-                        <p>${newTrivia.text}</p>
-                        <div class="trivia-meta">
-                            <span>Added by ${user.firstName} ${user.lastName}</span>
-                            <div class="trivia-actions">
-                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
-                            </div>
+                    <p>${newTrivia.text}</p>
+                    <div class="trivia-meta">
+                        <span>Added by ${user.firstName} ${user.lastName}</span>
+                        <div class="trivia-actions">
+                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
                         </div>
-                    `;
+                    </div>
+                `;
                 container.appendChild(div);
+
                 // Add event listeners
-                div.querySelector('.edit-trivia').addEventListener('click', () => {
-                    document.getElementById('triviaTextarea').value = newTrivia.text;
-                    document.getElementById('triviaFormContainer').style.display = 'block';
-                    div.remove();
-                });
-                div.querySelector('.delete-trivia').addEventListener('click', () => {
-                    deleteTrivia(newTrivia.id);
-                });
+                const editBtn = div.querySelector('.edit-trivia');
+                const deleteBtn = div.querySelector('.delete-trivia');
+                if (editBtn) {
+                    editBtn.addEventListener('click', () => {
+                        document.getElementById('triviaTextarea').value = newTrivia.text;
+                        document.getElementById('triviaFormContainer').style.display = 'block';
+                        div.remove();
+                    });
+                }
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => {
+                        deleteTrivia(newTrivia.id);
+                    });
+                }
 
                 document.getElementById('triviaFormContainer').style.display = 'none';
                 document.getElementById('triviaTextarea').value = '';
             } catch (error) {
                 console.error('Trivia error:', error);
-                alert('Failed to add trivia');
+                alert(error.message || 'Failed to add trivia');
+            } finally {
+                if (saveBtn) saveBtn.disabled = false;
             }
         }
 
@@ -789,9 +819,11 @@
                 const element = document.querySelector(`.trivia-item[data-id="${triviaId}"]`);
                 if (element) element.remove();
                 const container = document.getElementById('triviaContent');
-                if (container.children.length === 0) {
+                if (container && container.children.length === 0) {
                     const noTrivia = document.getElementById('noTrivia');
-                    container.appendChild(noTrivia);
+                    if (noTrivia) {
+                        container.appendChild(noTrivia);
+                    }
                 }
             } catch (error) {
                 console.error('Delete trivia error:', error);
@@ -799,7 +831,7 @@
             }
         }
 
-        // ----- Render comments (with fixed like and reply) -----
+        // ----- Render comments -----
         function renderComments(comments) {
             const container = document.getElementById('commentList');
             container.innerHTML = '';
@@ -813,24 +845,20 @@
             comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             comments.forEach(comment => {
-                // Render the top-level comment
                 const commentEl = createCommentElement(comment);
                 container.appendChild(commentEl);
 
-                // Render its replies
                 if (comment.replies && comment.replies.length > 0) {
                     const repliesContainer = document.createElement('div');
                     repliesContainer.className = 'replies';
                     comment.replies.forEach(reply => {
-                        // Pass the top-level comment id (comment.id) to the reply
-                        const replyEl = createCommentElement(reply, true, comment.id);
+                        const replyEl = createCommentElement(reply, true);
                         repliesContainer.appendChild(replyEl);
                         if (reply.replies && reply.replies.length > 0) {
                             const nestedContainer = document.createElement('div');
                             nestedContainer.className = 'replies';
                             reply.replies.forEach(nested => {
-                                // Pass the same top-level comment id (comment.id) to nested replies
-                                const nestedEl = createCommentElement(nested, true, comment.id);
+                                const nestedEl = createCommentElement(nested, true);
                                 nestedContainer.appendChild(nestedEl);
                             });
                             replyEl.querySelector('.comment-content').appendChild(nestedContainer);
@@ -841,8 +869,7 @@
             });
         }
 
-        // ----- Create comment element with proper reply handling -----
-        function createCommentElement(item, isReply = false, topLevelCommentId = null) {
+        function createCommentElement(item, isReply = false) {
             const div = document.createElement('div');
             div.className = isReply ? 'comment reply' : 'comment';
 
@@ -852,39 +879,32 @@
                 if (pic) avatarHtml = `<img src="${pic}" alt="${item.user.firstName}">`;
             }
 
-            // Determine the correct comment id for replying to this item
-            // For a top-level comment, the comment id is item.id
-            // For a reply, the comment id is the top-level comment id (passed)
-            const commentIdForReply = isReply ? topLevelCommentId : item.id;
-            // For the reply's parent reply id: if it's a reply, item.id is the reply id; else null
-            const parentReplyIdForReply = isReply ? item.id : null;
-
             div.innerHTML = `
-                    <div class="comment-avatar">${avatarHtml}</div>
-                    <div class="comment-content">
-                        <div class="comment-author">${item.user?.firstName || 'Unknown'} ${item.user?.lastName || ''}</div>
-                        <div class="comment-text">${item.text}</div>
-                        <div class="comment-actions">
-                            <span class="comment-action like-comment" data-id="${item.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span class="like-count">${item._count?.likes || 0}</span>
-                            </span>
-                            <span class="comment-action reply-comment" data-id="${item.id}" data-comment-id="${commentIdForReply}" data-parent-reply-id="${parentReplyIdForReply || ''}">
-                                <i class="fas fa-reply"></i> Reply
-                            </span>
-                            <span class="comment-timestamp">${formatDate(item.createdAt)}</span>
-                        </div>
-                        <div class="reply-form-container" style="display:none;">
-                            <form class="reply-form">
-                                <input type="text" class="reply-input" placeholder="Write a reply..." required>
-                                <button type="submit" class="reply-submit">Reply</button>
-                                <button type="button" class="cancel-reply">Cancel</button>
-                            </form>
-                        </div>
+                <div class="comment-avatar">${avatarHtml}</div>
+                <div class="comment-content">
+                    <div class="comment-author">${item.user?.firstName || 'Unknown'} ${item.user?.lastName || ''}</div>
+                    <div class="comment-text">${item.text}</div>
+                    <div class="comment-actions">
+                        <span class="comment-action like-comment" data-id="${item.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span class="like-count">${item._count?.likes || 0}</span>
+                        </span>
+                        <span class="comment-action reply-comment" data-id="${item.id}">
+                            <i class="fas fa-reply"></i> Reply
+                        </span>
+                        <span class="comment-timestamp">${formatDate(item.createdAt)}</span>
                     </div>
-                `;
+                    <div class="reply-form-container" style="display:none;">
+                        <form class="reply-form">
+                            <input type="text" class="reply-input" placeholder="Write a reply..." required>
+                            <button type="submit" class="reply-submit">Reply</button>
+                            <button type="button" class="cancel-reply">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            `;
 
-            // ----- Like button for comments/replies -----
+            // Like button
             const likeBtn = div.querySelector('.like-comment');
             likeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -938,12 +958,18 @@
                 }
             });
 
-            // ----- Reply button (using data attributes) -----
+            // Reply button
             const replyBtn = div.querySelector('.reply-comment');
             const formContainer = div.querySelector('.reply-form-container');
             const form = formContainer.querySelector('.reply-form');
             const input = form.querySelector('.reply-input');
             const cancelBtn = form.querySelector('.cancel-reply');
+
+            // Remove any existing submit listeners to avoid double submission
+            form.removeEventListener('submit', form._submitHandler);
+            const submitHandler = addReply(item.id, item.parentReplyId || null);
+            form._submitHandler = submitHandler;
+            form.addEventListener('submit', submitHandler);
 
             replyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -958,11 +984,6 @@
                 formContainer.style.display = 'none';
                 input.value = '';
             });
-
-            // Use the data attributes to get the correct ids
-            const commentId = parseInt(replyBtn.dataset.commentId);
-            const parentReplyId = replyBtn.dataset.parentReplyId ? parseInt(replyBtn.dataset.parentReplyId) : null;
-            form.addEventListener('submit', addReply(commentId, parentReplyId));
 
             return div;
         }
@@ -997,16 +1018,16 @@
                     el.className = 'related-video-item';
                     const thumb = getAbsoluteUrl(v.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
                     el.innerHTML = `
-                            <div class="thumb">
-                                <img src="${thumb}" alt="${v.title}">
-                                ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
-                            </div>
-                            <div class="info">
-                                <div class="title">${v.title}</div>
-                                <div class="channel">${v.user?.firstName || 'Unknown'}</div>
-                                <div class="views">${v.views?.toLocaleString() || 0} views</div>
-                            </div>
-                        `;
+                        <div class="thumb">
+                            <img src="${thumb}" alt="${v.title}">
+                            ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
+                        </div>
+                        <div class="info">
+                            <div class="title">${v.title}</div>
+                            <div class="channel">${v.user?.firstName || 'Unknown'}</div>
+                            <div class="views">${v.views?.toLocaleString() || 0} views</div>
+                        </div>
+                    `;
                     el.addEventListener('click', () => {
                         sessionStorage.setItem('currentVideo', JSON.stringify({ id: v.id }));
                         window.location.reload();
@@ -1022,7 +1043,7 @@
         // ----- Trivia (fetch from interaction endpoint) -----
         async function loadTrivia(video) {
             const container = document.getElementById('triviaContent');
-            const noTrivia = document.getElementById('noTrivia');
+            if (!container) return;
 
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia/${video.id}`, {
@@ -1033,47 +1054,73 @@
                 renderTriviaItems(trivia);
             } catch (e) {
                 console.warn('Trivia load error:', e);
+                // Show no trivia message
                 container.innerHTML = '';
-                noTrivia.style.display = 'block';
-                container.appendChild(noTrivia);
+                const noTrivia = document.getElementById('noTrivia');
+                if (noTrivia) {
+                    container.appendChild(noTrivia);
+                } else {
+                    const p = document.createElement('p');
+                    p.className = 'no-trivia';
+                    p.id = 'noTrivia';
+                    p.textContent = 'No trivia added yet.';
+                    container.appendChild(p);
+                }
             }
         }
 
         function renderTriviaItems(trivia) {
             const container = document.getElementById('triviaContent');
-            const noTrivia = document.getElementById('noTrivia');
+            if (!container) return;
             container.innerHTML = '';
+
             if (!trivia || trivia.length === 0) {
-                container.appendChild(noTrivia);
+                const noTrivia = document.getElementById('noTrivia');
+                if (noTrivia) {
+                    container.appendChild(noTrivia);
+                } else {
+                    const p = document.createElement('p');
+                    p.className = 'no-trivia';
+                    p.id = 'noTrivia';
+                    p.textContent = 'No trivia added yet.';
+                    container.appendChild(p);
+                }
                 return;
             }
+
             const user = getCurrentUser();
             trivia.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'trivia-item';
                 div.dataset.id = item.id;
                 div.innerHTML = `
-                        <p>${item.text}</p>
-                        <div class="trivia-meta">
-                            <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
-                            ${item.user.id === user?.id ? `
-                            <div class="trivia-actions">
-                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
-                            </div>
-                            ` : ''}
+                    <p>${item.text}</p>
+                    <div class="trivia-meta">
+                        <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
+                        ${item.user.id === user?.id ? `
+                        <div class="trivia-actions">
+                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
                         </div>
-                    `;
+                        ` : ''}
+                    </div>
+                `;
                 container.appendChild(div);
                 if (item.user.id === user?.id) {
-                    div.querySelector('.edit-trivia').addEventListener('click', () => {
-                        document.getElementById('triviaTextarea').value = item.text;
-                        document.getElementById('triviaFormContainer').style.display = 'block';
-                        div.remove();
-                    });
-                    div.querySelector('.delete-trivia').addEventListener('click', () => {
-                        deleteTrivia(item.id);
-                    });
+                    const editBtn = div.querySelector('.edit-trivia');
+                    const deleteBtn = div.querySelector('.delete-trivia');
+                    if (editBtn) {
+                        editBtn.addEventListener('click', () => {
+                            document.getElementById('triviaTextarea').value = item.text;
+                            document.getElementById('triviaFormContainer').style.display = 'block';
+                            div.remove();
+                        });
+                    }
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', () => {
+                            deleteTrivia(item.id);
+                        });
+                    }
                 }
             });
         }
