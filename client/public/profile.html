@@ -415,7 +415,7 @@
         <!-- ===== SIDEBAR CONTAINER (loaded dynamically) ===== -->
         <div id="sidebar-container"></div>
 
-        <!-- PROFILE CONTENT (unchanged) -->
+        <!-- PROFILE CONTENT -->
         <div class="profile-container">
             <div class="profile-header">
                 <div class="profile-picture-wrapper" id="profilePicWrapper">
@@ -556,15 +556,13 @@
         // ====== API BASE URL ======
         const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
-            
-
 
         // ====== Helper: Absolute URL ======
         function getAbsoluteUrl(url) {
             if (!url) return null;
             if (url.startsWith('http://') || url.startsWith('https://')) return url;
             const clean = url.startsWith('/') ? url.slice(1) : url;
-            return `https://soldout-jh33.onrender.com/${clean}`;
+            return `${STATIC_BASE_URL}/${clean}`;
         }
 
         // ====== Auth helpers ======
@@ -805,60 +803,40 @@
         }
 
         // ============================================================
-        // INITIALIZATION – with sidebar and header init
+        // INITIALIZATION
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function () {
             await loadSidebar();
 
             if (typeof window.initHeader === 'function') {
-                window.initHeader();
+                window.initHeader();   // ✅ This handles the dropdown toggle
             }
 
             const token = getAuthToken();
             if (!token) { window.location.href = 'index.html'; return; }
             loadProfile();
 
-            const userInfo = document.getElementById('userInfo');
-            const dropdown = document.getElementById('userDropdown');
-            if (userInfo && dropdown) {
-                userInfo.removeEventListener('click', userInfo._clickHandler);
-                userInfo._clickHandler = function (e) {
-                    e.stopPropagation();
-                    const currentUser = getCurrentUser();
-                    if (currentUser) {
-                        dropdown.classList.toggle('show');
-                    } else {
-                        window.location.href = 'index.html';
-                    }
-                };
-                userInfo.addEventListener('click', userInfo._clickHandler);
-                document.addEventListener('click', function () {
-                    dropdown.classList.remove('show');
-                });
-            }
-
+            // ✅ Logout button handler
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                logoutBtn.removeEventListener('click', logoutBtn._clickHandler);
-                logoutBtn._clickHandler = function (e) {
+                logoutBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     removeAuthToken();
                     removeCurrentUser();
                     window.location.href = 'index.html';
-                };
-                logoutBtn.addEventListener('click', logoutBtn._clickHandler);
+                });
             }
 
+            // ✅ Home link handler
             const homeLink = document.getElementById('homeLink');
             if (homeLink) {
-                homeLink.removeEventListener('click', homeLink._clickHandler);
-                homeLink._clickHandler = function (e) {
+                homeLink.addEventListener('click', function (e) {
                     e.preventDefault();
                     window.location.href = 'index.html';
-                };
-                homeLink.addEventListener('click', homeLink._clickHandler);
+                });
             }
 
+            // ✅ Profile picture upload
             profilePicWrapper.addEventListener('click', function () { profilePicInput.click(); });
             profilePicInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
@@ -874,6 +852,7 @@
                 this.value = '';
             });
 
+            // ✅ Edit profile modal
             editProfileBtn.addEventListener('click', function () {
                 const nameParts = profileName.textContent.split(' ');
                 document.getElementById('editFirstName').value = nameParts[0] || '';
