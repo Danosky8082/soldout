@@ -3,7 +3,7 @@
     // ============================================================
     // GLOBALS
     // ============================================================
-    window.STATIC_BASE_URL = 'https://soldout-jh33.onrender.com';
+    window.STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
 
     window.getAbsoluteUrl = function(url) {
         if (!url) return null;
