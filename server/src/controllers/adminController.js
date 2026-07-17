@@ -411,6 +411,38 @@ const changePassword = async (req, res) => {
 };
 
 // ============================================================
+// UPDATE VIDEO (Admin)
+// ============================================================
+const updateVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, genre, year, thumbnail, videoUrl } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !genre || !year || !thumbnail || !videoUrl) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const video = await prisma.video.update({
+      where: { id: parseInt(id) },
+      data: {
+        title,
+        description,
+        genre,
+        year: parseInt(year),
+        thumbnail,
+        videoUrl
+      }
+    });
+
+    res.json(video);
+  } catch (error) {
+    console.error('Update video error:', error);
+    res.status(500).json({ error: 'Failed to update video' });
+  }
+};
+
+// ============================================================
 // EXPORTS
 // ============================================================
 module.exports = {
@@ -433,5 +465,6 @@ module.exports = {
   getAdminById,
   deleteAdmin,
   changePassword,
-  registerAdmin
+  registerAdmin,
+  updateVideo
 };

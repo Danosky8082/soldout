@@ -60,4 +60,7 @@ router.post('/profile-picture', upload.single('profilePicture'), async (req, res
 // Change password
 router.post('/change-password', adminController.changePassword);
 
+//Admin video edit
+router.put('/videos/:id', adminController.updateVideo);
+
 module.exports = router;

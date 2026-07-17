@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/styles/admin.css">
 
     <style>
-        /* Ensure logo image is the same size as index page */
         .logo img {
             height: 32px;
             width: auto;
@@ -29,6 +28,31 @@
             align-items: center;
             gap: 6px;
             margin-bottom: 10px;
+        }
+
+        /* Modal form styling */
+        #editVideoForm .form-group {
+            margin-bottom: 15px;
+        }
+
+        #editVideoForm label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        #editVideoForm input,
+        #editVideoForm textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--bg-card);
+            color: #fff;
+        }
+
+        #editVideoForm textarea {
+            resize: vertical;
         }
     </style>
 </head>
@@ -110,7 +134,6 @@
                         <i class="fas fa-home"></i> Home
                     </button>
                 </div>
-                <!-- ===== UPDATED ADMIN USER AREA WITH PROFILE UPLOAD ===== -->
                 <div class="admin-user">
                     <img id="adminAvatar" src="https://via.placeholder.com/40" alt="Admin User">
                     <div class="admin-user-info">
@@ -179,9 +202,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Data will be loaded via JavaScript -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -200,9 +221,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Data will be loaded via JavaScript -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -221,9 +240,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Data will be loaded via JavaScript -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -242,9 +259,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Data will be loaded via JavaScript -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -266,9 +281,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Data will be loaded via JavaScript -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -341,6 +354,51 @@
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Video Modal -->
+    <div id="editVideoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit Video</div>
+                <span class="modal-close">&times;</span>
+            </div>
+            <form id="editVideoForm">
+                <input type="hidden" id="editVideoId">
+                <div class="form-group">
+                    <label for="editVideoTitle">Title</label>
+                    <input type="text" id="editVideoTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="editVideoDescription">Description</label>
+                    <textarea id="editVideoDescription" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editVideoGenre">Genre</label>
+                    <input type="text" id="editVideoGenre" required>
+                </div>
+                <div class="form-group">
+                    <label for="editVideoYear">Year</label>
+                    <input type="number" id="editVideoYear" required>
+                </div>
+                <div class="form-group">
+                    <label for="editVideoThumbnail">Thumbnail URL</label>
+                    <input type="url" id="editVideoThumbnail" required placeholder="https://example.com/thumbnail.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="editVideoUrl">Video URL</label>
+                    <input type="url" id="editVideoUrl" required placeholder="https://example.com/video.mp4">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn btn-delete" onclick="closeEditVideoModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="action-btn btn-approve">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -435,13 +493,11 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script>
         // ============================================================
-        //  ADMIN DASHBOARD – WITH ABSOLUTE URL SUPPORT
+        //  ADMIN DASHBOARD – WITH ABSOLUTE URL SUPPORT & EDIT VIDEO
         // ============================================================
 
-        // ----- Static Base URL -----
-       const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
+        const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
-
 
         function getAdminAbsoluteUrl(url) {
             if (!url) return null;
@@ -453,7 +509,6 @@
         let currentVideoBeingReviewed = null;
         let currentUserBeingEdited = null;
 
-        // ====== Safe DataTable Initialization ======
         function safeInitDataTable(selector, options) {
             const table = $(selector);
             if ($.fn.DataTable.isDataTable(selector)) {
@@ -510,7 +565,6 @@
 
             if (!uploadBtn || !fileInput) return;
 
-            // Remove old listeners to avoid duplicates
             const newUploadBtn = uploadBtn.cloneNode(true);
             uploadBtn.parentNode.replaceChild(newUploadBtn, uploadBtn);
 
@@ -568,6 +622,7 @@
                     throw new Error(data.message || 'Login failed');
                 }
 
+                // ✅ Store the user object
                 currentAdmin = data.user;
                 localStorage.setItem('adminToken', data.token);
 
@@ -576,7 +631,6 @@
                 document.getElementById('adminUserName').textContent =
                     `${currentAdmin.firstName} ${currentAdmin.lastName}`;
 
-                // Profile picture
                 const avatarImg = document.getElementById('adminAvatar');
                 if (currentAdmin.profilePicture) {
                     avatarImg.src = getAdminAbsoluteUrl(currentAdmin.profilePicture);
@@ -584,9 +638,7 @@
                     avatarImg.src = 'https://via.placeholder.com/40';
                 }
 
-                // Setup upload after login
                 setupAdminProfileUpload();
-
                 loadDashboardData();
                 initDataTables();
 
@@ -667,18 +719,13 @@
                     } else {
                         avatarImg.src = 'https://via.placeholder.com/40';
                     }
-
-                    // Setup upload after session restore
                     setupAdminProfileUpload();
-
                     loadDashboardData();
                     initDataTables();
                     return true;
                 }
             } catch (error) {
                 console.error('Session check error:', error);
-                console.error('Login error:', error);
-                showAlert(error.message || 'Admin login failed. Please check your credentials.', 'danger');
             }
             return false;
         }
@@ -702,7 +749,7 @@
             }
         }
 
-        // ====== INIT DATATABLES WITH ABSOLUTE THUMBNAILS ======
+        // ====== INIT DATATABLES ======
         function initDataTables() {
             showLoading();
 
@@ -895,11 +942,7 @@
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, status, error) {
-                        console.error('Users API Error:', {
-                            status: xhr.status,
-                            statusText: xhr.statusText,
-                            responseText: xhr.responseText
-                        });
+                        console.error('Users API Error:', { status: xhr.status, statusText: xhr.statusText, responseText: xhr.responseText });
                         let errorMessage = 'Failed to load users data';
                         try {
                             const errorData = JSON.parse(xhr.responseText);
@@ -1083,7 +1126,6 @@
                     video.createdAt ? new Date(video.createdAt).toLocaleDateString() : 'N/A';
                 document.getElementById('reviewVideoDescription').textContent = video.description || 'No description';
 
-                // Set video source with absolute URL
                 const videoPlayer = document.getElementById('reviewVideoPlayer');
                 const videoSrc = getAdminAbsoluteUrl(video.videoUrl);
                 if (videoSrc) {
@@ -1112,11 +1154,90 @@
                     reasonContainer.style.display = 'none';
                 }
 
+                // Set edit button to open edit modal with this video
+                document.getElementById('editVideoBtn').onclick = function () {
+                    closeModal();
+                    editVideo(video.id);
+                };
+
                 document.getElementById('videoReviewModal').style.display = 'flex';
             } catch (error) {
                 showAlert(error.message || 'Failed to load video details', 'danger');
             }
         }
+
+        // ====== Edit Video Functions ======
+        async function editVideo(videoId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch video details');
+                const video = await response.json();
+
+                document.getElementById('editVideoId').value = video.id;
+                document.getElementById('editVideoTitle').value = video.title || '';
+                document.getElementById('editVideoDescription').value = video.description || '';
+                document.getElementById('editVideoGenre').value = video.genre || '';
+                document.getElementById('editVideoYear').value = video.year || '';
+                document.getElementById('editVideoThumbnail').value = video.thumbnail || '';
+                document.getElementById('editVideoUrl').value = video.videoUrl || '';
+
+                document.getElementById('editVideoModal').style.display = 'flex';
+            } catch (error) {
+                showAlert(error.message || 'Failed to load video details for editing', 'danger');
+            }
+        }
+
+        function closeEditVideoModal() {
+            document.getElementById('editVideoModal').style.display = 'none';
+            document.getElementById('editVideoForm').reset();
+        }
+
+        document.getElementById('editVideoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const videoId = document.getElementById('editVideoId').value;
+            const data = {
+                title: document.getElementById('editVideoTitle').value.trim(),
+                description: document.getElementById('editVideoDescription').value.trim(),
+                genre: document.getElementById('editVideoGenre').value.trim(),
+                year: parseInt(document.getElementById('editVideoYear').value),
+                thumbnail: document.getElementById('editVideoThumbnail').value.trim(),
+                videoUrl: document.getElementById('editVideoUrl').value.trim()
+            };
+
+            if (!data.title || !data.description || !data.genre || !data.year || !data.thumbnail || !data.videoUrl) {
+                showAlert('Please fill in all fields', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/videos/${videoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to update video');
+                }
+                showAlert('Video updated successfully!');
+                closeEditVideoModal();
+                refreshTables();
+                loadDashboardData();
+            } catch (error) {
+                showAlert(error.message || 'Failed to update video', 'danger');
+            }
+        });
+
+        // Close edit modal with close button or overlay
+        document.querySelector('#editVideoModal .modal-close').addEventListener('click', closeEditVideoModal);
+        document.getElementById('editVideoModal').addEventListener('click', function (e) {
+            if (e.target === this) closeEditVideoModal();
+        });
 
         // ----- Approve Video -----
         document.getElementById('approveVideoBtn').addEventListener('click', async function () {
@@ -1169,11 +1290,6 @@
                 showAlert(error.message || 'Failed to reject video', 'danger');
             }
         });
-
-        // ----- Edit Video (stub) -----
-        function editVideo(videoId) {
-            alert(`Edit video ${videoId} functionality would be implemented here`);
-        }
 
         // ----- Unpublish Video -----
         async function unpublishVideo(videoId) {
@@ -1414,7 +1530,7 @@
             $('#adminsTable').DataTable().ajax.reload();
         }
 
-        // ----- Modal Close -----
+        // ----- Modal Close (global) -----
         window.addEventListener('click', function (event) {
             if (event.target.classList.contains('modal')) {
                 closeModal();
