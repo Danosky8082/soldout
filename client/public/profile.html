@@ -284,7 +284,6 @@
             background: var(--gradient-main);
             -webkit-background-clip: text;
             background-clip: text;
-            /* ✅ Standard property added */
             -webkit-text-fill-color: transparent;
         }
 
@@ -565,9 +564,8 @@
             return `${STATIC_BASE_URL}/${clean}`;
         }
 
-        // ====== Auth helpers ======
+        // ====== Auth helpers (we keep these, they are not in header.js) ======
         function getAuthToken() { return localStorage.getItem('authToken'); }
-        function getCurrentUser() { const data = localStorage.getItem('currentUser'); return data ? JSON.parse(data) : null; }
         function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
         function removeCurrentUser() { localStorage.removeItem('currentUser'); }
         function removeAuthToken() { localStorage.removeItem('authToken'); }
@@ -657,7 +655,22 @@
                     `;
                 }
 
-                updateHeaderAvatar(userData);
+                // ✅ Use shared header function to update avatar
+                if (typeof window.setAvatar === 'function') {
+                    window.setAvatar(userData);
+                } else {
+                    // fallback (should not happen)
+                    const avatar = document.getElementById('userAvatar');
+                    const name = document.getElementById('userNameDisplay');
+                    if (avatar && name) {
+                        if (userData.profilePicture) {
+                            avatar.innerHTML = `<img src="${getAbsoluteUrl(userData.profilePicture)}" alt="${userData.firstName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                        } else {
+                            avatar.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
+                        }
+                        name.textContent = `${userData.firstName} ${userData.lastName}`;
+                    }
+                }
             } catch (error) {
                 console.error('Error loading profile:', error);
                 showToast('Failed to load profile data', true);
@@ -744,24 +757,6 @@
             }
         }
 
-        // ====== Update header avatar ======
-        function updateHeaderAvatar(user) {
-            const avatarContainer = document.getElementById('userAvatar');
-            const userNameSpan = document.getElementById('userNameDisplay');
-            if (user) {
-                if (user.profilePicture) {
-                    const picUrl = getAbsoluteUrl(user.profilePicture);
-                    avatarContainer.innerHTML = `<img src="${picUrl}" alt="${user.firstName}">`;
-                } else {
-                    avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                }
-                userNameSpan.textContent = `${user.firstName} ${user.lastName}`;
-            } else {
-                avatarContainer.innerHTML = `<i class="fas fa-user-circle user-icon"></i>`;
-                userNameSpan.textContent = '';
-            }
-        }
-
         // ====== Upload profile picture ======
         async function uploadProfilePicture(file) {
             const token = getAuthToken();
@@ -789,11 +784,13 @@
                 profilePicImg.src = pictureUrl;
                 profilePicImg.style.display = 'block';
 
-                const user = getCurrentUser();
+                const user = window.getCurrentUser ? window.getCurrentUser() : null;
                 if (user) {
                     user.profilePicture = pictureUrl;
                     setCurrentUser(user);
-                    updateHeaderAvatar(user);
+                    if (typeof window.setAvatar === 'function') {
+                        window.setAvatar(user);
+                    }
                 }
                 showToast('Profile picture updated!');
             } catch (error) {
@@ -808,21 +805,28 @@
         document.addEventListener('DOMContentLoaded', async function () {
             await loadSidebar();
 
-            if (typeof window.initHeader === 'function') {
-                window.initHeader();   // ✅ This handles the dropdown toggle
+            // ✅ header.js auto-initializes, so we don't need to call initHeader manually.
+            // But we can ensure avatar is set after login.
+            const user = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (user && typeof window.setAvatar === 'function') {
+                window.setAvatar(user);
             }
 
             const token = getAuthToken();
             if (!token) { window.location.href = 'index.html'; return; }
             loadProfile();
 
-            // ✅ Logout button handler
+            // ✅ Logout button handler (will be overridden by header.js, but we keep as fallback)
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', function (e) {
+                // Remove any existing listener to avoid duplicates
+                const newBtn = logoutBtn.cloneNode(true);
+                logoutBtn.parentNode.replaceChild(newBtn, logoutBtn);
+                newBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     removeAuthToken();
                     removeCurrentUser();
+                    if (typeof window.setAvatar === 'function') window.setAvatar(null);
                     window.location.href = 'index.html';
                 });
             }
@@ -898,12 +902,15 @@
                     profileEmail.textContent = result.email;
                     profileBio.textContent = result.bio || 'No bio yet';
 
-                    const storedUser = getCurrentUser();
+                    // Update stored user and avatar
+                    const storedUser = window.getCurrentUser ? window.getCurrentUser() : null;
                     if (storedUser) {
                         storedUser.firstName = result.firstName;
                         storedUser.lastName = result.lastName;
                         setCurrentUser(storedUser);
-                        updateHeaderAvatar(storedUser);
+                        if (typeof window.setAvatar === 'function') {
+                            window.setAvatar(storedUser);
+                        }
                     }
 
                     editProfileModal.classList.remove('active');
