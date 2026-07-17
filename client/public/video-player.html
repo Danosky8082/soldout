@@ -296,35 +296,35 @@
 
     <script>
         // ============================================================
-        // SIDEBAR LOAD
-        // ============================================================
-        async function loadSidebar() {
+            // SIDEBAR LOAD
+            // ============================================================
+            async function loadSidebar() {
             try {
                 const response = await fetch('sidebar.html');
-                const html = await response.text();
-                document.getElementById('sidebar-container').innerHTML = html;
+            const html = await response.text();
+            document.getElementById('sidebar-container').innerHTML = html;
 
-                const hamburger = document.getElementById('hamburgerBtn');
-                const sidebar = document.getElementById('sidebarMobile');
-                const overlay = document.getElementById('sidebarOverlay');
+            const hamburger = document.getElementById('hamburgerBtn');
+            const sidebar = document.getElementById('sidebarMobile');
+            const overlay = document.getElementById('sidebarOverlay');
 
-                if (hamburger && sidebar && overlay) {
-                    function toggleSidebar(open) {
-                        const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
-                        sidebar.classList.toggle('open', isOpen);
-                        overlay.classList.toggle('active', isOpen);
-                        hamburger.classList.toggle('active', isOpen);
-                        document.body.style.overflow = isOpen ? 'hidden' : '';
-                    }
-                    hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleSidebar(); });
-                    overlay.addEventListener('click', function () { toggleSidebar(false); });
-                    sidebar.querySelectorAll('a').forEach(function (link) {
-                        link.addEventListener('click', function () { toggleSidebar(false); });
+            if (hamburger && sidebar && overlay) {
+                function toggleSidebar(open) {
+                    const isOpen = open !== undefined ? open : !sidebar.classList.contains('open');
+                    sidebar.classList.toggle('open', isOpen);
+                    overlay.classList.toggle('active', isOpen);
+                    hamburger.classList.toggle('active', isOpen);
+                    document.body.style.overflow = isOpen ? 'hidden' : '';
+                }
+                    hamburger.addEventListener('click', function (e) {e.stopPropagation(); toggleSidebar(); });
+            overlay.addEventListener('click', function () {toggleSidebar(false); });
+            sidebar.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () { toggleSidebar(false); });
                     });
-                    document.addEventListener('keydown', function (e) {
+            document.addEventListener('keydown', function (e) {
                         if (e.key === 'Escape' && sidebar.classList.contains('open')) toggleSidebar(false);
                     });
-                    window.addEventListener('resize', function () {
+            window.addEventListener('resize', function () {
                         if (window.innerWidth > 992 && sidebar.classList.contains('open')) toggleSidebar(false);
                     });
                 }
@@ -333,13 +333,13 @@
             }
         }
 
-        // ============================================================
-        // VIDEO PLAYER – FULL LOGIC
-        // ============================================================
-        const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
-        const STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
+            // ============================================================
+            // VIDEO PLAYER – FULL LOGIC
+            // ============================================================
+            const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
+            const STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
 
-        function getAbsoluteUrl(url) {
+            function getAbsoluteUrl(url) {
             if (typeof window.getAbsoluteUrl === 'function') return window.getAbsoluteUrl(url);
             if (!url) return null;
             if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -347,76 +347,76 @@
             return `${STATIC_BASE_URL}/${clean}`;
         }
 
-        function getCurrentUser() {
+            function getCurrentUser() {
             return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
         }
 
-        function getAuthToken() { return localStorage.getItem('authToken'); }
+            function getAuthToken() { return localStorage.getItem('authToken'); }
 
-        let currentVideo = null;
+            let currentVideo = null;
 
-        // ----- Load and render -----
-        async function initializePlayer() {
+            // ----- Load and render -----
+            async function initializePlayer() {
             const videoDataRaw = sessionStorage.getItem('currentVideo');
             if (!videoDataRaw) {
                 alert('No video selected');
-                window.location.href = 'index.html';
-                return;
+            window.location.href = 'index.html';
+            return;
             }
             let videoData;
             try {
                 videoData = JSON.parse(videoDataRaw);
             } catch (e) {
                 alert('Invalid video data');
-                window.location.href = 'index.html';
-                return;
+            window.location.href = 'index.html';
+            return;
             }
             if (!videoData.id) {
                 alert('Invalid video ID');
-                window.location.href = 'index.html';
-                return;
+            window.location.href = 'index.html';
+            return;
             }
             await loadVideo(videoData.id);
         }
 
-        async function loadVideo(videoId) {
+            async function loadVideo(videoId) {
             try {
                 const token = getAuthToken();
-                const user = getCurrentUser();
-                const userId = user ? user.id : null;
-                let url = `${API_BASE_URL}/videos/${videoId}`;
-                if (userId) url += `?userId=${userId}`;
+            const user = getCurrentUser();
+            const userId = user ? user.id : null;
+            let url = `${API_BASE_URL}/videos/${videoId}`;
+            if (userId) url += `?userId=${userId}`;
 
-                const response = await fetch(url, {
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            const response = await fetch(url, {
+                headers: token ? {'Authorization': `Bearer ${token}` } : { }
                 });
-                if (!response.ok) {
+            if (!response.ok) {
                     if (response.status === 404) {
-                        alert('Video not found. It may have been deleted.');
-                        window.location.href = 'index.html';
-                        return;
+                alert('Video not found. It may have been deleted.');
+            window.location.href = 'index.html';
+            return;
                     }
-                    throw new Error(`HTTP ${response.status}`);
+            throw new Error(`HTTP ${response.status}`);
                 }
-                currentVideo = await response.json();
+            currentVideo = await response.json();
 
-                populatePlayer();
-                setupInteractions();
+            populatePlayer();
+            setupInteractions();
             } catch (error) {
                 console.error('Error loading video:', error);
-                alert('Error loading video. Please try again.');
-                window.location.href = 'index.html';
+            alert('Error loading video. Please try again.');
+            window.location.href = 'index.html';
             }
         }
 
-        function populatePlayer() {
+            function populatePlayer() {
             const video = currentVideo;
             const player = document.getElementById('mainPlayer');
             player.src = getAbsoluteUrl(video.videoUrl) || video.videoUrl;
             document.getElementById('playerTitle').textContent = video.title;
             document.getElementById('uploaderName').textContent = video.user?.firstName + ' ' + video.user?.lastName || 'Unknown';
             document.getElementById('playerMeta').innerHTML =
-                `<span>${video.views?.toLocaleString() || '0'} views</span> • <span>${new Date(video.createdAt).toLocaleDateString()}</span>`;
+            `<span>${video.views?.toLocaleString() || '0'} views</span> • <span>${new Date(video.createdAt).toLocaleDateString()}</span>`;
             if (video.description) {
                 document.getElementById('playerDescription').textContent = video.description;
             }
@@ -425,12 +425,12 @@
             const avatarIcon = document.getElementById('uploaderAvatarIcon');
             if (video.user?.profilePicture) {
                 const pic = getAbsoluteUrl(video.user.profilePicture);
-                avatarImg.src = pic;
-                avatarImg.style.display = 'block';
-                avatarIcon.style.display = 'none';
+            avatarImg.src = pic;
+            avatarImg.style.display = 'block';
+            avatarIcon.style.display = 'none';
             } else {
                 avatarImg.style.display = 'none';
-                avatarIcon.style.display = 'block';
+            avatarIcon.style.display = 'block';
             }
 
             document.getElementById('likeCount').textContent = video.likeCount || 0;
@@ -441,10 +441,10 @@
             const subBtn = document.getElementById('subscribeButton');
             if (video.isSubscribed) {
                 subBtn.classList.add('subscribed');
-                subBtn.textContent = 'SUBSCRIBED';
+            subBtn.textContent = 'SUBSCRIBED';
             } else {
                 subBtn.classList.remove('subscribed');
-                subBtn.textContent = 'SUBSCRIBE';
+            subBtn.textContent = 'SUBSCRIBE';
             }
             document.getElementById('subscribersCount').textContent = (video.subscriberCount || 0) + ' subscribers';
 
@@ -452,9 +452,9 @@
             const countEl = document.querySelector('.rating-count');
             if (video.averageRating) {
                 avgEl.textContent = video.averageRating;
-                countEl.textContent = `(${video._count?.ratings || 0} ratings)`;
-                if (video.userRating) {
-                    document.getElementById(`star${video.userRating}`).checked = true;
+            countEl.textContent = `(${video._count?.ratings || 0} ratings)`;
+            if (video.userRating) {
+                document.getElementById(`star${video.userRating}`).checked = true;
                 }
             }
 
@@ -463,8 +463,8 @@
             loadTrivia(video);
         }
 
-        // ----- Interactions setup -----
-        function setupInteractions() {
+            // ----- Interactions setup -----
+            function setupInteractions() {
             const video = currentVideo;
             document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
             document.getElementById('dislikeButton').addEventListener('click', () => toggleLike(true));
@@ -474,12 +474,12 @@
 
             document.getElementById('triviaAddBtn').addEventListener('click', () => {
                 const user = getCurrentUser();
-                if (!user) { alert('Please log in to add trivia'); return; }
-                document.getElementById('triviaFormContainer').style.display = 'block';
+            if (!user) {alert('Please log in to add trivia'); return; }
+            document.getElementById('triviaFormContainer').style.display = 'block';
             });
             document.getElementById('triviaCancelBtn').addEventListener('click', () => {
                 document.getElementById('triviaFormContainer').style.display = 'none';
-                document.getElementById('triviaTextarea').value = '';
+            document.getElementById('triviaTextarea').value = '';
             });
             document.getElementById('triviaSaveBtn').addEventListener('click', addTrivia);
 
@@ -489,7 +489,7 @@
 
             document.getElementById('qualityToggle').addEventListener('click', () => {
                 const qs = document.getElementById('qualitySelector');
-                qs.style.display = qs.style.display === 'block' ? 'none' : 'block';
+            qs.style.display = qs.style.display === 'block' ? 'none' : 'block';
             });
             document.querySelectorAll('.quality-option').forEach(opt => {
                 opt.addEventListener('click', () => {
@@ -501,16 +501,16 @@
 
             document.getElementById('shareButton').addEventListener('click', () => {
                 document.getElementById('shareLink').value = window.location.href;
-                document.getElementById('shareModal').style.display = 'flex';
+            document.getElementById('shareModal').style.display = 'flex';
             });
             document.getElementById('shareModalClose').addEventListener('click', () => {
                 document.getElementById('shareModal').style.display = 'none';
             });
             document.getElementById('copyLinkBtn').addEventListener('click', () => {
                 const link = document.getElementById('shareLink');
-                link.select();
-                document.execCommand('copy');
-                alert('Link copied!');
+            link.select();
+            document.execCommand('copy');
+            alert('Link copied!');
             });
             ['shareFacebook', 'shareTwitter', 'shareWhatsApp', 'shareLinkedIn'].forEach(id => {
                 document.getElementById(id).addEventListener('click', () => {
@@ -526,311 +526,328 @@
             });
             window.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('shareModal')) {
-                    document.getElementById('shareModal').style.display = 'none';
+                document.getElementById('shareModal').style.display = 'none';
                 }
             });
         }
 
-        // ----- Like / Dislike (video) -----
-        async function toggleLike(isDislike) {
+            // ----- Like / Dislike (video) -----
+            async function toggleLike(isDislike) {
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to like/dislike'); return; }
+            if (!user) {alert('Please log in to like/dislike'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/like`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ userId: user.id, videoId: currentVideo.id, isDislike })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({userId: user.id, videoId: currentVideo.id, isDislike })
                 });
-                if (!res.ok) throw new Error('Failed to update like');
-                const data = await res.json();
-                document.getElementById('likeCount').textContent = data.likes || 0;
-                document.getElementById('dislikeCount').textContent = data.dislikes || 0;
-                if (isDislike) {
-                    document.getElementById('dislikeButton').classList.toggle('liked');
-                    document.getElementById('likeButton').classList.remove('liked');
+            if (!res.ok) throw new Error('Failed to update like');
+            const data = await res.json();
+            document.getElementById('likeCount').textContent = data.likes || 0;
+            document.getElementById('dislikeCount').textContent = data.dislikes || 0;
+            if (isDislike) {
+                document.getElementById('dislikeButton').classList.toggle('liked');
+            document.getElementById('likeButton').classList.remove('liked');
                 } else {
-                    document.getElementById('likeButton').classList.toggle('liked');
-                    document.getElementById('dislikeButton').classList.remove('liked');
+                document.getElementById('likeButton').classList.toggle('liked');
+            document.getElementById('dislikeButton').classList.remove('liked');
                 }
             } catch (error) {
                 console.error('Like error:', error);
-                alert('Failed to process like');
+            alert('Failed to process like');
             }
         }
 
-        // ----- Subscribe -----
-        async function toggleSubscribe() {
+            // ----- Subscribe -----
+            async function toggleSubscribe() {
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to subscribe'); return; }
+            if (!user) {alert('Please log in to subscribe'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/subscribe`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ userId: user.id, videoId: currentVideo.id })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({userId: user.id, videoId: currentVideo.id })
                 });
-                if (!res.ok) throw new Error('Failed to toggle subscription');
-                const data = await res.json();
-                const btn = document.getElementById('subscribeButton');
-                if (data.subscribed) {
-                    btn.classList.add('subscribed');
-                    btn.textContent = 'SUBSCRIBED';
+            if (!res.ok) throw new Error('Failed to toggle subscription');
+            const data = await res.json();
+            const btn = document.getElementById('subscribeButton');
+            if (data.subscribed) {
+                btn.classList.add('subscribed');
+            btn.textContent = 'SUBSCRIBED';
                 } else {
-                    btn.classList.remove('subscribed');
-                    btn.textContent = 'SUBSCRIBE';
+                btn.classList.remove('subscribed');
+            btn.textContent = 'SUBSCRIBE';
                 }
-                document.getElementById('subscribersCount').textContent = (data.count || 0) + ' subscribers';
+            document.getElementById('subscribersCount').textContent = (data.count || 0) + ' subscribers';
             } catch (error) {
                 console.error('Subscribe error:', error);
-                alert('Failed to subscribe');
+            alert('Failed to subscribe');
             }
         }
 
-        // ----- Save -----
-        async function toggleSave() {
+            // ----- Save -----
+            async function toggleSave() {
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to save'); return; }
+            if (!user) {alert('Please log in to save'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/save`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ userId: user.id, videoId: currentVideo.id })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({userId: user.id, videoId: currentVideo.id })
                 });
-                if (!res.ok) throw new Error('Failed to save');
-                const data = await res.json();
-                const btn = document.getElementById('saveButton');
-                if (data.action === 'saved') {
-                    btn.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
-                    btn.classList.add('saved');
+            if (!res.ok) throw new Error('Failed to save');
+            const data = await res.json();
+            const btn = document.getElementById('saveButton');
+            if (data.action === 'saved') {
+                btn.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
+            btn.classList.add('saved');
                 } else {
-                    btn.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
-                    btn.classList.remove('saved');
+                btn.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
+            btn.classList.remove('saved');
                 }
             } catch (error) {
                 console.error('Save error:', error);
-                alert('Failed to save');
+            alert('Failed to save');
             }
         }
 
-        // ----- Comment -----
-        async function addComment(e) {
-            e.preventDefault();
+            // ----- Comment -----
+            async function addComment(e) {
+                e.preventDefault();
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to comment'); return; }
+            if (!user) {alert('Please log in to comment'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             const input = document.getElementById('commentInput');
             const text = input.value.trim();
             if (!text) return;
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/comment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ text, userId: user.id, videoId: currentVideo.id })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({text, userId: user.id, videoId: currentVideo.id })
                 });
-                if (!res.ok) throw new Error('Failed to post comment');
-                input.value = '';
-                await loadVideo(currentVideo.id);
+            if (!res.ok) throw new Error('Failed to post comment');
+            input.value = '';
+            await loadVideo(currentVideo.id);
             } catch (error) {
                 console.error('Comment error:', error);
-                alert('Failed to post comment');
+            alert('Failed to post comment');
             }
         }
 
-        // ----- Reply (fixed) -----
-        function addReply(commentId, parentReplyId = null) {
+            // ----- Reply (with payload logging & better error handling) -----
+            function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
-                const form = e.target.closest('.reply-form');
-                const input = form.querySelector('.reply-input');
-                const text = input.value.trim();
-                if (!text) return;
+            const form = e.target.closest('.reply-form');
+            const input = form.querySelector('.reply-input');
+            const text = input.value.trim();
+            if (!text) return;
 
-                const user = getCurrentUser();
-                if (!user) { alert('Please log in to reply'); return; }
-                const token = getAuthToken();
-                if (!token) { alert('Please log in again.'); return; }
+            const user = getCurrentUser();
+            if (!user) {alert('Please log in to reply'); return; }
+            const token = getAuthToken();
+            if (!token) {alert('Please log in again.'); return; }
 
-                const payload = {
-                    text,
-                    userId: user.id,
-                    commentId: parseInt(commentId),
-                    videoId: currentVideo.id
+            const payload = {
+                text,
+                userId: user.id,
+            commentId: parseInt(commentId),
+            videoId: currentVideo.id
                 };
-                if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
+            if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
 
-                try {
+            console.log('[addReply] Sending payload:', payload);
+
+            try {
                     const res = await fetch(`${API_BASE_URL}/interactions/reply`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payload)
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error('Failed to post reply');
-                    input.value = '';
-                    await loadVideo(currentVideo.id);
+
+            // Try to parse error response
+            if (!res.ok) {
+                let errorMsg = 'Failed to post reply';
+            try {
+                            const errData = await res.json();
+            console.error('[addReply] Server error response:', errData);
+            errorMsg = errData.message || errData.error || errorMsg;
+                        } catch (e) {
+                // ignore
+            }
+            throw new Error(errorMsg);
+                    }
+
+            const reply = await res.json();
+            console.log('[addReply] Reply created:', reply);
+            input.value = '';
+            await loadVideo(currentVideo.id);
                 } catch (error) {
-                    console.error('Reply error:', error);
-                    alert('Failed to post reply');
+                console.error('Reply error:', error);
+            alert(error.message || 'Failed to post reply');
                 }
             };
         }
 
-        // ----- Rating -----
-        async function rateVideo(e) {
+            // ----- Rating -----
+            async function rateVideo(e) {
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to rate'); return; }
+            if (!user) {alert('Please log in to rate'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             const value = parseInt(e.target.value);
             if (value < 1 || value > 10) return;
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/rate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ userId: user.id, videoId: currentVideo.id, value })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({userId: user.id, videoId: currentVideo.id, value })
                 });
-                if (!res.ok) throw new Error('Failed to rate');
-                const data = await res.json();
-                document.querySelector('.average-value').textContent = data.average || 0;
-                document.querySelector('.rating-count').textContent = `(${data.count || 0} ratings)`;
+            if (!res.ok) throw new Error('Failed to rate');
+            const data = await res.json();
+            document.querySelector('.average-value').textContent = data.average || 0;
+            document.querySelector('.rating-count').textContent = `(${data.count || 0} ratings)`;
             } catch (error) {
                 console.error('Rating error:', error);
-                alert('Failed to rate');
+            alert('Failed to rate');
             }
         }
 
-        // ----- Trivia – add without reload -----
-        async function addTrivia() {
+            // ----- Trivia – add without reload -----
+            async function addTrivia() {
             const user = getCurrentUser();
-            if (!user) { alert('Please log in to add trivia'); return; }
+            if (!user) {alert('Please log in to add trivia'); return; }
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             const text = document.getElementById('triviaTextarea').value.trim();
-            if (!text) { alert('Please enter trivia text'); return; }
+            if (!text) {alert('Please enter trivia text'); return; }
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ text, userId: user.id, videoId: currentVideo.id })
+                method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({text, userId: user.id, videoId: currentVideo.id })
                 });
-                if (!res.ok) throw new Error('Failed to add trivia');
-                const newTrivia = await res.json();
+            if (!res.ok) throw new Error('Failed to add trivia');
+            const newTrivia = await res.json();
 
-                // Append new trivia to the list
-                const container = document.getElementById('triviaContent');
-                const noTrivia = document.getElementById('noTrivia');
-                if (noTrivia.parentNode === container) container.removeChild(noTrivia);
+            // Append new trivia to the list
+            const container = document.getElementById('triviaContent');
+            const noTrivia = document.getElementById('noTrivia');
+            if (noTrivia.parentNode === container) container.removeChild(noTrivia);
 
-                const div = document.createElement('div');
-                div.className = 'trivia-item';
-                div.dataset.id = newTrivia.id;
-                div.innerHTML = `
-                    <p>${newTrivia.text}</p>
-                    <div class="trivia-meta">
-                        <span>Added by ${user.firstName} ${user.lastName}</span>
-                        <div class="trivia-actions">
-                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
+            const div = document.createElement('div');
+            div.className = 'trivia-item';
+            div.dataset.id = newTrivia.id;
+            div.innerHTML = `
+            <p>${newTrivia.text}</p>
+            <div class="trivia-meta">
+                <span>Added by ${user.firstName} ${user.lastName}</span>
+                <div class="trivia-actions">
+                    <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                    <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            `;
+            container.appendChild(div);
                 // Add event listeners
                 div.querySelector('.edit-trivia').addEventListener('click', () => {
-                    document.getElementById('triviaTextarea').value = newTrivia.text;
-                    document.getElementById('triviaFormContainer').style.display = 'block';
-                    div.remove();
+                document.getElementById('triviaTextarea').value = newTrivia.text;
+            document.getElementById('triviaFormContainer').style.display = 'block';
+            div.remove();
                 });
                 div.querySelector('.delete-trivia').addEventListener('click', () => {
-                    deleteTrivia(newTrivia.id);
+                deleteTrivia(newTrivia.id);
                 });
 
-                document.getElementById('triviaFormContainer').style.display = 'none';
-                document.getElementById('triviaTextarea').value = '';
+            document.getElementById('triviaFormContainer').style.display = 'none';
+            document.getElementById('triviaTextarea').value = '';
             } catch (error) {
                 console.error('Trivia error:', error);
-                alert('Failed to add trivia');
+            alert('Failed to add trivia');
             }
         }
 
-        // ----- Delete trivia – remove element only -----
-        async function deleteTrivia(triviaId) {
+            // ----- Delete trivia – remove element only -----
+            async function deleteTrivia(triviaId) {
             if (!confirm('Delete this trivia?')) return;
             const token = getAuthToken();
-            if (!token) { alert('Please log in again.'); return; }
+            if (!token) {alert('Please log in again.'); return; }
             try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia/${triviaId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                method: 'DELETE',
+            headers: {'Authorization': `Bearer ${token}` }
                 });
-                if (!res.ok) throw new Error('Failed to delete trivia');
-                const element = document.querySelector(`.trivia-item[data-id="${triviaId}"]`);
-                if (element) element.remove();
-                const container = document.getElementById('triviaContent');
-                if (container.children.length === 0) {
+            if (!res.ok) throw new Error('Failed to delete trivia');
+            const element = document.querySelector(`.trivia-item[data-id="${triviaId}"]`);
+            if (element) element.remove();
+            const container = document.getElementById('triviaContent');
+            if (container.children.length === 0) {
                     const noTrivia = document.getElementById('noTrivia');
-                    container.appendChild(noTrivia);
+            container.appendChild(noTrivia);
                 }
             } catch (error) {
                 console.error('Delete trivia error:', error);
-                alert('Failed to delete trivia');
+            alert('Failed to delete trivia');
             }
         }
 
-        // ----- Render comments (with fixed like) -----
-        function renderComments(comments) {
+            // ----- Render comments (with fixed like) -----
+            function renderComments(comments) {
             const container = document.getElementById('commentList');
             container.innerHTML = '';
             document.getElementById('commentsCount').textContent = `(${comments.length})`;
 
             if (!comments || comments.length === 0) {
                 container.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
-                return;
+            return;
             }
 
             comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             comments.forEach(comment => {
                 const commentEl = createCommentElement(comment);
-                container.appendChild(commentEl);
+            container.appendChild(commentEl);
 
                 if (comment.replies && comment.replies.length > 0) {
                     const repliesContainer = document.createElement('div');
-                    repliesContainer.className = 'replies';
+            repliesContainer.className = 'replies';
                     comment.replies.forEach(reply => {
                         const replyEl = createCommentElement(reply, true);
-                        repliesContainer.appendChild(replyEl);
+            repliesContainer.appendChild(replyEl);
                         if (reply.replies && reply.replies.length > 0) {
                             const nestedContainer = document.createElement('div');
-                            nestedContainer.className = 'replies';
+            nestedContainer.className = 'replies';
                             reply.replies.forEach(nested => {
                                 const nestedEl = createCommentElement(nested, true);
-                                nestedContainer.appendChild(nestedEl);
+            nestedContainer.appendChild(nestedEl);
                             });
-                            replyEl.querySelector('.comment-content').appendChild(nestedContainer);
+            replyEl.querySelector('.comment-content').appendChild(nestedContainer);
                         }
                     });
-                    commentEl.querySelector('.comment-content').appendChild(repliesContainer);
+            commentEl.querySelector('.comment-content').appendChild(repliesContainer);
                 }
             });
         }
 
-        function createCommentElement(item, isReply = false) {
+            function createCommentElement(item, isReply = false) {
             const div = document.createElement('div');
             div.className = isReply ? 'comment reply' : 'comment';
 
             let avatarHtml = `<i class="fas fa-user"></i>`;
             if (item.user?.profilePicture) {
                 const pic = getAbsoluteUrl(item.user.profilePicture);
-                if (pic) avatarHtml = `<img src="${pic}" alt="${item.user.firstName}">`;
+            if (pic) avatarHtml = `<img src="${pic}" alt="${item.user.firstName}">`;
             }
 
-            div.innerHTML = `
+                div.innerHTML = `
                 <div class="comment-avatar">${avatarHtml}</div>
                 <div class="comment-content">
                     <div class="comment-author">${item.user?.firstName || 'Unknown'} ${item.user?.lastName || ''}</div>
@@ -848,21 +865,21 @@
                     <div class="reply-form-container" style="display:none;">
                         <form class="reply-form">
                             <input type="text" class="reply-input" placeholder="Write a reply..." required>
-                            <button type="submit" class="reply-submit">Reply</button>
-                            <button type="button" class="cancel-reply">Cancel</button>
+                                <button type="submit" class="reply-submit">Reply</button>
+                                <button type="button" class="cancel-reply">Cancel</button>
                         </form>
                     </div>
                 </div>
-            `;
+                `;
 
-            // ----- FIXED: Like button for comments/replies -----
-            const likeBtn = div.querySelector('.like-comment');
+                // ----- FIXED: Like button for comments/replies -----
+                const likeBtn = div.querySelector('.like-comment');
             likeBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
+                    e.stopPropagation();
                 const user = getCurrentUser();
-                if (!user) { alert('Please log in to like'); return; }
+                if (!user) {alert('Please log in to like'); return; }
                 const token = getAuthToken();
-                if (!token) { alert('Please log in again.'); return; }
+                if (!token) {alert('Please log in again.'); return; }
 
                 const id = likeBtn.dataset.id;
                 const type = likeBtn.dataset.type;
@@ -874,50 +891,50 @@
 
                 if (isCurrentlyLiked) {
                     likeBtn.classList.remove('liked');
-                    countSpan.textContent = Math.max(0, currentCount - 1);
+                countSpan.textContent = Math.max(0, currentCount - 1);
                 } else {
                     likeBtn.classList.add('liked');
-                    countSpan.textContent = currentCount + 1;
+                countSpan.textContent = currentCount + 1;
                 }
 
-                const payload = { userId: user.id };
+                const payload = {userId: user.id };
                 if (isReply) payload.replyId = parseInt(id);
                 else payload.commentId = parseInt(id);
 
                 try {
                     const res = await fetch(`${API_BASE_URL}/interactions/like`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payload)
+                    method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error('Failed to update like');
-                    const data = await res.json();
-                    if (data.likeCount !== undefined) {
-                        countSpan.textContent = data.likeCount;
+                if (!res.ok) throw new Error('Failed to update like');
+                const data = await res.json();
+                if (data.likeCount !== undefined) {
+                    countSpan.textContent = data.likeCount;
                         if (data.likeCount > 0) likeBtn.classList.add('liked');
-                        else likeBtn.classList.remove('liked');
+                else likeBtn.classList.remove('liked');
                     }
                 } catch (error) {
                     console.error('Like error:', error);
-                    if (isCurrentlyLiked) {
-                        likeBtn.classList.add('liked');
-                        countSpan.textContent = currentCount;
+                if (isCurrentlyLiked) {
+                    likeBtn.classList.add('liked');
+                countSpan.textContent = currentCount;
                     } else {
-                        likeBtn.classList.remove('liked');
-                        countSpan.textContent = currentCount;
+                    likeBtn.classList.remove('liked');
+                countSpan.textContent = currentCount;
                     }
                 }
             });
 
-            // Reply button (unchanged)
-            const replyBtn = div.querySelector('.reply-comment');
-            const formContainer = div.querySelector('.reply-form-container');
-            const form = formContainer.querySelector('.reply-form');
-            const input = form.querySelector('.reply-input');
-            const cancelBtn = form.querySelector('.cancel-reply');
+                // Reply button (unchanged)
+                const replyBtn = div.querySelector('.reply-comment');
+                const formContainer = div.querySelector('.reply-form-container');
+                const form = formContainer.querySelector('.reply-form');
+                const input = form.querySelector('.reply-input');
+                const cancelBtn = form.querySelector('.cancel-reply');
 
             replyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
+                    e.stopPropagation();
                 document.querySelectorAll('.reply-form-container').forEach(f => {
                     if (f !== formContainer) f.style.display = 'none';
                 });
@@ -926,19 +943,19 @@
             });
 
             cancelBtn.addEventListener('click', () => {
-                formContainer.style.display = 'none';
+                    formContainer.style.display = 'none';
                 input.value = '';
             });
 
-            form.addEventListener('submit', addReply(item.id, item.parentReplyId || null));
+                form.addEventListener('submit', addReply(item.id, item.parentReplyId || null));
 
-            return div;
+                return div;
         }
 
-        function formatDate(dateStr) {
+                function formatDate(dateStr) {
             const d = new Date(dateStr);
-            return d.toLocaleDateString('en-US', {
-                year: 'numeric',
+                return d.toLocaleDateString('en-US', {
+                    year: 'numeric',
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
@@ -946,11 +963,11 @@
             });
         }
 
-        // ----- Related Videos -----
-        async function loadRelatedVideos(video) {
+                // ----- Related Videos -----
+                async function loadRelatedVideos(video) {
             const container = document.getElementById('relatedVideos');
-            container.innerHTML = '<p class="loading">Loading similar videos...</p>';
-            try {
+                container.innerHTML = '<p class="loading">Loading similar videos...</p>';
+                try {
                 const res = await fetch(`${API_BASE_URL}/videos/premium`);
                 if (!res.ok) throw new Error('Failed to fetch videos');
                 const all = await res.json();
@@ -958,79 +975,79 @@
                 container.innerHTML = '';
                 if (related.length === 0) {
                     container.innerHTML = '<p>No similar videos found</p>';
-                    return;
+                return;
                 }
                 related.forEach(v => {
                     const el = document.createElement('div');
-                    el.className = 'related-video-item';
-                    const thumb = getAbsoluteUrl(v.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
-                    el.innerHTML = `
-                        <div class="thumb">
-                            <img src="${thumb}" alt="${v.title}">
-                            ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
-                        </div>
-                        <div class="info">
-                            <div class="title">${v.title}</div>
-                            <div class="channel">${v.user?.firstName || 'Unknown'}</div>
-                            <div class="views">${v.views?.toLocaleString() || 0} views</div>
-                        </div>
-                    `;
+                el.className = 'related-video-item';
+                const thumb = getAbsoluteUrl(v.thumbnail) || 'https://via.placeholder.com/300x169?text=No+Thumb';
+                el.innerHTML = `
+                <div class="thumb">
+                    <img src="${thumb}" alt="${v.title}">
+                        ${v.duration ? `<span class="related-duration">${v.duration}</span>` : ''}
+                </div>
+                <div class="info">
+                    <div class="title">${v.title}</div>
+                    <div class="channel">${v.user?.firstName || 'Unknown'}</div>
+                    <div class="views">${v.views?.toLocaleString() || 0} views</div>
+                </div>
+                `;
                     el.addEventListener('click', () => {
-                        sessionStorage.setItem('currentVideo', JSON.stringify({ id: v.id }));
-                        window.location.reload();
+                    sessionStorage.setItem('currentVideo', JSON.stringify({ id: v.id }));
+                window.location.reload();
                     });
-                    container.appendChild(el);
+                container.appendChild(el);
                 });
             } catch (e) {
-                console.error('Related videos error:', e);
+                    console.error('Related videos error:', e);
                 container.innerHTML = '<p>Error loading similar videos</p>';
             }
         }
 
-        // ----- Trivia (fetch from interaction endpoint) -----
-        async function loadTrivia(video) {
+                // ----- Trivia (fetch from interaction endpoint) -----
+                async function loadTrivia(video) {
             const container = document.getElementById('triviaContent');
-            const noTrivia = document.getElementById('noTrivia');
+                const noTrivia = document.getElementById('noTrivia');
 
-            try {
+                try {
                 const res = await fetch(`${API_BASE_URL}/interactions/trivia/${video.id}`, {
-                    headers: getAuthToken() ? { 'Authorization': `Bearer ${getAuthToken()}` } : {}
+                    headers: getAuthToken() ? {'Authorization': `Bearer ${getAuthToken()}` } : { }
                 });
                 if (!res.ok) throw new Error('Failed to fetch trivia');
                 const trivia = await res.json();
                 renderTriviaItems(trivia);
             } catch (e) {
-                console.warn('Trivia load error:', e);
+                    console.warn('Trivia load error:', e);
                 container.innerHTML = '';
                 noTrivia.style.display = 'block';
                 container.appendChild(noTrivia);
             }
         }
 
-        function renderTriviaItems(trivia) {
+                function renderTriviaItems(trivia) {
             const container = document.getElementById('triviaContent');
-            const noTrivia = document.getElementById('noTrivia');
-            container.innerHTML = '';
-            if (!trivia || trivia.length === 0) {
-                container.appendChild(noTrivia);
+                const noTrivia = document.getElementById('noTrivia');
+                container.innerHTML = '';
+                if (!trivia || trivia.length === 0) {
+                    container.appendChild(noTrivia);
                 return;
             }
-            const user = getCurrentUser();
+                const user = getCurrentUser();
             trivia.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'trivia-item';
                 div.dataset.id = item.id;
                 div.innerHTML = `
-                    <p>${item.text}</p>
-                    <div class="trivia-meta">
-                        <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
-                        ${item.user.id === user?.id ? `
+                <p>${item.text}</p>
+                <div class="trivia-meta">
+                    <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
+                    ${item.user.id === user?.id ? `
                         <div class="trivia-actions">
                             <button class="edit-trivia"><i class="fas fa-edit"></i></button>
                             <button class="delete-trivia"><i class="fas fa-trash"></i></button>
                         </div>
                         ` : ''}
-                    </div>
+                </div>
                 `;
                 container.appendChild(div);
                 if (item.user.id === user?.id) {
