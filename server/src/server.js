@@ -10,6 +10,7 @@ const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
 
+
 // ✅ Corrected paths
 const videoRoutes = require('./routes/videoRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
