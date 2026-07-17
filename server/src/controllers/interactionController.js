@@ -1,35 +1,54 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// ========== LIKE / DISLIKE (for videos) ==========
+// ========== LIKE / DISLIKE (supports video, comment, reply) ==========
 const toggleLike = async (req, res) => {
   try {
-    const { userId, videoId, isDislike } = req.body;
+    const { userId, videoId, commentId, replyId, isDislike } = req.body;
     const parsedUserId = parseInt(userId);
-    const parsedVideoId = parseInt(videoId);
 
-    if (!userId || !videoId) {
-      return res.status(400).json({ message: 'userId and videoId are required' });
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
     }
 
-    // Check if video exists
-    const video = await prisma.video.findUnique({
-      where: { id: parsedVideoId }
+    // Determine target type and validate
+    let targetId, targetType, targetModel;
+
+    if (videoId) {
+      targetId = parseInt(videoId);
+      targetType = 'video';
+      targetModel = prisma.video;
+    } else if (commentId) {
+      targetId = parseInt(commentId);
+      targetType = 'comment';
+      targetModel = prisma.comment;
+    } else if (replyId) {
+      targetId = parseInt(replyId);
+      targetType = 'reply';
+      targetModel = prisma.reply;
+    } else {
+      return res.status(400).json({ error: 'Missing target (videoId, commentId, or replyId required)' });
+    }
+
+    // Check if target exists
+    const target = await targetModel.findUnique({
+      where: { id: targetId }
     });
-    if (!video) {
-      return res.status(404).json({ message: 'Video not found' });
+    if (!target) {
+      return res.status(404).json({ error: `${targetType} not found` });
     }
 
-    // Determine the LikeType
     const type = isDislike ? 'DISLIKE' : 'LIKE';
 
-    // Check if user already has a like on this video
+    // Build where clause for existing like
+    const whereClause = { userId: parsedUserId };
+    if (targetType === 'video') whereClause.videoId = targetId;
+    else if (targetType === 'comment') whereClause.commentId = targetId;
+    else if (targetType === 'reply') whereClause.replyId = targetId;
+
+    // Check if user already has a like on this target
     const existing = await prisma.like.findFirst({
-      where: {
-        userId: parsedUserId,
-        videoId: parsedVideoId,
-        type: { in: ['LIKE', 'DISLIKE'] }
-      }
+      where: whereClause
     });
 
     if (existing) {
@@ -45,27 +64,38 @@ const toggleLike = async (req, res) => {
       }
     } else {
       // Create new like
-      await prisma.like.create({
-        data: {
-          type,
-          userId: parsedUserId,
-          videoId: parsedVideoId
-        }
-      });
+      const createData = {
+        type,
+        userId: parsedUserId
+      };
+      if (targetType === 'video') createData.videoId = targetId;
+      else if (targetType === 'comment') createData.commentId = targetId;
+      else if (targetType === 'reply') createData.replyId = targetId;
+
+      await prisma.like.create({ data: createData });
     }
 
-    // Get updated counts
-    const likes = await prisma.like.count({
-      where: { videoId: parsedVideoId, type: 'LIKE' }
-    });
-    const dislikes = await prisma.like.count({
-      where: { videoId: parsedVideoId, type: 'DISLIKE' }
-    });
-
-    res.json({ likes, dislikes });
+    // Return updated counts based on target type
+    if (targetType === 'video') {
+      const likes = await prisma.like.count({
+        where: { videoId: targetId, type: 'LIKE' }
+      });
+      const dislikes = await prisma.like.count({
+        where: { videoId: targetId, type: 'DISLIKE' }
+      });
+      return res.json({ likes, dislikes });
+    } else {
+      const likeCount = await prisma.like.count({
+        where: { 
+          [targetType === 'comment' ? 'commentId' : 'replyId']: targetId,
+          type: 'LIKE' 
+        }
+      });
+      return res.json({ likeCount });
+    }
   } catch (error) {
     console.error('Like error:', error);
-    res.status(500).json({ message: 'Failed to process like', error: error.message });
+    res.status(500).json({ error: 'Failed to process like', message: error.message });
   }
 };
 
@@ -132,6 +162,14 @@ const addComment = async (req, res) => {
       return res.status(400).json({ message: 'text, userId, videoId are required' });
     }
 
+    // Verify video exists
+    const video = await prisma.video.findUnique({
+      where: { id: parseInt(videoId) }
+    });
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
     const comment = await prisma.comment.create({
       data: {
         text,
@@ -157,15 +195,18 @@ const addComment = async (req, res) => {
   }
 };
 
-// ========== ADD REPLY (with validation) ==========
+// ========== ADD REPLY (with full validation) ==========
 const addReply = async (req, res) => {
   try {
     const { text, userId, commentId, videoId, parentReplyId } = req.body;
     if (!text || !userId || !commentId || !videoId) {
-      return res.status(400).json({ message: 'text, userId, commentId, videoId are required' });
+      return res.status(400).json({ 
+        error: 'MISSING_FIELDS',
+        message: 'text, userId, commentId, videoId are required' 
+      });
     }
 
-    // ✅ 1. Check that the comment exists
+    // 1. Check that the comment exists
     const comment = await prisma.comment.findUnique({
       where: { id: parseInt(commentId) }
     });
@@ -176,7 +217,7 @@ const addReply = async (req, res) => {
       });
     }
 
-    // ✅ 2. Verify the comment belongs to the video
+    // 2. Verify the comment belongs to the video
     if (comment.videoId !== parseInt(videoId)) {
       return res.status(400).json({
         error: 'VIDEO_MISMATCH',
@@ -184,7 +225,7 @@ const addReply = async (req, res) => {
       });
     }
 
-    // ✅ 3. If replying to a reply, verify that parent reply exists and belongs to the same comment
+    // 3. If replying to a reply, verify that parent reply exists and belongs to the same comment
     if (parentReplyId) {
       const parentReply = await prisma.reply.findUnique({
         where: { id: parseInt(parentReplyId) },
@@ -204,7 +245,7 @@ const addReply = async (req, res) => {
       }
     }
 
-    // ✅ 4. Create the reply
+    // 4. Create the reply
     const reply = await prisma.reply.create({
       data: {
         text,
@@ -238,6 +279,14 @@ const addTrivia = async (req, res) => {
     const { text, userId, videoId } = req.body;
     if (!text || !userId || !videoId) {
       return res.status(400).json({ message: 'text, userId, videoId are required' });
+    }
+
+    // Verify video exists
+    const video = await prisma.video.findUnique({
+      where: { id: parseInt(videoId) }
+    });
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
     }
 
     const trivia = await prisma.trivia.create({
@@ -293,6 +342,14 @@ const rateVideo = async (req, res) => {
     const parsedUserId = parseInt(userId);
     const parsedVideoId = parseInt(videoId);
 
+    // Check if video exists
+    const video = await prisma.video.findUnique({
+      where: { id: parsedVideoId }
+    });
+    if (!video) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
     // Check if rating exists
     const existing = await prisma.rating.findFirst({
       where: {
@@ -333,6 +390,31 @@ const rateVideo = async (req, res) => {
   }
 };
 
+// ========== GET TRIVIA FOR VIDEO ==========
+const getTriviaForVideo = async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const trivia = await prisma.trivia.findMany({
+      where: { videoId: parseInt(videoId) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePicture: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(trivia);
+  } catch (error) {
+    console.error('Get trivia error:', error);
+    res.status(500).json({ message: 'Failed to fetch trivia', error: error.message });
+  }
+};
+
 module.exports = {
   toggleLike,
   toggleSubscribe,
@@ -340,5 +422,6 @@ module.exports = {
   addReply,
   addTrivia,
   deleteTrivia,
-  rateVideo
+  rateVideo,
+  getTriviaForVideo
 };
