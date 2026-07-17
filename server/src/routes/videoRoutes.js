@@ -442,4 +442,19 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.get('/:id/trivia', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const trivia = await prisma.trivia.findMany({
+      where: { videoId: parseInt(id) },
+      include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(trivia);
+  } catch (error) {
+    console.error('Trivia fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch trivia' });
+  }
+});
+
 module.exports = router;

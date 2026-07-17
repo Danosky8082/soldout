@@ -7,12 +7,9 @@
     <title>Video Player - Soldout.com</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/global.css">
-    <!-- ✅ Add favicon here -->
     <link rel="icon" type="image/png" href="/soldout.png">
     <script src="header.js" defer></script>
-
     <style>
-        /* Ensure logo image is the same size as index page */
         .logo img {
             height: 32px;
             width: auto;
@@ -30,7 +27,7 @@
 
 <body>
     <div class="container">
-        <!-- ===== HARDCODED HEADER (with hamburger) ===== -->
+        <!-- HEADER -->
         <header>
             <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
                 <span></span><span></span><span></span>
@@ -64,13 +61,12 @@
             </div>
         </header>
 
-        <!-- ===== SIDEBAR CONTAINER (dynamic) ===== -->
+        <!-- SIDEBAR -->
         <div id="sidebar-container"></div>
 
-        <!-- ========== MAIN CONTENT ========== -->
+        <!-- MAIN CONTENT -->
         <div class="main-content">
             <div class="video-container">
-                <!-- Video Player -->
                 <div class="video-player">
                     <div class="rating-container">
                         <div class="rating-stars" id="ratingStars">
@@ -113,7 +109,6 @@
                     </video>
                 </div>
 
-                <!-- Video Info -->
                 <div class="video-info">
                     <h1 id="playerTitle" class="video-title"></h1>
                     <div class="video-meta">
@@ -145,7 +140,6 @@
                     </div>
                 </div>
 
-                <!-- Comments -->
                 <div class="comments-section">
                     <h3 class="comments-title">Comments <span id="commentsCount">(0)</span></h3>
                     <form class="comment-form" id="commentForm">
@@ -157,7 +151,6 @@
                 </div>
             </div>
 
-            <!-- Sidebar -->
             <div class="sidebar">
                 <div class="section-title">Similar Videos</div>
                 <div class="related-videos" id="relatedVideos"></div>
@@ -221,7 +214,7 @@
 
     <script>
         // ============================================================
-        // LOAD MOBILE SIDEBAR
+        // SIDEBAR LOAD
         // ============================================================
         async function loadSidebar() {
             try {
@@ -241,27 +234,16 @@
                         hamburger.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    hamburger.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        toggleSidebar();
-                    });
-                    overlay.addEventListener('click', function () {
-                        toggleSidebar(false);
-                    });
+                    hamburger.addEventListener('click', function (e) { e.stopPropagation(); toggleSidebar(); });
+                    overlay.addEventListener('click', function () { toggleSidebar(false); });
                     sidebar.querySelectorAll('a').forEach(function (link) {
-                        link.addEventListener('click', function () {
-                            toggleSidebar(false);
-                        });
+                        link.addEventListener('click', function () { toggleSidebar(false); });
                     });
                     document.addEventListener('keydown', function (e) {
-                        if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-                            toggleSidebar(false);
-                        }
+                        if (e.key === 'Escape' && sidebar.classList.contains('open')) toggleSidebar(false);
                     });
                     window.addEventListener('resize', function () {
-                        if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
-                            toggleSidebar(false);
-                        }
+                        if (window.innerWidth > 992 && sidebar.classList.contains('open')) toggleSidebar(false);
                     });
                 }
             } catch (err) {
@@ -270,11 +252,10 @@
         }
 
         // ============================================================
-        // VIDEO PLAYER LOGIC (full – comments, replies, trivia, ratings)
+        // VIDEO PLAYER – FULL LOGIC (fixed)
         // ============================================================
-       const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
+        const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE_URL = 'https://soldout-c6ij.onrender.com';
-
 
         function getAbsoluteUrl(url) {
             if (typeof window.getAbsoluteUrl === 'function') return window.getAbsoluteUrl(url);
@@ -292,6 +273,7 @@
 
         let currentVideo = null;
 
+        // ----- Load and render -----
         async function initializePlayer() {
             const videoDataRaw = sessionStorage.getItem('currentVideo');
             if (!videoDataRaw) {
@@ -345,7 +327,6 @@
             }
         }
 
-        // ========== Populate & Interact ==========
         function populatePlayer() {
             const video = currentVideo;
             const player = document.getElementById('mainPlayer');
@@ -400,6 +381,7 @@
             loadTrivia(video);
         }
 
+        // ----- Interactions setup -----
         function setupInteractions() {
             const video = currentVideo;
             document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
@@ -467,7 +449,7 @@
             });
         }
 
-        // ----- Like / Dislike -----
+        // ----- Like / Dislike (video) -----
         async function toggleLike(isDislike) {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to like/dislike'); return; }
@@ -578,7 +560,7 @@
             }
         }
 
-        // ----- Reply -----
+        // ----- Reply (fixed) -----
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
@@ -592,13 +574,20 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
 
+                // Build payload – include parentReplyId only if it's not null
+                const payload = {
+                    text,
+                    userId: user.id,
+                    commentId: parseInt(commentId),
+                    videoId: currentVideo.id
+                };
+                if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
+
                 try {
                     const res = await fetch(`${API_BASE_URL}/interactions/reply`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({
-                            text, userId: user.id, commentId, videoId: currentVideo.id, parentReplyId
-                        })
+                        body: JSON.stringify(payload)
                     });
                     if (!res.ok) throw new Error('Failed to post reply');
                     input.value = '';
@@ -634,7 +623,7 @@
             }
         }
 
-        // ----- Trivia -----
+        // ----- Trivia (fixed – fallback for missing endpoint) -----
         async function addTrivia() {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to add trivia'); return; }
@@ -675,7 +664,7 @@
             }
         }
 
-        // ========== COMMENTS RENDERING ==========
+        // ----- Render comments (with fixed like) -----
         function renderComments(comments) {
             const container = document.getElementById('commentList');
             container.innerHTML = '';
@@ -748,7 +737,7 @@
                 </div>
             `;
 
-            // Like button
+            // ----- FIXED: Like button for comments/replies -----
             const likeBtn = div.querySelector('.like-comment');
             likeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -760,43 +749,56 @@
                 const id = likeBtn.dataset.id;
                 const type = likeBtn.dataset.type;
                 const isReply = type === 'REPLY';
-                const countEl = likeBtn.querySelector('.like-count');
-                let count = parseInt(countEl.textContent);
-                const isLiked = likeBtn.classList.contains('liked');
 
-                if (isLiked) {
+                // Optimistic toggle
+                const isCurrentlyLiked = likeBtn.classList.contains('liked');
+                const countSpan = likeBtn.querySelector('.like-count');
+                let currentCount = parseInt(countSpan.textContent) || 0;
+
+                if (isCurrentlyLiked) {
                     likeBtn.classList.remove('liked');
-                    countEl.textContent = Math.max(0, count - 1);
+                    countSpan.textContent = Math.max(0, currentCount - 1);
                 } else {
                     likeBtn.classList.add('liked');
-                    countEl.textContent = count + 1;
+                    countSpan.textContent = currentCount + 1;
                 }
 
+                // Payload for like: we send { userId, commentId } (or replyId) to toggle
+                const payload = { userId: user.id };
+                if (isReply) payload.replyId = parseInt(id);
+                else payload.commentId = parseInt(id);
+
                 try {
-                    const body = { userId: user.id, type: 'LIKE', isLiked: !isLiked };
-                    if (isReply) body.replyId = id;
-                    else body.commentId = id;
                     const res = await fetch(`${API_BASE_URL}/interactions/like`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(body)
+                        body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error('Failed to update like');
+                    if (!res.ok) {
+                        // Revert optimistic update
+                        throw new Error('Failed to update like');
+                    }
                     const data = await res.json();
-                    if (data.likeCount !== undefined) countEl.textContent = data.likeCount;
+                    if (data.likeCount !== undefined) {
+                        countSpan.textContent = data.likeCount;
+                        // If likeCount is 0, remove the 'liked' class, else add it
+                        if (data.likeCount > 0) likeBtn.classList.add('liked');
+                        else likeBtn.classList.remove('liked');
+                    }
                 } catch (error) {
                     console.error('Like error:', error);
-                    if (isLiked) {
+                    // Revert optimistically
+                    if (isCurrentlyLiked) {
                         likeBtn.classList.add('liked');
-                        countEl.textContent = count;
+                        countSpan.textContent = currentCount;
                     } else {
                         likeBtn.classList.remove('liked');
-                        countEl.textContent = count;
+                        countSpan.textContent = currentCount;
                     }
                 }
             });
 
-            // Reply button
+            // Reply button (unchanged)
             const replyBtn = div.querySelector('.reply-comment');
             const formContainer = div.querySelector('.reply-form-container');
             const form = formContainer.querySelector('.reply-form');
@@ -833,7 +835,7 @@
             });
         }
 
-        // ========== RELATED VIDEOS ==========
+        // ----- Related Videos -----
         async function loadRelatedVideos(video) {
             const container = document.getElementById('relatedVideos');
             container.innerHTML = '<p class="loading">Loading similar videos...</p>';
@@ -874,51 +876,76 @@
             }
         }
 
-        // ========== TRIVIA ==========
+        // ----- Trivia (fixed – fallback for missing endpoint) -----
         async function loadTrivia(video) {
             const container = document.getElementById('triviaContent');
             const noTrivia = document.getElementById('noTrivia');
+
+            // If trivia is already included in the video object (from backend), use it
+            if (video.trivia && video.trivia.length > 0) {
+                renderTriviaItems(video.trivia);
+                return;
+            }
+
+            // Otherwise try to fetch from the trivia endpoint
             try {
                 const res = await fetch(`${API_BASE_URL}/videos/${video.id}/trivia`);
-                if (!res.ok) throw new Error('Failed to fetch trivia');
-                const trivia = await res.json();
-                container.innerHTML = '';
-                if (trivia.length === 0) {
+                if (res.status === 404) {
+                    // Endpoint doesn't exist – just show no trivia
+                    container.innerHTML = '';
+                    noTrivia.style.display = 'block';
                     container.appendChild(noTrivia);
                     return;
                 }
-                const user = getCurrentUser();
-                trivia.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'trivia-item';
-                    div.dataset.id = item.id;
-                    div.innerHTML = `
-                        <p>${item.text}</p>
-                        <div class="trivia-meta">
-                            <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
-                            ${item.user.id === user?.id ? `
-                            <div class="trivia-actions">
-                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
-                            </div>
-                            ` : ''}
-                        </div>
-                    `;
-                    container.appendChild(div);
-                    if (item.user.id === user?.id) {
-                        div.querySelector('.edit-trivia').addEventListener('click', () => {
-                            document.getElementById('triviaTextarea').value = item.text;
-                            document.getElementById('triviaFormContainer').style.display = 'block';
-                            div.remove();
-                        });
-                        div.querySelector('.delete-trivia').addEventListener('click', () => {
-                            deleteTrivia(item.id);
-                        });
-                    }
-                });
+                if (!res.ok) throw new Error('Failed to fetch trivia');
+                const trivia = await res.json();
+                renderTriviaItems(trivia);
             } catch (e) {
-                console.error('Trivia load error:', e);
+                console.warn('Trivia load error (fallback):', e);
+                // On error, show no trivia
+                container.innerHTML = '';
+                noTrivia.style.display = 'block';
+                container.appendChild(noTrivia);
             }
+        }
+
+        function renderTriviaItems(trivia) {
+            const container = document.getElementById('triviaContent');
+            const noTrivia = document.getElementById('noTrivia');
+            container.innerHTML = '';
+            if (!trivia || trivia.length === 0) {
+                container.appendChild(noTrivia);
+                return;
+            }
+            const user = getCurrentUser();
+            trivia.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'trivia-item';
+                div.dataset.id = item.id;
+                div.innerHTML = `
+                    <p>${item.text}</p>
+                    <div class="trivia-meta">
+                        <span>Added by ${item.user.firstName} ${item.user.lastName}</span>
+                        ${item.user.id === user?.id ? `
+                        <div class="trivia-actions">
+                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+                if (item.user.id === user?.id) {
+                    div.querySelector('.edit-trivia').addEventListener('click', () => {
+                        document.getElementById('triviaTextarea').value = item.text;
+                        document.getElementById('triviaFormContainer').style.display = 'block';
+                        div.remove();
+                    });
+                    div.querySelector('.delete-trivia').addEventListener('click', () => {
+                        deleteTrivia(item.id);
+                    });
+                }
+            });
         }
 
         // ============================================================
