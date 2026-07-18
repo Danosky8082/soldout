@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
+const youtubeRoutes = require('./routes/youtubeRoutes');
 
 // ✅ Routes
 const videoRoutes = require('./routes/videoRoutes');
@@ -375,6 +376,11 @@ app.use((err, req, res, next) => {
     console.error('Server error:', err.stack);
     res.status(500).json({ error: 'Internal Server Error' });
 });
+
+// ============================================================
+//  YOUTUBE API
+// ============================================================
+app.use('/api/youtube', youtubeRoutes);
 
 // ============================================================
 //  START SERVER
