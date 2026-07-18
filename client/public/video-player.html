@@ -2,14 +2,15 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Video Player - Soldout.com</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/styles/global.css">
-    <link rel="icon" type="image/png" href="/soldout.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/global.css" />
+    <link rel="icon" type="image/png" href="/soldout.png" />
     <script src="header.js" defer></script>
     <style>
+        /* ===== BASE ===== */
         .logo img {
             height: 32px;
             width: auto;
@@ -23,86 +24,872 @@
             letter-spacing: -0.5px;
         }
 
-        /* === MOBILE RESPONSIVE === */
+        /* ===== VIDEO PLAYER LAYOUT ===== */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 20px 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .video-container {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar {
+            width: 340px;
+            flex-shrink: 0;
+        }
+
+        /* ===== VIDEO PLAYER ===== */
+        .video-player {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .video-player video {
+            width: 100%;
+            display: block;
+            background: #000;
+        }
+
+        .rating-container {
+            position: absolute;
+            bottom: 60px;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 14px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 2px;
+            direction: rtl;
+        }
+
+        .rating-stars input {
+            display: none;
+        }
+
+        .rating-stars label {
+            color: #555;
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .rating-stars input:checked~label,
+        .rating-stars label:hover,
+        .rating-stars label:hover~label {
+            color: #fbbf24;
+        }
+
+        .average-value {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .rating-count {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .quality-toggle {
+            position: absolute;
+            bottom: 60px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+
+        .quality-selector {
+            display: none;
+            position: absolute;
+            bottom: 90px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            padding: 6px 0;
+            min-width: 80px;
+        }
+
+        .quality-selector .quality-option {
+            padding: 6px 16px;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .quality-selector .quality-option:hover,
+        .quality-selector .quality-option.active {
+            background: #333;
+            color: #fff;
+        }
+
+        /* ===== VIDEO INFO ===== */
+        .video-info {
+            padding: 0 4px;
+        }
+
+        .video-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 8px;
+            line-height: 1.3;
+            color: #fff;
+        }
+
+        .video-meta {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .video-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            background: transparent;
+            border: none;
+            color: #ccc;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .action-button.liked {
+            color: #3b82f6;
+        }
+
+        .action-button.saved {
+            color: #22c55e;
+        }
+
+        .uploader-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-top: 1px solid #2a2a2a;
+            border-bottom: 1px solid #2a2a2a;
+            margin: 12px 0;
+        }
+
+        .uploader-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .uploader-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .uploader-avatar i {
+            font-size: 24px;
+            color: #888;
+        }
+
+        .uploader-details {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .uploader-name {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .subscribers-count {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .subscribe-button {
+            background: #cc0000;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .subscribe-button.subscribed {
+            background: #2a2a2a;
+            color: #aaa;
+        }
+
+        .video-description {
+            font-size: 14px;
+            color: #ccc;
+            margin: 10px 0;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        /* ===== COMMENTS & TRIVIA TABS (mobile) ===== */
+        .bottom-tabs {
+            display: none;
+            /* hidden on desktop */
+            margin-top: 20px;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 12px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== COMMENTS ===== */
+        .comments-section {
+            margin-top: 20px;
+        }
+
+        .comments-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .comment-input:focus {
+            border-color: #555;
+        }
+
+        .comment-submit {
+            padding: 10px 20px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .comment-submit:hover {
+            background: #2563eb;
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .comment {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .comment.reply {
+            margin-left: 50px;
+            border-bottom: none;
+            padding-top: 10px;
+        }
+
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .comment-avatar i {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .comment-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .comment-text {
+            color: #ddd;
+            font-size: 14px;
+            margin: 2px 0 6px;
+            word-wrap: break-word;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .comment-action {
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .comment-action:hover {
+            color: #fff;
+        }
+
+        .comment-action.liked {
+            color: #3b82f6;
+        }
+
+        .reply-form-container {
+            margin-top: 8px;
+        }
+
+        .reply-form {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .reply-input {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .reply-submit {
+            padding: 6px 14px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .cancel-reply {
+            padding: 6px 12px;
+            background: transparent;
+            color: #888;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* ===== RELATED VIDEOS ===== */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin: 16px 0 12px;
+        }
+
+        .related-videos {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .related-video-item {
+            display: flex;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .related-video-item:hover {
+            opacity: 0.8;
+        }
+
+        .related-video-item .thumb {
+            width: 120px;
+            height: 68px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #222;
+            flex-shrink: 0;
+        }
+
+        .related-video-item .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .related-video-item .info {
+            flex: 1;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .related-video-item .title {
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .related-video-item .channel {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .related-video-item .views {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* ===== TRIVIA ===== */
+        .trivia-container {
+            margin-top: 20px;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 16px;
+        }
+
+        .trivia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .trivia-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .trivia-add-btn {
+            background: #2a2a2a;
+            color: #ccc;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trivia-add-btn:hover {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .trivia-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .trivia-item {
+            background: #1a1a1a;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .trivia-item p {
+            margin: 0 0 4px;
+        }
+
+        .trivia-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .trivia-actions button {
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 0 4px;
+            font-size: 13px;
+        }
+
+        .trivia-actions button:hover {
+            color: #fff;
+        }
+
+        .trivia-form-container {
+            margin-top: 10px;
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .trivia-textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .trivia-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .trivia-save-btn,
+        .trivia-cancel-btn {
+            padding: 4px 14px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .trivia-save-btn {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .trivia-save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .trivia-cancel-btn {
+            background: transparent;
+            color: #888;
+        }
+
+        /* ===== MOBILE ===== */
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
                 padding: 0 10px;
             }
 
-            .video-container {
-                width: 100%;
-                padding-right: 0;
-            }
-
             .sidebar {
                 width: 100%;
-                margin-left: 0;
                 margin-top: 20px;
             }
 
             .video-player video {
-                height: auto;
                 max-height: 50vh;
-                width: 100%;
             }
 
             .video-title {
                 font-size: 18px;
-                line-height: 1.3;
+            }
+
+            .video-meta {
+                font-size: 13px;
+                flex-direction: column;
+                align-items: stretch;
             }
 
             .video-actions {
-                flex-wrap: wrap;
-                gap: 8px;
+                justify-content: flex-start;
+                gap: 4px;
             }
 
             .action-button {
-                padding: 6px 12px;
-                font-size: 14px;
+                font-size: 12px;
+                padding: 4px 10px;
             }
 
             .uploader-info {
                 flex-wrap: wrap;
-                gap: 10px;
+                gap: 8px;
+            }
+
+            .uploader-name {
+                font-size: 14px;
+            }
+
+            .subscribe-button {
+                font-size: 12px;
+                padding: 4px 12px;
+            }
+
+            .video-description {
+                font-size: 13px;
+                max-height: 60px;
+            }
+
+            /* Tabs for mobile */
+            .bottom-tabs {
+                display: block;
             }
 
             .comments-section {
-                padding: 10px 0;
-            }
-
-            .comment-form {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .comment-input {
-                width: 100%;
-                padding: 10px;
-            }
-
-            .comment-submit {
-                width: 100%;
-                padding: 10px;
+                margin-top: 0;
             }
 
             .trivia-container {
-                margin-top: 20px;
+                border-top: none;
+                padding-top: 0;
+                margin-top: 0;
             }
 
-            .trivia-header {
-                flex-wrap: wrap;
-                gap: 10px;
+            /* Hide desktop separate sections */
+            .desktop-comments {
+                display: none;
             }
 
-            .rating-container {
-                flex-wrap: wrap;
-                gap: 10px;
+            .desktop-trivia {
+                display: none;
             }
 
-            .rating-stars {
-                font-size: 18px;
+            .sidebar .trivia-container {
+                display: none;
+                /* hide sidebar trivia on mobile */
             }
+
+            .related-videos {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 12px;
+                padding-bottom: 8px;
+            }
+
+            .related-video-item {
+                flex: 0 0 160px;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .related-video-item .thumb {
+                width: 100%;
+                height: 90px;
+            }
+
+            .related-video-item .info {
+                font-size: 12px;
+            }
+
+            .comment.reply {
+                margin-left: 30px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .bottom-tabs {
+                display: none !important;
+            }
+
+            .desktop-comments {
+                display: block !important;
+            }
+
+            .desktop-trivia {
+                display: block !important;
+            }
+        }
+
+        /* ===== SHARE MODAL (unchanged) ===== */
+        .share-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 480px;
+            width: 90%;
+        }
+
+        .share-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .share-modal-header h3 {
+            margin: 0;
+            color: #fff;
+        }
+
+        .share-modal-close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .share-options {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #2a2a2a;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #ccc;
+            transition: 0.2s;
+        }
+
+        .share-option:hover {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .share-link-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .share-link {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+        }
+
+        .copy-link {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -115,7 +902,7 @@
                 <span></span><span></span><span></span>
             </button>
             <div class="logo" id="homeLink">
-                <img src="/soldout.png" alt="Soldout.com">
+                <img src="/soldout.png" alt="Soldout.com" />
                 <span>Soldout.com</span>
             </div>
             <div class="nav-links">
@@ -149,28 +936,29 @@
         <!-- MAIN CONTENT -->
         <div class="main-content">
             <div class="video-container">
+                <!-- VIDEO PLAYER -->
                 <div class="video-player">
                     <div class="rating-container">
                         <div class="rating-stars" id="ratingStars">
-                            <input type="radio" id="star10" name="rating" value="10"><label for="star10"><i
+                            <input type="radio" id="star10" name="rating" value="10" /><label for="star10"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star9" name="rating" value="9"><label for="star9"><i
+                            <input type="radio" id="star9" name="rating" value="9" /><label for="star9"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star8" name="rating" value="8"><label for="star8"><i
+                            <input type="radio" id="star8" name="rating" value="8" /><label for="star8"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star7" name="rating" value="7"><label for="star7"><i
+                            <input type="radio" id="star7" name="rating" value="7" /><label for="star7"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star6" name="rating" value="6"><label for="star6"><i
+                            <input type="radio" id="star6" name="rating" value="6" /><label for="star6"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star5" name="rating" value="5"><label for="star5"><i
+                            <input type="radio" id="star5" name="rating" value="5" /><label for="star5"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star4" name="rating" value="4"><label for="star4"><i
+                            <input type="radio" id="star4" name="rating" value="4" /><label for="star4"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star3" name="rating" value="3"><label for="star3"><i
+                            <input type="radio" id="star3" name="rating" value="3" /><label for="star3"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star2" name="rating" value="2"><label for="star2"><i
+                            <input type="radio" id="star2" name="rating" value="2" /><label for="star2"><i
                                     class="fas fa-star"></i></label>
-                            <input type="radio" id="star1" name="rating" value="1"><label for="star1"><i
+                            <input type="radio" id="star1" name="rating" value="1" /><label for="star1"><i
                                     class="fas fa-star"></i></label>
                         </div>
                         <div class="rating-average">
@@ -186,11 +974,12 @@
                         <div class="quality-option" data-quality="1080">1080p</div>
                     </div>
                     <video id="mainPlayer" controls autoplay>
-                        <source src="" type="video/mp4" data-quality="720">
+                        <source src="" type="video/mp4" data-quality="720" />
                         Your browser does not support the video tag.
                     </video>
                 </div>
 
+                <!-- VIDEO INFO -->
                 <div class="video-info">
                     <h1 id="playerTitle" class="video-title"></h1>
                     <div class="video-meta">
@@ -200,18 +989,13 @@
                                     id="likeCount">0</span></button>
                             <button class="action-button" id="dislikeButton"><i class="fas fa-thumbs-down"></i> <span
                                     id="dislikeCount">0</span></button>
-                            <button class="action-button" id="shareButton"><i class="fas fa-share"></i>
-                                <span>Share</span></button>
-                            <button class="action-button" id="saveButton"><i class="fas fa-plus"></i>
-                                <span>Save</span></button>
+                            <button class="action-button" id="shareButton"><i class="fas fa-share"></i> Share</button>
+                            <button class="action-button" id="saveButton"><i class="fas fa-plus"></i> Save</button>
                         </div>
-                    </div>
-                    <div class="video-description">
-                        <div id="playerDescription"></div>
                     </div>
                     <div class="uploader-info">
                         <div class="uploader-avatar" id="uploaderAvatar">
-                            <img src="" alt="Uploader" id="uploaderAvatarImg" style="display:none;">
+                            <img src="" alt="Uploader" id="uploaderAvatarImg" style="display:none;" />
                             <i class="fas fa-user" id="uploaderAvatarIcon"></i>
                         </div>
                         <div class="uploader-details">
@@ -220,36 +1004,84 @@
                         </div>
                         <button class="subscribe-button" id="subscribeButton">SUBSCRIBE</button>
                     </div>
-                </div>
+                    <div class="video-description" id="playerDescription"></div>
 
-                <div class="comments-section">
-                    <h3 class="comments-title">Comments <span id="commentsCount">(0)</span></h3>
-                    <form class="comment-form" id="commentForm">
-                        <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..."
-                            required>
-                        <button type="submit" class="comment-submit">Comment</button>
-                    </form>
-                    <div class="comment-list" id="commentList"></div>
+                    <!-- ===== DESKTOP COMMENTS (hidden on mobile) ===== -->
+                    <div class="desktop-comments">
+                        <div class="comments-section" id="desktopComments">
+                            <h3 class="comments-title">Comments <span id="commentsCountDesktop">(0)</span></h3>
+                            <form class="comment-form" id="commentFormDesktop">
+                                <input type="text" class="comment-input" placeholder="Add a comment..." required />
+                                <button type="submit" class="comment-submit">Comment</button>
+                            </form>
+                            <div class="comment-list" id="commentListDesktop"></div>
+                        </div>
+                    </div>
+
+                    <!-- ===== MOBILE TABS (Comments & Trivia) ===== -->
+                    <div class="bottom-tabs">
+                        <div class="tab-bar" id="tabBar">
+                            <button class="tab-btn active" data-tab="comments">Comments</button>
+                            <button class="tab-btn" data-tab="trivia">Trivia</button>
+                        </div>
+                        <div class="tab-content active" id="tabComments">
+                            <div class="comments-section" id="mobileComments">
+                                <h3 class="comments-title">Comments <span id="commentsCountMobile">(0)</span></h3>
+                                <form class="comment-form" id="commentFormMobile">
+                                    <input type="text" class="comment-input" placeholder="Add a comment..." required />
+                                    <button type="submit" class="comment-submit">Comment</button>
+                                </form>
+                                <div class="comment-list" id="commentListMobile"></div>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="tabTrivia">
+                            <div class="trivia-container">
+                                <div class="trivia-header">
+                                    <div class="trivia-title">Trivia</div>
+                                    <button class="trivia-add-btn" id="triviaAddBtnMobile"><i class="fas fa-plus"></i>
+                                        Add Trivia</button>
+                                </div>
+                                <div class="trivia-content" id="triviaContentMobile">
+                                    <p class="no-trivia" id="noTriviaMobile">No trivia added yet.</p>
+                                </div>
+                                <div class="trivia-form-container" id="triviaFormContainerMobile"
+                                    style="display: none;">
+                                    <textarea class="trivia-textarea" id="triviaTextareaMobile"
+                                        placeholder="Enter trivia text..."></textarea>
+                                    <div class="trivia-actions">
+                                        <button class="trivia-save-btn" id="triviaSaveBtnMobile">Save</button>
+                                        <button class="trivia-cancel-btn" id="triviaCancelBtnMobile">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <!-- SIDEBAR (desktop only) -->
             <div class="sidebar">
                 <div class="section-title">Similar Videos</div>
                 <div class="related-videos" id="relatedVideos"></div>
-                <div class="trivia-container">
-                    <div class="trivia-header">
-                        <div class="trivia-title">Trivia</div>
-                        <button class="trivia-add-btn" id="triviaAddBtn"><i class="fas fa-plus"></i> Add Trivia</button>
-                    </div>
-                    <div class="trivia-content" id="triviaContent">
-                        <p class="no-trivia" id="noTrivia">No trivia added yet.</p>
-                    </div>
-                    <div class="trivia-form-container" id="triviaFormContainer" style="display: none;">
-                        <textarea class="trivia-textarea" id="triviaTextarea"
-                            placeholder="Enter trivia text..."></textarea>
-                        <div class="trivia-actions">
-                            <button class="trivia-save-btn" id="triviaSaveBtn">Save</button>
-                            <button class="trivia-cancel-btn" id="triviaCancelBtn">Cancel</button>
+
+                <!-- Desktop Trivia (hidden on mobile) -->
+                <div class="desktop-trivia">
+                    <div class="trivia-container">
+                        <div class="trivia-header">
+                            <div class="trivia-title">Trivia</div>
+                            <button class="trivia-add-btn" id="triviaAddBtnDesktop"><i class="fas fa-plus"></i> Add
+                                Trivia</button>
+                        </div>
+                        <div class="trivia-content" id="triviaContentDesktop">
+                            <p class="no-trivia" id="noTriviaDesktop">No trivia added yet.</p>
+                        </div>
+                        <div class="trivia-form-container" id="triviaFormContainerDesktop" style="display: none;">
+                            <textarea class="trivia-textarea" id="triviaTextareaDesktop"
+                                placeholder="Enter trivia text..."></textarea>
+                            <div class="trivia-actions">
+                                <button class="trivia-save-btn" id="triviaSaveBtnDesktop">Save</button>
+                                <button class="trivia-cancel-btn" id="triviaCancelBtnDesktop">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -264,16 +1096,13 @@
                     <span class="share-modal-close" id="shareModalClose">&times;</span>
                 </div>
                 <div class="share-options">
-                    <div class="share-option" id="shareFacebook"><i class="fab fa-facebook"></i><span>Facebook</span>
-                    </div>
-                    <div class="share-option" id="shareTwitter"><i class="fab fa-twitter"></i><span>Twitter</span></div>
-                    <div class="share-option" id="shareWhatsApp"><i class="fab fa-whatsapp"></i><span>WhatsApp</span>
-                    </div>
-                    <div class="share-option" id="shareLinkedIn"><i class="fab fa-linkedin"></i><span>LinkedIn</span>
-                    </div>
+                    <div class="share-option" id="shareFacebook"><i class="fab fa-facebook"></i> Facebook</div>
+                    <div class="share-option" id="shareTwitter"><i class="fab fa-twitter"></i> Twitter</div>
+                    <div class="share-option" id="shareWhatsApp"><i class="fab fa-whatsapp"></i> WhatsApp</div>
+                    <div class="share-option" id="shareLinkedIn"><i class="fab fa-linkedin"></i> LinkedIn</div>
                 </div>
                 <div class="share-link-container">
-                    <input type="text" class="share-link" id="shareLink" readonly>
+                    <input type="text" class="share-link" id="shareLink" readonly />
                     <button class="copy-link" id="copyLinkBtn">Copy</button>
                 </div>
             </div>
@@ -458,35 +1287,38 @@
                 }
             }
 
-            renderComments(video.comments || []);
+            // Render comments & trivia
+            renderComments(video.comments || [], 'desktop');
+            renderComments(video.comments || [], 'mobile');
             loadRelatedVideos(video);
-            loadTrivia(video);
+            loadTrivia(video, 'desktop');
+            loadTrivia(video, 'mobile');
         }
 
-        // ----- Interactions setup -----
+        // ===== Interactions setup =====
         function setupInteractions() {
             const video = currentVideo;
+
+            // ---- Like / Dislike ----
             document.getElementById('likeButton').addEventListener('click', () => toggleLike(false));
             document.getElementById('dislikeButton').addEventListener('click', () => toggleLike(true));
+
+            // ---- Subscribe ----
             document.getElementById('subscribeButton').addEventListener('click', toggleSubscribe);
+
+            // ---- Save ----
             document.getElementById('saveButton').addEventListener('click', toggleSave);
-            document.getElementById('commentForm').addEventListener('submit', addComment);
 
-            document.getElementById('triviaAddBtn').addEventListener('click', () => {
-                const user = getCurrentUser();
-                if (!user) { alert('Please log in to add trivia'); return; }
-                document.getElementById('triviaFormContainer').style.display = 'block';
-            });
-            document.getElementById('triviaCancelBtn').addEventListener('click', () => {
-                document.getElementById('triviaFormContainer').style.display = 'none';
-                document.getElementById('triviaTextarea').value = '';
-            });
-            document.getElementById('triviaSaveBtn').addEventListener('click', addTrivia);
+            // ---- Comment forms (desktop & mobile) ----
+            document.getElementById('commentFormDesktop').addEventListener('submit', (e) => addComment(e, 'desktop'));
+            document.getElementById('commentFormMobile').addEventListener('submit', (e) => addComment(e, 'mobile'));
 
+            // ---- Rating ----
             document.querySelectorAll('#ratingStars input').forEach(input => {
                 input.addEventListener('change', rateVideo);
             });
 
+            // ---- Quality toggle ----
             document.getElementById('qualityToggle').addEventListener('click', () => {
                 const qs = document.getElementById('qualitySelector');
                 qs.style.display = qs.style.display === 'block' ? 'none' : 'block';
@@ -499,6 +1331,7 @@
                 });
             });
 
+            // ---- Share ----
             document.getElementById('shareButton').addEventListener('click', () => {
                 document.getElementById('shareLink').value = window.location.href;
                 document.getElementById('shareModal').style.display = 'flex';
@@ -529,9 +1362,24 @@
                     document.getElementById('shareModal').style.display = 'none';
                 }
             });
+
+            // ---- Trivia (desktop & mobile) ----
+            setupTriviaUI('desktop');
+            setupTriviaUI('mobile');
+
+            // ---- Mobile tabs ----
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const tab = this.dataset.tab;
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+                });
+            });
         }
 
-        // ----- Like / Dislike (video) -----
+        // ===== Like / Dislike (video) =====
         async function toggleLike(isDislike) {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to like/dislike'); return; }
@@ -560,7 +1408,7 @@
             }
         }
 
-        // ----- Subscribe -----
+        // ===== Subscribe =====
         async function toggleSubscribe() {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to subscribe'); return; }
@@ -589,7 +1437,7 @@
             }
         }
 
-        // ----- Save -----
+        // ===== Save =====
         async function toggleSave() {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to save'); return; }
@@ -605,10 +1453,10 @@
                 const data = await res.json();
                 const btn = document.getElementById('saveButton');
                 if (data.action === 'saved') {
-                    btn.innerHTML = '<i class="fas fa-check"></i> <span>Saved</span>';
+                    btn.innerHTML = '<i class="fas fa-check"></i> Save';
                     btn.classList.add('saved');
                 } else {
-                    btn.innerHTML = '<i class="fas fa-plus"></i> <span>Save</span>';
+                    btn.innerHTML = '<i class="fas fa-plus"></i> Save';
                     btn.classList.remove('saved');
                 }
             } catch (error) {
@@ -617,14 +1465,15 @@
             }
         }
 
-        // ----- Comment -----
-        async function addComment(e) {
+        // ===== Add Comment =====
+        async function addComment(e, source) {
             e.preventDefault();
             const user = getCurrentUser();
             if (!user) { alert('Please log in to comment'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-            const input = document.getElementById('commentInput');
+            const form = source === 'desktop' ? document.getElementById('commentFormDesktop') : document.getElementById('commentFormMobile');
+            const input = form.querySelector('.comment-input');
             const text = input.value.trim();
             if (!text) return;
             try {
@@ -642,11 +1491,11 @@
             }
         }
 
-        // ----- Reply (with fixed double submission) -----
+        // ===== Reply (with videoId fix) =====
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
-                e.stopPropagation(); // prevent any bubbling that might trigger double submit
+                e.stopPropagation();
 
                 const form = e.target.closest('.reply-form');
                 if (!form) return;
@@ -655,7 +1504,6 @@
                 const text = input.value.trim();
                 if (!text) return;
 
-                // Disable submit button to prevent double submission
                 const submitBtn = form.querySelector('.reply-submit');
                 if (submitBtn) submitBtn.disabled = true;
 
@@ -664,11 +1512,12 @@
                 const token = getAuthToken();
                 if (!token) { alert('Please log in again.'); return; }
 
+                // IMPORTANT: Use the current video ID – it must match the comment's videoId
                 const payload = {
                     text,
                     userId: user.id,
                     commentId: parseInt(commentId),
-                    videoId: currentVideo.id
+                    videoId: currentVideo.id  // Always use the current video's ID
                 };
                 if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
 
@@ -694,10 +1543,9 @@
                     const reply = await res.json();
                     console.log('[addReply] Reply created:', reply);
                     input.value = '';
-                    // Close the reply form
                     const formContainer = form.closest('.reply-form-container');
                     if (formContainer) formContainer.style.display = 'none';
-                    // Reload comments to show the new reply
+                    // Reload the video to refresh comments
                     await loadVideo(currentVideo.id);
                 } catch (error) {
                     console.error('Reply error:', error);
@@ -708,7 +1556,7 @@
             };
         }
 
-        // ----- Rating -----
+        // ===== Rating =====
         async function rateVideo(e) {
             const user = getCurrentUser();
             if (!user) { alert('Please log in to rate'); return; }
@@ -732,17 +1580,47 @@
             }
         }
 
-        // ----- Trivia – add without reload (with noTrivia fix) -----
-        async function addTrivia() {
+        // ===== Trivia UI Setup =====
+        function setupTriviaUI(source) {
+            const suffix = source === 'desktop' ? 'Desktop' : 'Mobile';
+            const addBtn = document.getElementById(`triviaAddBtn${suffix}`);
+            const cancelBtn = document.getElementById(`triviaCancelBtn${suffix}`);
+            const saveBtn = document.getElementById(`triviaSaveBtn${suffix}`);
+            const formContainer = document.getElementById(`triviaFormContainer${suffix}`);
+            const textarea = document.getElementById(`triviaTextarea${suffix}`);
+
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const user = getCurrentUser();
+                    if (!user) { alert('Please log in to add trivia'); return; }
+                    formContainer.style.display = 'block';
+                });
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    formContainer.style.display = 'none';
+                    textarea.value = '';
+                });
+            }
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => {
+                    addTrivia(source);
+                });
+            }
+        }
+
+        // ===== Add Trivia (with source) =====
+        async function addTrivia(source) {
+            const suffix = source === 'desktop' ? 'Desktop' : 'Mobile';
             const user = getCurrentUser();
             if (!user) { alert('Please log in to add trivia'); return; }
             const token = getAuthToken();
             if (!token) { alert('Please log in again.'); return; }
-            const text = document.getElementById('triviaTextarea').value.trim();
+            const textarea = document.getElementById(`triviaTextarea${suffix}`);
+            const text = textarea.value.trim();
             if (!text) { alert('Please enter trivia text'); return; }
 
-            // Disable save button to prevent double submission
-            const saveBtn = document.getElementById('triviaSaveBtn');
+            const saveBtn = document.getElementById(`triviaSaveBtn${suffix}`);
             if (saveBtn) saveBtn.disabled = true;
 
             try {
@@ -754,49 +1632,47 @@
                 if (!res.ok) throw new Error('Failed to add trivia');
                 const newTrivia = await res.json();
 
-                // Append new trivia to the list
-                const container = document.getElementById('triviaContent');
-                if (!container) throw new Error('Trivia container not found');
+                // Append to both desktop and mobile trivia lists
+                ['Desktop', 'Mobile'].forEach(s => {
+                    const container = document.getElementById(`triviaContent${s}`);
+                    if (!container) return;
+                    const noTrivia = document.getElementById(`noTrivia${s}`);
+                    if (noTrivia && noTrivia.parentNode === container) container.removeChild(noTrivia);
 
-                // Remove 'no trivia' message if it exists
-                const noTrivia = document.getElementById('noTrivia');
-                if (noTrivia && noTrivia.parentNode === container) {
-                    container.removeChild(noTrivia);
-                }
-
-                const div = document.createElement('div');
-                div.className = 'trivia-item';
-                div.dataset.id = newTrivia.id;
-                div.innerHTML = `
-                    <p>${newTrivia.text}</p>
-                    <div class="trivia-meta">
-                        <span>Added by ${user.firstName} ${user.lastName}</span>
-                        <div class="trivia-actions">
-                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                    const div = document.createElement('div');
+                    div.className = 'trivia-item';
+                    div.dataset.id = newTrivia.id;
+                    div.innerHTML = `
+                        <p>${newTrivia.text}</p>
+                        <div class="trivia-meta">
+                            <span>Added by ${user.firstName} ${user.lastName}</span>
+                            <div class="trivia-actions">
+                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                container.appendChild(div);
+                    `;
+                    container.appendChild(div);
+                    const editBtn = div.querySelector('.edit-trivia');
+                    const deleteBtn = div.querySelector('.delete-trivia');
+                    if (editBtn) {
+                        editBtn.addEventListener('click', () => {
+                            document.getElementById(`triviaTextarea${s}`).value = newTrivia.text;
+                            document.getElementById(`triviaFormContainer${s}`).style.display = 'block';
+                            div.remove();
+                        });
+                    }
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', () => {
+                            deleteTrivia(newTrivia.id);
+                        });
+                    }
+                });
 
-                // Add event listeners
-                const editBtn = div.querySelector('.edit-trivia');
-                const deleteBtn = div.querySelector('.delete-trivia');
-                if (editBtn) {
-                    editBtn.addEventListener('click', () => {
-                        document.getElementById('triviaTextarea').value = newTrivia.text;
-                        document.getElementById('triviaFormContainer').style.display = 'block';
-                        div.remove();
-                    });
-                }
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', () => {
-                        deleteTrivia(newTrivia.id);
-                    });
-                }
-
-                document.getElementById('triviaFormContainer').style.display = 'none';
-                document.getElementById('triviaTextarea').value = '';
+                // Clear form
+                const formContainer = document.getElementById(`triviaFormContainer${suffix}`);
+                if (formContainer) formContainer.style.display = 'none';
+                textarea.value = '';
             } catch (error) {
                 console.error('Trivia error:', error);
                 alert(error.message || 'Failed to add trivia');
@@ -805,7 +1681,7 @@
             }
         }
 
-        // ----- Delete trivia – remove element only -----
+        // ===== Delete Trivia =====
         async function deleteTrivia(triviaId) {
             if (!confirm('Delete this trivia?')) return;
             const token = getAuthToken();
@@ -816,26 +1692,32 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) throw new Error('Failed to delete trivia');
-                const element = document.querySelector(`.trivia-item[data-id="${triviaId}"]`);
-                if (element) element.remove();
-                const container = document.getElementById('triviaContent');
-                if (container && container.children.length === 0) {
-                    const noTrivia = document.getElementById('noTrivia');
-                    if (noTrivia) {
-                        container.appendChild(noTrivia);
+                // Remove from both desktop and mobile
+                ['Desktop', 'Mobile'].forEach(s => {
+                    const element = document.querySelector(`#triviaContent${s} .trivia-item[data-id="${triviaId}"]`);
+                    if (element) element.remove();
+                    const container = document.getElementById(`triviaContent${s}`);
+                    if (container && container.children.length === 0) {
+                        const noTrivia = document.getElementById(`noTrivia${s}`);
+                        if (noTrivia) {
+                            container.appendChild(noTrivia);
+                        }
                     }
-                }
+                });
             } catch (error) {
                 console.error('Delete trivia error:', error);
                 alert('Failed to delete trivia');
             }
         }
 
-        // ----- Render comments -----
-        function renderComments(comments) {
-            const container = document.getElementById('commentList');
+        // ===== Render Comments (for both desktop & mobile) =====
+        function renderComments(comments, source) {
+            const listId = source === 'desktop' ? 'commentListDesktop' : 'commentListMobile';
+            const countId = source === 'desktop' ? 'commentsCountDesktop' : 'commentsCountMobile';
+            const container = document.getElementById(listId);
+            if (!container) return;
             container.innerHTML = '';
-            document.getElementById('commentsCount').textContent = `(${comments.length})`;
+            document.getElementById(countId).textContent = `(${comments.length})`;
 
             if (!comments || comments.length === 0) {
                 container.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
@@ -845,20 +1727,20 @@
             comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             comments.forEach(comment => {
-                const commentEl = createCommentElement(comment);
+                const commentEl = createCommentElement(comment, source, false);
                 container.appendChild(commentEl);
 
                 if (comment.replies && comment.replies.length > 0) {
                     const repliesContainer = document.createElement('div');
                     repliesContainer.className = 'replies';
                     comment.replies.forEach(reply => {
-                        const replyEl = createCommentElement(reply, true);
+                        const replyEl = createCommentElement(reply, source, true);
                         repliesContainer.appendChild(replyEl);
                         if (reply.replies && reply.replies.length > 0) {
                             const nestedContainer = document.createElement('div');
                             nestedContainer.className = 'replies';
                             reply.replies.forEach(nested => {
-                                const nestedEl = createCommentElement(nested, true);
+                                const nestedEl = createCommentElement(nested, source, true);
                                 nestedContainer.appendChild(nestedEl);
                             });
                             replyEl.querySelector('.comment-content').appendChild(nestedContainer);
@@ -869,7 +1751,7 @@
             });
         }
 
-        function createCommentElement(item, isReply = false) {
+        function createCommentElement(item, source, isReply = false) {
             const div = document.createElement('div');
             div.className = isReply ? 'comment reply' : 'comment';
 
@@ -915,7 +1797,7 @@
 
                 const id = likeBtn.dataset.id;
                 const type = likeBtn.dataset.type;
-                const isReply = type === 'REPLY';
+                const isReplyLike = type === 'REPLY';
 
                 const isCurrentlyLiked = likeBtn.classList.contains('liked');
                 const countSpan = likeBtn.querySelector('.like-count');
@@ -930,7 +1812,7 @@
                 }
 
                 const payload = { userId: user.id };
-                if (isReply) payload.replyId = parseInt(id);
+                if (isReplyLike) payload.replyId = parseInt(id);
                 else payload.commentId = parseInt(id);
 
                 try {
@@ -999,7 +1881,7 @@
             });
         }
 
-        // ----- Related Videos -----
+        // ===== Related Videos =====
         async function loadRelatedVideos(video) {
             const container = document.getElementById('relatedVideos');
             container.innerHTML = '<p class="loading">Loading similar videos...</p>';
@@ -1040,9 +1922,10 @@
             }
         }
 
-        // ----- Trivia (fetch from interaction endpoint) -----
-        async function loadTrivia(video) {
-            const container = document.getElementById('triviaContent');
+        // ===== Load Trivia (desktop & mobile) =====
+        async function loadTrivia(video, source) {
+            const suffix = source === 'desktop' ? 'Desktop' : 'Mobile';
+            const container = document.getElementById(`triviaContent${suffix}`);
             if (!container) return;
 
             try {
@@ -1051,37 +1934,37 @@
                 });
                 if (!res.ok) throw new Error('Failed to fetch trivia');
                 const trivia = await res.json();
-                renderTriviaItems(trivia);
+                renderTriviaItems(trivia, source);
             } catch (e) {
                 console.warn('Trivia load error:', e);
-                // Show no trivia message
                 container.innerHTML = '';
-                const noTrivia = document.getElementById('noTrivia');
+                const noTrivia = document.getElementById(`noTrivia${suffix}`);
                 if (noTrivia) {
                     container.appendChild(noTrivia);
                 } else {
                     const p = document.createElement('p');
                     p.className = 'no-trivia';
-                    p.id = 'noTrivia';
+                    p.id = `noTrivia${suffix}`;
                     p.textContent = 'No trivia added yet.';
                     container.appendChild(p);
                 }
             }
         }
 
-        function renderTriviaItems(trivia) {
-            const container = document.getElementById('triviaContent');
+        function renderTriviaItems(trivia, source) {
+            const suffix = source === 'desktop' ? 'Desktop' : 'Mobile';
+            const container = document.getElementById(`triviaContent${suffix}`);
             if (!container) return;
             container.innerHTML = '';
 
             if (!trivia || trivia.length === 0) {
-                const noTrivia = document.getElementById('noTrivia');
+                const noTrivia = document.getElementById(`noTrivia${suffix}`);
                 if (noTrivia) {
                     container.appendChild(noTrivia);
                 } else {
                     const p = document.createElement('p');
                     p.className = 'no-trivia';
-                    p.id = 'noTrivia';
+                    p.id = `noTrivia${suffix}`;
                     p.textContent = 'No trivia added yet.';
                     container.appendChild(p);
                 }
@@ -1111,8 +1994,8 @@
                     const deleteBtn = div.querySelector('.delete-trivia');
                     if (editBtn) {
                         editBtn.addEventListener('click', () => {
-                            document.getElementById('triviaTextarea').value = item.text;
-                            document.getElementById('triviaFormContainer').style.display = 'block';
+                            document.getElementById(`triviaTextarea${suffix}`).value = item.text;
+                            document.getElementById(`triviaFormContainer${suffix}`).style.display = 'block';
                             div.remove();
                         });
                     }
