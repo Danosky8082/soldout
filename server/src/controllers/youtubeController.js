@@ -1,5 +1,3 @@
-const fetch = require('node-fetch'); // or use global fetch (Node 18+)
-
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search';
 
@@ -48,8 +46,6 @@ const searchYouTube = async (req, res) => {
       channelId: item.snippet.channelId,
       publishedAt: item.snippet.publishedAt,
       source: 'youtube',
-      // You can add more fields as needed (duration, views, etc.)
-      // For now we'll set a placeholder views value; you can later fetch statistics separately.
       views: Math.floor(Math.random() * 50000) + 1000,
       year: new Date(item.snippet.publishedAt).getFullYear(),
       genre: detectGenre(item.snippet.title, item.snippet.description),
