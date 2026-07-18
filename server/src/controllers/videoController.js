@@ -249,7 +249,7 @@ const getVideoById = async (req, res) => {
       if (subscription) isSubscribed = true;
     }
 
-    // 6. Fetch comments with replies and likes (for the frontend)
+    // 6. Fetch comments with replies and likes
     const comments = await prisma.comment.findMany({
       where: { videoId: parseInt(id) },
       include: {
@@ -292,29 +292,29 @@ const getVideoById = async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Format comments to match frontend expectations
-    const formattedComments = comments.map(comment => {
-      // Format likes count for comment
-      const commentLikes = comment.likes.filter(l => l.type === 'LIKE').length;
-      // Format replies recursively (up to 2 levels deep)
-      const formatReplies = (replies) => {
-        return replies.map(reply => ({
-          id: reply.id,
-          text: reply.text,
-          createdAt: reply.createdAt,
-          user: reply.user,
-          _count: {
-            likes: reply.likes.filter(l => l.type === 'LIKE').length
-          },
-          replies: reply.replies ? formatReplies(reply.replies) : []
-        }));
-      };
+    // 7. Format comments with videoId
+    const formatReplies = (replies) => {
+      return replies.map(reply => ({
+        id: reply.id,
+        text: reply.text,
+        createdAt: reply.createdAt,
+        user: reply.user,
+        videoId: reply.videoId,   // ✅ include videoId
+        _count: {
+          likes: reply.likes.filter(l => l.type === 'LIKE').length
+        },
+        replies: reply.replies ? formatReplies(reply.replies) : []
+      }));
+    };
 
+    const formattedComments = comments.map(comment => {
+      const commentLikes = comment.likes.filter(l => l.type === 'LIKE').length;
       return {
         id: comment.id,
         text: comment.text,
         createdAt: comment.createdAt,
         user: comment.user,
+        videoId: comment.videoId,   // ✅ include videoId
         _count: {
           likes: commentLikes
         },
@@ -322,7 +322,7 @@ const getVideoById = async (req, res) => {
       };
     });
 
-    // 7. Build response
+    // 8. Build response
     const response = {
       ...video,
       averageRating: avgRating,
@@ -335,14 +335,12 @@ const getVideoById = async (req, res) => {
       isDisliked,
       isSubscribed,
       comments: formattedComments,
-      // Ensure user has subscriberCount for frontend
       user: {
         ...video.user,
         subscriberCount
       }
     };
 
-    // Remove internal fields
     delete response._count;
 
     res.json(response);

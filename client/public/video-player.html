@@ -1617,7 +1617,7 @@
             }
         }
 
-        // ----- Reply (FIXED) -----
+        // ===== REPLY (FIXED) =====
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
@@ -1634,17 +1634,20 @@
                 const token = getToken();
                 if (!token) { alert('Please log in again.'); return; }
 
-                // IMPORTANT: We need to send the correct videoId.
-                // Use the current video's ID (which should be the same as the comment's video).
-                // To be safe, we can fetch the comment's videoId from the dataset or from the comment object.
-                // But we pass video.id which is the current video.
-                const videoId = video.id; // This is the current video ID
+                // Get the videoId from the comment item's dataset (which we set in createCommentEl)
+                const commentItem = form.closest('.comment-item');
+                let videoId = video.id; // fallback
+                if (commentItem && commentItem.dataset.videoId) {
+                    videoId = parseInt(commentItem.dataset.videoId);
+                }
+                // Ensure it's a number
+                if (isNaN(videoId)) videoId = video.id;
 
                 const payload = {
                     text,
                     userId: user.id,
                     commentId: parseInt(commentId),
-                    videoId: videoId // Always use current video ID
+                    videoId: videoId
                 };
                 if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
 
@@ -1785,7 +1788,7 @@
         }
 
         // ============================================================
-        // RENDER COMMENTS
+        // RENDER COMMENTS (with videoId in dataset)
         // ============================================================
         function renderComments(comments) {
             const list = document.getElementById('commentList');
@@ -1826,6 +1829,8 @@
         function createCommentEl(item, isReply = false) {
             const div = document.createElement('div');
             div.className = isReply ? 'comment-item reply' : 'comment-item';
+            // Store videoId in dataset (use current video.id; if item has videoId, use that)
+            div.dataset.videoId = item.videoId || video.id;
 
             let avatarHtml = `<i class="fas fa-user"></i>`;
             if (item.user?.profilePicture) {
