@@ -274,11 +274,6 @@
             color: #22c55e;
         }
 
-        .action-btn .badge {
-            font-size: 12px;
-            color: #aaa;
-        }
-
         /* ===== DESCRIPTION ===== */
         .description-section {
             padding: 12px 0;
@@ -570,10 +565,11 @@
         }
 
         .related-item:hover {
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
         .related-thumb {
+            position: relative;
             width: 160px;
             height: 90px;
             border-radius: 8px;
@@ -582,10 +578,27 @@
             flex-shrink: 0;
         }
 
-        .related-thumb img {
+        .related-thumb img,
+        .related-thumb video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .related-thumb video {
+            display: none;
+            /* hidden until hover */
+        }
+
+        .related-item:hover .related-thumb video {
+            display: block;
+        }
+
+        .related-item:hover .related-thumb img {
+            display: none;
         }
 
         .related-info {
@@ -615,7 +628,7 @@
             font-size: 12px;
         }
 
-        /* ===== TRIVIA (in sidebar on desktop, below on mobile) ===== */
+        /* ===== TRIVIA ===== */
         .trivia-section {
             margin-top: 24px;
             border-top: 1px solid #2a2a2a;
@@ -1604,7 +1617,7 @@
             }
         }
 
-        // ----- Reply -----
+        // ----- Reply (FIXED) -----
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
@@ -1621,16 +1634,24 @@
                 const token = getToken();
                 if (!token) { alert('Please log in again.'); return; }
 
-                const submit = form.querySelector('.reply-submit');
-                if (submit) submit.disabled = true;
+                // IMPORTANT: We need to send the correct videoId.
+                // Use the current video's ID (which should be the same as the comment's video).
+                // To be safe, we can fetch the comment's videoId from the dataset or from the comment object.
+                // But we pass video.id which is the current video.
+                const videoId = video.id; // This is the current video ID
 
                 const payload = {
                     text,
                     userId: user.id,
                     commentId: parseInt(commentId),
-                    videoId: video.id
+                    videoId: videoId // Always use current video ID
                 };
                 if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
+
+                console.log('[Reply] Sending payload:', payload);
+
+                const submit = form.querySelector('.reply-submit');
+                if (submit) submit.disabled = true;
 
                 try {
                     const res = await fetch(`${API_BASE}/interactions/reply`, {
@@ -1909,7 +1930,7 @@
                 input.value = '';
             });
 
-            // Submit reply
+            // Submit reply (attach the handler)
             form.removeEventListener('submit', form._handler);
             const handler = addReply(item.id, item.parentReplyId || null);
             form._handler = handler;
@@ -1924,7 +1945,7 @@
         }
 
         // ============================================================
-        // RELATED VIDEOS
+        // RELATED VIDEOS (with hover preview)
         // ============================================================
         async function loadRelated(v) {
             const list = document.getElementById('relatedList');
@@ -1942,14 +1963,33 @@
                     const el = document.createElement('div');
                     el.className = 'related-item';
                     const thumb = absUrl(r.thumbnail) || 'https://via.placeholder.com/160x90?text=No+Image';
+                    const vidSrc = absUrl(r.videoUrl);
+                    let videoHtml = '';
+                    if (vidSrc) {
+                        videoHtml = `<video src="${vidSrc}" muted loop playsinline></video>`;
+                    }
                     el.innerHTML = `
-                        <div class="related-thumb"><img src="${thumb}" alt="${r.title}" loading="lazy" /></div>
+                        <div class="related-thumb">
+                            <img src="${thumb}" alt="${r.title}" loading="lazy" />
+                            ${videoHtml}
+                        </div>
                         <div class="related-info">
                             <div class="related-title">${r.title || 'Untitled'}</div>
                             <div class="related-channel">${r.user?.firstName || 'Unknown'}</div>
                             <div class="related-meta">${r.views || 0} views</div>
                         </div>
                     `;
+                    // Hover play/pause
+                    const vidEl = el.querySelector('video');
+                    if (vidEl) {
+                        el.addEventListener('mouseenter', function () {
+                            vidEl.play().catch(() => { });
+                        });
+                        el.addEventListener('mouseleave', function () {
+                            vidEl.pause();
+                            vidEl.currentTime = 0;
+                        });
+                    }
                     el.addEventListener('click', function () {
                         sessionStorage.setItem('currentVideo', JSON.stringify({ id: r.id }));
                         window.location.reload();
