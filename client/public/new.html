@@ -40,7 +40,6 @@
             letter-spacing: -0.5px;
         }
 
-        /* ===== PAGE HEADER ===== */
         .page-header {
             padding: 16px 0 12px;
             border-bottom: 1px solid #2a2a2a;
@@ -78,7 +77,6 @@
             margin-top: 4px;
         }
 
-        /* ===== FILTER BAR ===== */
         .filter-bar {
             display: flex;
             flex-wrap: wrap;
@@ -171,7 +169,6 @@
             background: #2a2a2a;
         }
 
-        /* ===== SOURCE TOGGLE ===== */
         .source-toggle {
             display: flex;
             gap: 4px;
@@ -203,7 +200,6 @@
             color: #fff;
         }
 
-        /* ===== VIDEO GRID ===== */
         .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -297,6 +293,11 @@
             color: #fff;
         }
 
+        .badge-nollywood {
+            background: #f472b6;
+            color: #fff;
+        }
+
         .video-card .info {
             padding: 12px 14px 14px;
         }
@@ -375,7 +376,6 @@
             color: #fff;
         }
 
-        /* ===== LOADING & NO RESULTS ===== */
         .loading-state {
             display: flex;
             justify-content: center;
@@ -415,7 +415,6 @@
             font-size: 16px;
         }
 
-        /* ===== MOBILE ===== */
         @media (max-width: 1024px) {
             .video-grid {
                 grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -576,6 +575,7 @@
                 <option value="all">All Categories</option>
                 <option value="trailer">Movie Trailers</option>
                 <option value="soundtrack">Soundtracks</option>
+                <option value="nollywood">Nollywood</option>
                 <option value="teaser">Teasers</option>
                 <option value="behind">Behind the Scenes</option>
             </select>
@@ -597,6 +597,7 @@
                 <option value="sci-fi">Sci-Fi</option>
                 <option value="thriller">Thriller</option>
                 <option value="western">Western</option>
+                <option value="nollywood">Nollywood</option>
             </select>
 
             <button class="clear-filter" id="clearFilters">
@@ -619,7 +620,9 @@
         <!-- FOOTER -->
         <footer>
             <div class="footer-links">
-                <a href="admin.html"><font color="green">Admin</font></a> |
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
                 <a href="#">About Us</a> |
                 <a href="#">Contact</a> |
                 <a href="#">Privacy Policy</a> |
@@ -650,16 +653,18 @@
                         ham.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    ham.addEventListener('click', function(e) { e.stopPropagation();
-                        toggle(); });
-                    ov.addEventListener('click', function() { toggle(false); });
-                    sb.querySelectorAll('a').forEach(function(a) {
-                        a.addEventListener('click', function() { toggle(false); });
+                    ham.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggle();
                     });
-                    document.addEventListener('keydown', function(e) {
+                    ov.addEventListener('click', function () { toggle(false); });
+                    sb.querySelectorAll('a').forEach(function (a) {
+                        a.addEventListener('click', function () { toggle(false); });
+                    });
+                    document.addEventListener('keydown', function (e) {
                         if (e.key === 'Escape' && sb.classList.contains('open')) toggle(false);
                     });
-                    window.addEventListener('resize', function() {
+                    window.addEventListener('resize', function () {
                         if (window.innerWidth > 992 && sb.classList.contains('open')) toggle(false);
                     });
                 }
@@ -669,7 +674,7 @@
         }
 
         // ============================================================
-        // NEW RELEASES – INTERNET POWERED with LIVE SEARCH
+        // NEW RELEASES – with robust filtering & Nollywood support
         // ============================================================
         const API_BASE = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE = 'https://soldout-c6ij.onrender.com';
@@ -684,7 +689,6 @@
         function getUser() {
             return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
         }
-
         function getToken() { return localStorage.getItem('authToken'); }
 
         let allVideos = [];
@@ -693,8 +697,60 @@
         let currentCategory = 'all';
         let currentGenre = 'all';
         let searchQuery = '';
-        let isSearching = false;
         let searchTimeout = null;
+
+        // ===== DETECT CATEGORY & GENRE from title/description =====
+        function detectMetadata(title, description, existingGenre = '') {
+            const text = (title + ' ' + description + ' ' + existingGenre).toLowerCase();
+
+            // ----- CATEGORY -----
+            let category = 'trailer'; // default
+            if (text.includes('soundtrack') || text.includes('score') || text.includes('music video') || text.includes(
+                'official audio')) {
+                category = 'soundtrack';
+            } else if (text.includes('nollywood') || text.includes('nigerian movie') || text.includes('ghana movie') ||
+                text.includes('yoruba movie') || text.includes('igbo movie')) {
+                category = 'nollywood';
+            } else if (text.includes('teaser')) {
+                category = 'teaser';
+            } else if (text.includes('behind the scenes') || text.includes('bts') || text.includes('making of')) {
+                category = 'behind';
+            } else if (text.includes('trailer') || text.includes('official trailer') || text.includes('movie trailer')) {
+                category = 'trailer';
+            }
+
+            // ----- GENRE (detect from common keywords) -----
+            const genreMap = {
+                action: ['action', 'explosive', 'battle', 'fight', 'war', 'attack'],
+                adventure: ['adventure', 'quest', 'journey', 'explore'],
+                animation: ['animation', 'animated', 'cartoon', 'pixar', 'disney'],
+                comedy: ['comedy', 'funny', 'humor', 'hilarious', 'laugh'],
+                crime: ['crime', 'criminal', 'detective', 'murder', 'mystery', 'police'],
+                documentary: ['documentary', 'doc', 'real life', 'true story'],
+                drama: ['drama', 'emotional', 'family', 'relationship', 'struggle'],
+                fantasy: ['fantasy', 'magic', 'dragon', 'mythical', 'wizard'],
+                horror: ['horror', 'scary', 'terrifying', 'ghost', 'halloween'],
+                musical: ['musical', 'musical', 'broadway'],
+                romance: ['romance', 'love', 'kiss', 'wedding', 'heart'],
+                'sci-fi': ['sci-fi', 'science fiction', 'space', 'alien', 'futuristic', 'robot'],
+                thriller: ['thriller', 'suspense', 'mystery', 'twist', 'tense'],
+                western: ['western', 'cowboy', 'wild west', 'frontier'],
+                nollywood: ['nollywood', 'nigerian', 'ghana', 'yoruba', 'igbo']
+            };
+
+            let detectedGenre = '';
+            for (const [genre, keywords] of Object.entries(genreMap)) {
+                if (keywords.some(k => text.includes(k))) {
+                    detectedGenre = genre;
+                    break;
+                }
+            }
+
+            // If no genre detected, keep existing genre if any, else Unknown
+            const finalGenre = detectedGenre || existingGenre || 'Unknown';
+
+            return { category, genre: finalGenre };
+        }
 
         // ===== FETCH DEFAULT LATEST =====
         async function fetchDefaultVideos() {
@@ -713,25 +769,37 @@
                 const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
                 if (soldoutRes.ok) {
                     const soldoutData = await soldoutRes.json();
-                    results = results.concat(soldoutData.map(v => ({
-                        ...v,
-                        source: 'soldout',
-                        category: v.genre?.toLowerCase().includes('soundtrack') ? 'soundtrack' : 'trailer'
-                    })));
+                    results = results.concat(soldoutData.map(v => {
+                        const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
+                        return {
+                            ...v,
+                            source: 'soldout',
+                            category: meta.category,
+                            genre: meta.genre
+                        };
+                    }));
                 }
 
-                // 2. YouTube – latest trailers & soundtracks
+                // 2. YouTube – latest trailers & soundtracks (using generic queries)
                 try {
+                    // Trailers
                     const trailerRes = await fetch(`${API_BASE}/youtube/search?q=movie%20trailer%202025&type=video&maxResults=20&order=date`);
                     if (trailerRes.ok) {
                         const trailerItems = await trailerRes.json();
-                        results = results.concat(trailerItems.map(v => ({ ...v, category: 'trailer' })));
+                        results = results.concat(trailerItems.map(v => {
+                            const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
+                            return { ...v, category: meta.category, genre: meta.genre };
+                        }));
                     }
 
+                    // Soundtracks
                     const soundtrackRes = await fetch(`${API_BASE}/youtube/search?q=movie%20soundtrack%202025&type=video&maxResults=15&order=date`);
                     if (soundtrackRes.ok) {
                         const soundtrackItems = await soundtrackRes.json();
-                        results = results.concat(soundtrackItems.map(v => ({ ...v, category: 'soundtrack' })));
+                        results = results.concat(soundtrackItems.map(v => {
+                            const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
+                            return { ...v, category: meta.category, genre: meta.genre };
+                        }));
                     }
                 } catch (e) {
                     console.warn('YouTube fetch error:', e);
@@ -747,7 +815,6 @@
                 });
 
                 allVideos = results;
-                isSearching = false;
                 applyFiltersAndRender();
             } catch (e) {
                 console.error('Load error:', e);
@@ -766,7 +833,6 @@
         // ===== PERFORM SEARCH =====
         async function performSearch(query) {
             if (!query.trim()) {
-                // If search is empty, revert to default
                 await fetchDefaultVideos();
                 return;
             }
@@ -782,7 +848,7 @@
             try {
                 let results = [];
 
-                // 1. Filter existing Soldout videos by search query
+                // 1. Filter existing Soldout videos by search query (from API)
                 const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
                 if (soldoutRes.ok) {
                     const soldoutData = await soldoutRes.json();
@@ -791,26 +857,21 @@
                         (v.description || '').toLowerCase().includes(query.toLowerCase()) ||
                         (v.genre || '').toLowerCase().includes(query.toLowerCase())
                     );
-                    results = results.concat(filteredSoldout.map(v => ({
-                        ...v,
-                        source: 'soldout',
-                        category: v.genre?.toLowerCase().includes('soundtrack') ? 'soundtrack' : 'trailer'
-                    })));
+                    results = results.concat(filteredSoldout.map(v => {
+                        const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
+                        return { ...v, source: 'soldout', category: meta.category, genre: meta.genre };
+                    }));
                 }
 
-                // 2. Search YouTube with the query (both trailers and soundtracks in one go, but we can combine)
+                // 2. Search YouTube with the query
                 try {
-                    // Search for videos with the query (general)
                     const searchRes = await fetch(`${API_BASE}/youtube/search?q=${encodeURIComponent(query)}&type=video&maxResults=30&order=relevance`);
                     if (searchRes.ok) {
                         const searchItems = await searchRes.json();
-                        // Try to auto-categorize: if query includes "soundtrack" or "music", label as soundtrack
-                        const isSoundtrackSearch = query.toLowerCase().includes('soundtrack') || query.toLowerCase()
-                            .includes('music') || query.toLowerCase().includes('score');
-                        results = results.concat(searchItems.map(v => ({
-                            ...v,
-                            category: isSoundtrackSearch ? 'soundtrack' : 'trailer'
-                        })));
+                        results = results.concat(searchItems.map(v => {
+                            const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
+                            return { ...v, category: meta.category, genre: meta.genre };
+                        }));
                     }
                 } catch (e) {
                     console.warn('YouTube search error:', e);
@@ -826,7 +887,6 @@
                 });
 
                 allVideos = results;
-                isSearching = true;
                 applyFiltersAndRender();
             } catch (e) {
                 console.error('Search error:', e);
@@ -839,7 +899,7 @@
             }
         }
 
-        // ===== Apply filters and render =====
+        // ===== Apply filters (now case-insensitive includes) =====
         function applyFiltersAndRender() {
             let filtered = [...allVideos];
 
@@ -848,22 +908,30 @@
                 filtered = filtered.filter(v => v.source === currentSource);
             }
 
-            // Category filter
+            // Category filter (case-insensitive partial match)
             if (currentCategory !== 'all') {
-                filtered = filtered.filter(v => v.category === currentCategory);
+                filtered = filtered.filter(v =>
+                    v.category && v.category.toLowerCase().includes(currentCategory.toLowerCase())
+                );
             }
 
-            // Genre filter
+            // Genre filter (case-insensitive partial match)
             if (currentGenre !== 'all') {
-                filtered = filtered.filter(v => {
-                    const g = v.genre ? v.genre.toLowerCase() : '';
-                    return g === currentGenre.toLowerCase() || g.includes(currentGenre.toLowerCase());
-                });
+                filtered = filtered.filter(v =>
+                    v.genre && v.genre.toLowerCase().includes(currentGenre.toLowerCase())
+                );
             }
 
-            // Search filter (already applied to soldout, but we also filter YouTube results by the query if not already)
-            // In this version, we already filtered soldout and YouTube by the query, so no extra client-side filter needed.
-            // However, if we have search results from YouTube that don't match the query (shouldn't happen), we can keep them.
+            // Search filter (extra client-side safety, but we already filtered from API)
+            if (searchQuery.trim()) {
+                const q = searchQuery.trim().toLowerCase();
+                filtered = filtered.filter(v =>
+                    (v.title || '').toLowerCase().includes(q) ||
+                    (v.description || '').toLowerCase().includes(q) ||
+                    (v.genre || '').toLowerCase().includes(q) ||
+                    (v.channelName || '').toLowerCase().includes(q)
+                );
+            }
 
             // Sort by date (newest first)
             filtered.sort((a, b) => {
@@ -908,8 +976,11 @@
                     badge = '<span class="badge badge-trending">Trending</span>';
                 }
 
+                // Show category badge
                 if (v.category === 'soundtrack') {
                     badge += ' <span class="badge badge-soundtrack">Soundtrack</span>';
+                } else if (v.category === 'nollywood') {
+                    badge += ' <span class="badge badge-nollywood">Nollywood</span>';
                 } else if (v.category === 'trailer') {
                     badge += ' <span class="badge badge-trailer">Trailer</span>';
                 }
@@ -934,7 +1005,7 @@
                                 <span><i class="fas fa-calendar-alt"></i> ${v.year || 'N/A'}</span>
                                 <span><i class="fas fa-clock"></i> ${daysAgo}d ago</span>
                             </div>
-                            ${v.genre ? `<span class="genre-tag">${v.genre}</span>` : ''}
+                            ${v.genre && v.genre !== 'Unknown' ? `<span class="genre-tag">${v.genre}</span>` : ''}
                             <span class="source-tag ${sourceClass}">${sourceIcon}</span>
                         </div>
                     </div>
@@ -943,7 +1014,7 @@
 
             // Click handler
             grid.querySelectorAll('.video-card').forEach(card => {
-                card.addEventListener('click', function() {
+                card.addEventListener('click', function () {
                     const id = this.dataset.id;
                     const source = this.dataset.source;
                     const video = allVideos.find(v => v.id == id || v.videoId == id);
@@ -976,14 +1047,13 @@
             currentCategory = 'all';
             currentGenre = 'all';
             searchQuery = '';
-            isSearching = false;
             fetchDefaultVideos();
         }
 
         // ============================================================
         // INIT
         // ============================================================
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', async function () {
             await loadSidebar();
             if (typeof window.initHeader === 'function') window.initHeader();
 
@@ -992,16 +1062,10 @@
 
             // --- Search with debounce ---
             const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 const query = this.value.trim();
                 searchQuery = query;
-
-                // Clear previous timeout
-                if (searchTimeout) {
-                    clearTimeout(searchTimeout);
-                }
-
-                // Debounce: wait 500ms after user stops typing
+                if (searchTimeout) clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
                     if (query) {
                         performSearch(query);
@@ -1012,12 +1076,12 @@
             });
 
             // --- Filter events ---
-            document.getElementById('categoryFilter').addEventListener('change', function() {
+            document.getElementById('categoryFilter').addEventListener('change', function () {
                 currentCategory = this.value;
                 applyFiltersAndRender();
             });
 
-            document.getElementById('genreFilter').addEventListener('change', function() {
+            document.getElementById('genreFilter').addEventListener('change', function () {
                 currentGenre = this.value;
                 applyFiltersAndRender();
             });
@@ -1026,7 +1090,7 @@
 
             // --- Source toggle ---
             document.querySelectorAll('.source-toggle button').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     document.querySelectorAll('.source-toggle button').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentSource = this.dataset.source;
