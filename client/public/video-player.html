@@ -607,15 +607,16 @@
         }
 
         .related-title {
-            font-weight: 500;
-            color: #fff;
-            font-size: 14px;
-            line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+    font-weight: 500;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;          /* ✅ Standard property for modern browsers */
+    overflow: hidden;
+}
 
         .related-channel {
             color: #888;
