@@ -78,7 +78,7 @@
             margin-top: 4px;
         }
 
-        /* ===== FILTER BAR (with source toggle inside) ===== */
+        /* ===== FILTER BAR ===== */
         .filter-bar {
             display: flex;
             flex-wrap: wrap;
@@ -171,7 +171,7 @@
             background: #2a2a2a;
         }
 
-        /* ===== SOURCE TOGGLE (now inside filter bar) ===== */
+        /* ===== SOURCE TOGGLE ===== */
         .source-toggle {
             display: flex;
             gap: 4px;
@@ -559,14 +559,13 @@
             </div>
         </div>
 
-        <!-- FILTER BAR (with source toggle inside) -->
+        <!-- FILTER BAR -->
         <div class="filter-bar" id="filterBar">
             <div class="search-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" id="searchInput" placeholder="Search trailers, soundtracks, movies..." />
             </div>
 
-            <!-- Source toggle moved here -->
             <div class="source-toggle">
                 <button class="active" data-source="all"><i class="fas fa-globe"></i> All</button>
                 <button data-source="youtube"><i class="fab fa-youtube"></i> YouTube</button>
@@ -620,9 +619,7 @@
         <!-- FOOTER -->
         <footer>
             <div class="footer-links">
-                <a href="admin.html">
-                    <font color="green">Admin</font>
-                </a> |
+                <a href="admin.html"><font color="green">Admin</font></a> |
                 <a href="#">About Us</a> |
                 <a href="#">Contact</a> |
                 <a href="#">Privacy Policy</a> |
@@ -653,15 +650,16 @@
                         ham.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    ham.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
-                    ov.addEventListener('click', function () { toggle(false); });
-                    sb.querySelectorAll('a').forEach(function (a) {
-                        a.addEventListener('click', function () { toggle(false); });
+                    ham.addEventListener('click', function(e) { e.stopPropagation();
+                        toggle(); });
+                    ov.addEventListener('click', function() { toggle(false); });
+                    sb.querySelectorAll('a').forEach(function(a) {
+                        a.addEventListener('click', function() { toggle(false); });
                     });
-                    document.addEventListener('keydown', function (e) {
+                    document.addEventListener('keydown', function(e) {
                         if (e.key === 'Escape' && sb.classList.contains('open')) toggle(false);
                     });
-                    window.addEventListener('resize', function () {
+                    window.addEventListener('resize', function() {
                         if (window.innerWidth > 992 && sb.classList.contains('open')) toggle(false);
                     });
                 }
@@ -671,7 +669,7 @@
         }
 
         // ============================================================
-        // NEW RELEASES – INTERNET POWERED
+        // NEW RELEASES – INTERNET POWERED with LIVE SEARCH
         // ============================================================
         const API_BASE = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE = 'https://soldout-c6ij.onrender.com';
@@ -686,6 +684,7 @@
         function getUser() {
             return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
         }
+
         function getToken() { return localStorage.getItem('authToken'); }
 
         let allVideos = [];
@@ -694,21 +693,23 @@
         let currentCategory = 'all';
         let currentGenre = 'all';
         let searchQuery = '';
+        let isSearching = false;
+        let searchTimeout = null;
 
-        // ===== FETCH FROM MULTIPLE SOURCES =====
-        async function fetchVideos() {
+        // ===== FETCH DEFAULT LATEST =====
+        async function fetchDefaultVideos() {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = `
                 <div class="loading-state">
                     <i class="fas fa-spinner"></i>
-                    Fetching trailers and soundtracks...
+                    Loading latest trailers...
                 </div>
             `;
 
             try {
                 let results = [];
 
-                // 1. Fetch from your soldout API
+                // 1. Soldout API
                 const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
                 if (soldoutRes.ok) {
                     const soldoutData = await soldoutRes.json();
@@ -719,19 +720,15 @@
                     })));
                 }
 
-                // 2. Fetch from YouTube via backend proxy
+                // 2. YouTube – latest trailers & soundtracks
                 try {
-                    // Search for movie trailers (newest first)
-                    const trailerQuery = 'movie trailer 2025';
-                    const trailerRes = await fetch(`${API_BASE}/youtube/search?q=${encodeURIComponent(trailerQuery)}&type=video&maxResults=20&order=date`);
+                    const trailerRes = await fetch(`${API_BASE}/youtube/search?q=movie%20trailer%202025&type=video&maxResults=20&order=date`);
                     if (trailerRes.ok) {
                         const trailerItems = await trailerRes.json();
                         results = results.concat(trailerItems.map(v => ({ ...v, category: 'trailer' })));
                     }
 
-                    // Search for soundtracks
-                    const soundtrackQuery = 'movie soundtrack 2025';
-                    const soundtrackRes = await fetch(`${API_BASE}/youtube/search?q=${encodeURIComponent(soundtrackQuery)}&type=video&maxResults=15&order=date`);
+                    const soundtrackRes = await fetch(`${API_BASE}/youtube/search?q=movie%20soundtrack%202025&type=video&maxResults=15&order=date`);
                     if (soundtrackRes.ok) {
                         const soundtrackItems = await soundtrackRes.json();
                         results = results.concat(soundtrackItems.map(v => ({ ...v, category: 'soundtrack' })));
@@ -740,7 +737,7 @@
                     console.warn('YouTube fetch error:', e);
                 }
 
-                // Remove duplicates by videoId
+                // Deduplicate
                 const seen = new Set();
                 results = results.filter(v => {
                     const key = v.source === 'youtube' ? v.videoId : v.id;
@@ -750,6 +747,7 @@
                 });
 
                 allVideos = results;
+                isSearching = false;
                 applyFiltersAndRender();
             } catch (e) {
                 console.error('Load error:', e);
@@ -760,6 +758,82 @@
                         <button onclick="location.reload()" style="background:#3b82f6;color:#fff;border:none;padding:8px 24px;border-radius:30px;cursor:pointer;font-size:14px;margin-top:12px;">
                             <i class="fas fa-sync-alt"></i> Retry
                         </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ===== PERFORM SEARCH =====
+        async function performSearch(query) {
+            if (!query.trim()) {
+                // If search is empty, revert to default
+                await fetchDefaultVideos();
+                return;
+            }
+
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner"></i>
+                    Searching for "${query}"...
+                </div>
+            `;
+
+            try {
+                let results = [];
+
+                // 1. Filter existing Soldout videos by search query
+                const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
+                if (soldoutRes.ok) {
+                    const soldoutData = await soldoutRes.json();
+                    const filteredSoldout = soldoutData.filter(v =>
+                        (v.title || '').toLowerCase().includes(query.toLowerCase()) ||
+                        (v.description || '').toLowerCase().includes(query.toLowerCase()) ||
+                        (v.genre || '').toLowerCase().includes(query.toLowerCase())
+                    );
+                    results = results.concat(filteredSoldout.map(v => ({
+                        ...v,
+                        source: 'soldout',
+                        category: v.genre?.toLowerCase().includes('soundtrack') ? 'soundtrack' : 'trailer'
+                    })));
+                }
+
+                // 2. Search YouTube with the query (both trailers and soundtracks in one go, but we can combine)
+                try {
+                    // Search for videos with the query (general)
+                    const searchRes = await fetch(`${API_BASE}/youtube/search?q=${encodeURIComponent(query)}&type=video&maxResults=30&order=relevance`);
+                    if (searchRes.ok) {
+                        const searchItems = await searchRes.json();
+                        // Try to auto-categorize: if query includes "soundtrack" or "music", label as soundtrack
+                        const isSoundtrackSearch = query.toLowerCase().includes('soundtrack') || query.toLowerCase()
+                            .includes('music') || query.toLowerCase().includes('score');
+                        results = results.concat(searchItems.map(v => ({
+                            ...v,
+                            category: isSoundtrackSearch ? 'soundtrack' : 'trailer'
+                        })));
+                    }
+                } catch (e) {
+                    console.warn('YouTube search error:', e);
+                }
+
+                // Deduplicate
+                const seen = new Set();
+                results = results.filter(v => {
+                    const key = v.source === 'youtube' ? v.videoId : v.id;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+
+                allVideos = results;
+                isSearching = true;
+                applyFiltersAndRender();
+            } catch (e) {
+                console.error('Search error:', e);
+                grid.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Search failed. Please try again.</p>
                     </div>
                 `;
             }
@@ -787,18 +861,11 @@
                 });
             }
 
-            // Search filter
-            if (searchQuery.trim()) {
-                const q = searchQuery.trim().toLowerCase();
-                filtered = filtered.filter(v =>
-                    (v.title || '').toLowerCase().includes(q) ||
-                    (v.description || '').toLowerCase().includes(q) ||
-                    (v.genre || '').toLowerCase().includes(q) ||
-                    (v.channelName || '').toLowerCase().includes(q)
-                );
-            }
+            // Search filter (already applied to soldout, but we also filter YouTube results by the query if not already)
+            // In this version, we already filtered soldout and YouTube by the query, so no extra client-side filter needed.
+            // However, if we have search results from YouTube that don't match the query (shouldn't happen), we can keep them.
 
-            // Sort by date (newest first) – this is the default algorithm
+            // Sort by date (newest first)
             filtered.sort((a, b) => {
                 const dateA = new Date(a.createdAt || a.publishedAt || 0);
                 const dateB = new Date(b.createdAt || b.publishedAt || 0);
@@ -876,7 +943,7 @@
 
             // Click handler
             grid.querySelectorAll('.video-card').forEach(card => {
-                card.addEventListener('click', function () {
+                card.addEventListener('click', function() {
                     const id = this.dataset.id;
                     const source = this.dataset.source;
                     const video = allVideos.find(v => v.id == id || v.videoId == id);
@@ -909,31 +976,48 @@
             currentCategory = 'all';
             currentGenre = 'all';
             searchQuery = '';
-            applyFiltersAndRender();
+            isSearching = false;
+            fetchDefaultVideos();
         }
 
         // ============================================================
         // INIT
         // ============================================================
-        document.addEventListener('DOMContentLoaded', async function () {
+        document.addEventListener('DOMContentLoaded', async function() {
             await loadSidebar();
             if (typeof window.initHeader === 'function') window.initHeader();
 
-            // Load videos
-            await fetchVideos();
+            // Load default videos
+            await fetchDefaultVideos();
 
-            // --- Filter events ---
-            document.getElementById('searchInput').addEventListener('input', function () {
-                searchQuery = this.value;
-                applyFiltersAndRender();
+            // --- Search with debounce ---
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                searchQuery = query;
+
+                // Clear previous timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+
+                // Debounce: wait 500ms after user stops typing
+                searchTimeout = setTimeout(() => {
+                    if (query) {
+                        performSearch(query);
+                    } else {
+                        fetchDefaultVideos();
+                    }
+                }, 500);
             });
 
-            document.getElementById('categoryFilter').addEventListener('change', function () {
+            // --- Filter events ---
+            document.getElementById('categoryFilter').addEventListener('change', function() {
                 currentCategory = this.value;
                 applyFiltersAndRender();
             });
 
-            document.getElementById('genreFilter').addEventListener('change', function () {
+            document.getElementById('genreFilter').addEventListener('change', function() {
                 currentGenre = this.value;
                 applyFiltersAndRender();
             });
@@ -942,7 +1026,7 @@
 
             // --- Source toggle ---
             document.querySelectorAll('.source-toggle button').forEach(btn => {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', function() {
                     document.querySelectorAll('.source-toggle button').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentSource = this.dataset.source;
