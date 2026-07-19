@@ -653,10 +653,7 @@
                         ham.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    ham.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        toggle();
-                    });
+                    ham.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
                     ov.addEventListener('click', function () { toggle(false); });
                     sb.querySelectorAll('a').forEach(function (a) {
                         a.addEventListener('click', function () { toggle(false); });
@@ -674,7 +671,7 @@
         }
 
         // ============================================================
-        // NEW RELEASES – with robust filtering & Nollywood support
+        // NEW RELEASES LOGIC
         // ============================================================
         const API_BASE = 'https://soldout-c6ij.onrender.com/api';
         const STATIC_BASE = 'https://soldout-c6ij.onrender.com';
@@ -699,14 +696,12 @@
         let searchQuery = '';
         let searchTimeout = null;
 
-        // ===== DETECT CATEGORY & GENRE from title/description =====
+        // ===== DETECT CATEGORY & GENRE =====
         function detectMetadata(title, description, existingGenre = '') {
             const text = (title + ' ' + description + ' ' + existingGenre).toLowerCase();
 
-            // ----- CATEGORY -----
-            let category = 'trailer'; // default
-            if (text.includes('soundtrack') || text.includes('score') || text.includes('music video') || text.includes(
-                'official audio')) {
+            let category = 'trailer';
+            if (text.includes('soundtrack') || text.includes('score') || text.includes('music video') || text.includes('official audio')) {
                 category = 'soundtrack';
             } else if (text.includes('nollywood') || text.includes('nigerian movie') || text.includes('ghana movie') ||
                 text.includes('yoruba movie') || text.includes('igbo movie')) {
@@ -719,7 +714,6 @@
                 category = 'trailer';
             }
 
-            // ----- GENRE (detect from common keywords) -----
             const genreMap = {
                 action: ['action', 'explosive', 'battle', 'fight', 'war', 'attack'],
                 adventure: ['adventure', 'quest', 'journey', 'explore'],
@@ -745,14 +739,11 @@
                     break;
                 }
             }
-
-            // If no genre detected, keep existing genre if any, else Unknown
             const finalGenre = detectedGenre || existingGenre || 'Unknown';
-
             return { category, genre: finalGenre };
         }
 
-        // ===== FETCH DEFAULT LATEST =====
+        // ===== FETCH DEFAULT =====
         async function fetchDefaultVideos() {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = `
@@ -765,24 +756,18 @@
             try {
                 let results = [];
 
-                // 1. Soldout API
+                // Soldout
                 const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
                 if (soldoutRes.ok) {
                     const soldoutData = await soldoutRes.json();
                     results = results.concat(soldoutData.map(v => {
                         const meta = detectMetadata(v.title || '', v.description || '', v.genre || '');
-                        return {
-                            ...v,
-                            source: 'soldout',
-                            category: meta.category,
-                            genre: meta.genre
-                        };
+                        return { ...v, source: 'soldout', category: meta.category, genre: meta.genre };
                     }));
                 }
 
-                // 2. YouTube – latest trailers & soundtracks (using generic queries)
+                // YouTube
                 try {
-                    // Trailers
                     const trailerRes = await fetch(`${API_BASE}/youtube/search?q=movie%20trailer%202025&type=video&maxResults=20&order=date`);
                     if (trailerRes.ok) {
                         const trailerItems = await trailerRes.json();
@@ -792,7 +777,6 @@
                         }));
                     }
 
-                    // Soundtracks
                     const soundtrackRes = await fetch(`${API_BASE}/youtube/search?q=movie%20soundtrack%202025&type=video&maxResults=15&order=date`);
                     if (soundtrackRes.ok) {
                         const soundtrackItems = await soundtrackRes.json();
@@ -830,7 +814,7 @@
             }
         }
 
-        // ===== PERFORM SEARCH =====
+        // ===== SEARCH =====
         async function performSearch(query) {
             if (!query.trim()) {
                 await fetchDefaultVideos();
@@ -848,7 +832,6 @@
             try {
                 let results = [];
 
-                // 1. Filter existing Soldout videos by search query (from API)
                 const soldoutRes = await fetch(`${API_BASE}/videos/premium`);
                 if (soldoutRes.ok) {
                     const soldoutData = await soldoutRes.json();
@@ -863,7 +846,6 @@
                     }));
                 }
 
-                // 2. Search YouTube with the query
                 try {
                     const searchRes = await fetch(`${API_BASE}/youtube/search?q=${encodeURIComponent(query)}&type=video&maxResults=30&order=relevance`);
                     if (searchRes.ok) {
@@ -877,7 +859,6 @@
                     console.warn('YouTube search error:', e);
                 }
 
-                // Deduplicate
                 const seen = new Set();
                 results = results.filter(v => {
                     const key = v.source === 'youtube' ? v.videoId : v.id;
@@ -899,30 +880,23 @@
             }
         }
 
-        // ===== Apply filters (now case-insensitive includes) =====
+        // ===== FILTERS =====
         function applyFiltersAndRender() {
             let filtered = [...allVideos];
 
-            // Source filter
             if (currentSource !== 'all') {
                 filtered = filtered.filter(v => v.source === currentSource);
             }
-
-            // Category filter (case-insensitive partial match)
             if (currentCategory !== 'all') {
                 filtered = filtered.filter(v =>
                     v.category && v.category.toLowerCase().includes(currentCategory.toLowerCase())
                 );
             }
-
-            // Genre filter (case-insensitive partial match)
             if (currentGenre !== 'all') {
                 filtered = filtered.filter(v =>
                     v.genre && v.genre.toLowerCase().includes(currentGenre.toLowerCase())
                 );
             }
-
-            // Search filter (extra client-side safety, but we already filtered from API)
             if (searchQuery.trim()) {
                 const q = searchQuery.trim().toLowerCase();
                 filtered = filtered.filter(v =>
@@ -933,7 +907,6 @@
                 );
             }
 
-            // Sort by date (newest first)
             filtered.sort((a, b) => {
                 const dateA = new Date(a.createdAt || a.publishedAt || 0);
                 const dateB = new Date(b.createdAt || b.publishedAt || 0);
@@ -945,7 +918,7 @@
             updateResultCount(filteredVideos.length);
         }
 
-        // ===== Render videos =====
+        // ===== RENDER =====
         function renderVideos(videos) {
             const grid = document.getElementById('videoGrid');
 
@@ -970,20 +943,12 @@
                 const daysAgo = Math.floor((Date.now() - new Date(v.createdAt || v.publishedAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24));
 
                 let badge = '';
-                if (daysAgo <= 2) {
-                    badge = '<span class="badge badge-new">New</span>';
-                } else if (v.views > 100000) {
-                    badge = '<span class="badge badge-trending">Trending</span>';
-                }
+                if (daysAgo <= 2) badge = '<span class="badge badge-new">New</span>';
+                else if (v.views > 100000) badge = '<span class="badge badge-trending">Trending</span>';
 
-                // Show category badge
-                if (v.category === 'soundtrack') {
-                    badge += ' <span class="badge badge-soundtrack">Soundtrack</span>';
-                } else if (v.category === 'nollywood') {
-                    badge += ' <span class="badge badge-nollywood">Nollywood</span>';
-                } else if (v.category === 'trailer') {
-                    badge += ' <span class="badge badge-trailer">Trailer</span>';
-                }
+                if (v.category === 'soundtrack') badge += ' <span class="badge badge-soundtrack">Soundtrack</span>';
+                else if (v.category === 'nollywood') badge += ' <span class="badge badge-nollywood">Nollywood</span>';
+                else if (v.category === 'trailer') badge += ' <span class="badge badge-trailer">Trailer</span>';
 
                 const sourceClass = v.source === 'youtube' ? 'youtube' : 'soldout';
                 const sourceIcon = v.source === 'youtube' ? 'fab fa-youtube' : 'fas fa-video';
@@ -1012,13 +977,11 @@
                 `;
             }).join('');
 
-            // Click handler
             grid.querySelectorAll('.video-card').forEach(card => {
                 card.addEventListener('click', function () {
                     const id = this.dataset.id;
                     const source = this.dataset.source;
                     const video = allVideos.find(v => v.id == id || v.videoId == id);
-
                     if (video) {
                         if (source === 'youtube') {
                             window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank');
@@ -1031,12 +994,10 @@
             });
         }
 
-        // ===== Update result count =====
         function updateResultCount(count) {
             document.getElementById('resultCount').textContent = count;
         }
 
-        // ===== Reset filters =====
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('categoryFilter').value = 'all';
@@ -1055,9 +1016,9 @@
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function () {
             await loadSidebar();
-            if (typeof window.initHeader === 'function') window.initHeader();
+            // header.js auto-inits – no need to call initHeader manually
 
-            // Load default videos
+            // Load videos
             await fetchDefaultVideos();
 
             // --- Search with debounce ---
@@ -1075,7 +1036,6 @@
                 }, 500);
             });
 
-            // --- Filter events ---
             document.getElementById('categoryFilter').addEventListener('change', function () {
                 currentCategory = this.value;
                 applyFiltersAndRender();
@@ -1088,7 +1048,6 @@
 
             document.getElementById('clearFilters').addEventListener('click', resetFilters);
 
-            // --- Source toggle ---
             document.querySelectorAll('.source-toggle button').forEach(btn => {
                 btn.addEventListener('click', function () {
                     document.querySelectorAll('.source-toggle button').forEach(b => b.classList.remove('active'));
@@ -1098,7 +1057,7 @@
                 });
             });
 
-            // --- Update header avatar ---
+            // Update avatar
             const user = getUser();
             if (user && typeof window.setAvatar === 'function') {
                 window.setAvatar(user);

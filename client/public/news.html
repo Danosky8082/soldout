@@ -40,7 +40,6 @@
             letter-spacing: -0.5px;
         }
 
-        /* ===== PAGE HEADER ===== */
         .page-header {
             padding: 20px 0 16px;
             border-bottom: 1px solid #2a2a2a;
@@ -82,7 +81,6 @@
             margin-top: 4px;
         }
 
-        /* ===== FILTER BAR ===== */
         .filter-bar {
             display: flex;
             flex-wrap: wrap;
@@ -175,7 +173,6 @@
             background: #2a2a2a;
         }
 
-        /* ===== NEWS GRID ===== */
         .news-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -324,7 +321,6 @@
             gap: 4px;
         }
 
-        /* ===== LOADING ===== */
         .loading-state {
             display: flex;
             justify-content: center;
@@ -365,7 +361,6 @@
             font-size: 16px;
         }
 
-        /* ===== MOBILE ===== */
         @media (max-width: 1024px) {
             .news-grid {
                 grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -459,7 +454,7 @@
 
 <body>
     <div class="container">
-        <!-- ===== HEADER (same as other pages) ===== -->
+        <!-- HEADER -->
         <header>
             <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
                 <span></span><span></span><span></span>
@@ -494,7 +489,7 @@
             </div>
         </header>
 
-        <!-- ===== SIDEBAR CONTAINER (loaded dynamically) ===== -->
+        <!-- SIDEBAR CONTAINER (mobile) -->
         <div id="sidebar-container"></div>
 
         <!-- ===== PAGE CONTENT ===== -->
@@ -564,7 +559,7 @@
 
     <script>
         // ============================================================
-        // SIDEBAR LOAD (same as other pages)
+        // SIDEBAR LOAD
         // ============================================================
         async function loadSidebar() {
             try {
@@ -582,10 +577,7 @@
                         ham.classList.toggle('active', isOpen);
                         document.body.style.overflow = isOpen ? 'hidden' : '';
                     }
-                    ham.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        toggle();
-                    });
+                    ham.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
                     ov.addEventListener('click', function () { toggle(false); });
                     sb.querySelectorAll('a').forEach(function (a) {
                         a.addEventListener('click', function () { toggle(false); });
@@ -626,20 +618,17 @@
         let searchQuery = '';
         let searchTimeout = null;
 
-        // ===== CATEGORY KEYWORDS FOR AUTO-DETECTION =====
         function detectCategory(title, description) {
             const text = (title + ' ' + description).toLowerCase();
-
-            if (text.includes('soundtrack') || text.includes('score') || text.includes('album') || text.includes('song') &&
-                text.includes('movie')) {
+            if (text.includes('soundtrack') || text.includes('score') || text.includes('album') || (text.includes('song') && text.includes('movie'))) {
                 return 'soundtracks';
             }
-            if (text.includes('music') || text.includes('song') || text.includes('album') || text.includes('concert') || text
-                .includes('band') || text.includes('singer')) {
+            if (text.includes('music') || text.includes('song') || text.includes('album') || text.includes('concert') ||
+                text.includes('band') || text.includes('singer')) {
                 return 'music';
             }
-            if (text.includes('tv') || text.includes('series') || text.includes('episode') || text.includes('netflix') || text
-                .includes('hbo') || text.includes('streaming')) {
+            if (text.includes('tv') || text.includes('series') || text.includes('episode') || text.includes('netflix') ||
+                text.includes('hbo') || text.includes('streaming')) {
                 return 'tv';
             }
             if (text.includes('celebrity') || text.includes('star') || text.includes('actor') || text.includes('actress') ||
@@ -684,61 +673,68 @@
             return formatDate(dateStr);
         }
 
-        // ===== FALLBACK NEWS DATA (with picsum.photos for images) =====
+        // ===== FALLBACK =====
         function getFallbackNews() {
             const now = new Date().toISOString();
-            return [{
-                title: 'Avengers: Doomsday – First Look Revealed',
-                description: 'Marvel Studios has released the first official images from the highly anticipated Avengers: Doomsday, featuring Robert Downey Jr. as Doctor Doom.',
-                imageUrl: 'https://picsum.photos/seed/avengers/600/337',
-                source: 'Marvel Entertainment',
-                publishedAt: now,
-                url: '#',
-                category: 'movies'
-            }, {
-                title: 'Hans Zimmer to Score Christopher Nolan\'s Next Film',
-                description: 'The legendary composer Hans Zimmer is reuniting with director Christopher Nolan for his upcoming untitled project, set for release in 2026.',
-                imageUrl: 'https://picsum.photos/seed/hans/600/337',
-                source: 'Film Music Magazine',
-                publishedAt: now,
-                url: '#',
-                category: 'soundtracks'
-            }, {
-                title: 'Beyoncé Announces World Tour 2026',
-                description: 'Global superstar Beyoncé has announced a massive world tour for 2026, with stops in over 30 cities across North America, Europe, and Asia.',
-                imageUrl: 'https://picsum.photos/seed/beyonce/600/337',
-                source: 'Music Today',
-                publishedAt: now,
-                url: '#',
-                category: 'music'
-            }, {
-                title: 'The Last of Us Season 3 Gets Early Renewal',
-                description: 'HBO has renewed the critically acclaimed series The Last of Us for a third season, even before the premiere of Season 2.',
-                imageUrl: 'https://picsum.photos/seed/lastofus/600/337',
-                source: 'TV Insider',
-                publishedAt: now,
-                url: '#',
-                category: 'tv'
-            }, {
-                title: 'Tom Holland and Zendaya Engaged – Reports',
-                description: 'Sources confirm that Spider-Man co-stars Tom Holland and Zendaya are engaged after nearly five years of dating.',
-                imageUrl: 'https://picsum.photos/seed/tomz/600/337',
-                source: 'Celebrity Buzz',
-                publishedAt: now,
-                url: '#',
-                category: 'celebrity'
-            }, {
-                title: 'Oppenheimer 2? Christopher Nolan Teases Sequel',
-                description: 'In a recent interview, Christopher Nolan hinted at the possibility of a sequel to the Oscar-winning film Oppenheimer.',
-                imageUrl: 'https://picsum.photos/seed/oppenheimer/600/337',
-                source: 'Film Insider',
-                publishedAt: now,
-                url: '#',
-                category: 'movies'
-            }];
+            return [
+                {
+                    title: 'Avengers: Doomsday – First Look Revealed',
+                    description: 'Marvel Studios has released the first official images from the highly anticipated Avengers: Doomsday, featuring Robert Downey Jr. as Doctor Doom.',
+                    imageUrl: 'https://picsum.photos/seed/avengers/600/337',
+                    source: 'Marvel Entertainment',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'movies'
+                },
+                {
+                    title: 'Hans Zimmer to Score Christopher Nolan\'s Next Film',
+                    description: 'The legendary composer Hans Zimmer is reuniting with director Christopher Nolan for his upcoming untitled project, set for release in 2026.',
+                    imageUrl: 'https://picsum.photos/seed/hans/600/337',
+                    source: 'Film Music Magazine',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'soundtracks'
+                },
+                {
+                    title: 'Beyoncé Announces World Tour 2026',
+                    description: 'Global superstar Beyoncé has announced a massive world tour for 2026, with stops in over 30 cities across North America, Europe, and Asia.',
+                    imageUrl: 'https://picsum.photos/seed/beyonce/600/337',
+                    source: 'Music Today',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'music'
+                },
+                {
+                    title: 'The Last of Us Season 3 Gets Early Renewal',
+                    description: 'HBO has renewed the critically acclaimed series The Last of Us for a third season, even before the premiere of Season 2.',
+                    imageUrl: 'https://picsum.photos/seed/lastofus/600/337',
+                    source: 'TV Insider',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'tv'
+                },
+                {
+                    title: 'Tom Holland and Zendaya Engaged – Reports',
+                    description: 'Sources confirm that Spider-Man co-stars Tom Holland and Zendaya are engaged after nearly five years of dating.',
+                    imageUrl: 'https://picsum.photos/seed/tomz/600/337',
+                    source: 'Celebrity Buzz',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'celebrity'
+                },
+                {
+                    title: 'Oppenheimer 2? Christopher Nolan Teases Sequel',
+                    description: 'In a recent interview, Christopher Nolan hinted at the possibility of a sequel to the Oscar-winning film Oppenheimer.',
+                    imageUrl: 'https://picsum.photos/seed/oppenheimer/600/337',
+                    source: 'Film Insider',
+                    publishedAt: now,
+                    url: '#',
+                    category: 'movies'
+                }
+            ];
         }
 
-        // ===== FETCH NEWS FROM BACKEND PROXY =====
+        // ===== FETCH NEWS =====
         async function fetchNews() {
             const grid = document.getElementById('newsGrid');
             grid.innerHTML = `
@@ -749,18 +745,14 @@
             `;
 
             try {
-                // Try to fetch from backend proxy
                 const response = await fetch(`${API_BASE}/news/entertainment?limit=30`);
-
                 if (!response.ok) {
                     console.warn(`[News] API returned ${response.status}, using fallback`);
                     allArticles = getFallbackNews();
                     applyFiltersAndRender();
                     return;
                 }
-
                 const data = await response.json();
-
                 if (data && data.length > 0) {
                     console.log(`[News] Loaded ${data.length} articles from API`);
                     allArticles = data;
@@ -776,18 +768,14 @@
             }
         }
 
-        // ===== APPLY FILTERS =====
         function applyFiltersAndRender() {
             let filtered = [...allArticles];
 
-            // Category filter
             if (currentCategory !== 'all') {
                 filtered = filtered.filter(a =>
                     a.category && a.category.toLowerCase() === currentCategory.toLowerCase()
                 );
             }
-
-            // Search filter
             if (searchQuery.trim()) {
                 const q = searchQuery.trim().toLowerCase();
                 filtered = filtered.filter(a =>
@@ -797,11 +785,9 @@
                 );
             }
 
-            // Sort
             if (currentSort === 'date') {
                 filtered.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
             } else {
-                // Relevance: keep as is (from API order)
                 filtered.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
             }
 
@@ -810,7 +796,6 @@
             updateResultCount(filteredArticles.length);
         }
 
-        // ===== RENDER ARTICLES =====
         function renderArticles(articles) {
             const grid = document.getElementById('newsGrid');
 
@@ -852,26 +837,22 @@
                 `;
             }).join('');
 
-            // Click handler - open article in new tab
             grid.querySelectorAll('.news-card').forEach(card => {
                 card.addEventListener('click', function () {
                     const url = this.dataset.url;
                     if (url && url !== '#') {
                         window.open(url, '_blank');
                     } else {
-                        // If no URL, just show a message
                         alert('Full article link not available.');
                     }
                 });
             });
         }
 
-        // ===== UPDATE RESULT COUNT =====
         function updateResultCount(count) {
             document.getElementById('resultCount').textContent = count;
         }
 
-        // ===== RESET FILTERS =====
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('categoryFilter').value = 'all';
@@ -887,7 +868,7 @@
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function () {
             await loadSidebar();
-            if (typeof window.initHeader === 'function') window.initHeader();
+            // header.js auto-inits – no need to call initHeader manually
 
             // Set avatar if logged in
             const user = getCurrentUser();
@@ -895,10 +876,8 @@
                 window.setAvatar(user);
             }
 
-            // Load news
             await fetchNews();
 
-            // --- Search with debounce ---
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', function () {
                 searchQuery = this.value.trim();
@@ -908,22 +887,18 @@
                 }, 400);
             });
 
-            // --- Category filter ---
             document.getElementById('categoryFilter').addEventListener('change', function () {
                 currentCategory = this.value;
                 applyFiltersAndRender();
             });
 
-            // --- Sort filter ---
             document.getElementById('sortFilter').addEventListener('change', function () {
                 currentSort = this.value;
                 applyFiltersAndRender();
             });
 
-            // --- Clear filters ---
             document.getElementById('clearFilters').addEventListener('click', resetFilters);
 
-            // --- Home link ---
             document.getElementById('homeLink').addEventListener('click', function (e) {
                 e.preventDefault();
                 window.location.href = 'index.html';
