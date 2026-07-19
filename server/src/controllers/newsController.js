@@ -8,16 +8,17 @@ const NEWSAPI_BASE_URL = 'https://newsapi.org/v2';
  * GET /api/news/entertainment?limit=30&category=movies
  */
 const getEntertainmentNews = async (req, res) => {
+    console.log('[News] Request received:', req.query);
+
     try {
         const { limit = 30, category = 'entertainment' } = req.query;
 
         const promises = [];
-        let hasGNews = false;
-        let hasNewsAPI = false;
+        let results = [];
 
-        // ----- 1. GNews -----
+        // ----- 1. GNews (if API key exists) -----
         if (GNEWS_API_KEY) {
-            hasGNews = true;
+            console.log('[News] Fetching from GNews...');
             const gnewsQuery = category === 'all' || category === 'entertainment'
                 ? 'movie OR film OR music OR soundtrack OR celebrity OR tv show'
                 : category;
@@ -32,7 +33,10 @@ const getEntertainmentNews = async (req, res) => {
             const gnewsUrl = `${GNEWS_BASE_URL}/search?${gnewsParams.toString()}`;
             promises.push(
                 fetch(gnewsUrl)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error(`GNews HTTP ${res.status}`);
+                        return res.json();
+                    })
                     .then(data => {
                         if (data.errors) {
                             console.warn('[GNews] Error:', data.errors);
@@ -41,7 +45,7 @@ const getEntertainmentNews = async (req, res) => {
                         return (data.articles || []).map(a => ({
                             title: a.title || 'Untitled',
                             description: a.description || a.content || '',
-                            imageUrl: a.image || 'https://via.placeholder.com/600x337?text=No+Image',
+                            imageUrl: a.image || null,
                             source: a.source?.name || 'Unknown',
                             publishedAt: a.publishedAt || new Date().toISOString(),
                             url: a.url || '#',
@@ -54,15 +58,15 @@ const getEntertainmentNews = async (req, res) => {
                         return [];
                     })
             );
+        } else {
+            console.warn('[News] GNEWS_API_KEY not set');
         }
 
-        // ----- 2. NewsAPI -----
+        // ----- 2. NewsAPI (if API key exists) -----
         if (NEWSAPI_KEY) {
-            hasNewsAPI = true;
-            // NewsAPI categories: entertainment, music, movies, etc.
+            console.log('[News] Fetching from NewsAPI...');
             let newsApiCategory = 'entertainment';
             if (category !== 'all' && category !== 'entertainment') {
-                // Map our categories to NewsAPI's
                 const map = {
                     movies: 'entertainment',
                     music: 'entertainment',
@@ -82,7 +86,10 @@ const getEntertainmentNews = async (req, res) => {
             const newsApiUrl = `${NEWSAPI_BASE_URL}/top-headlines?${newsApiParams.toString()}`;
             promises.push(
                 fetch(newsApiUrl)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error(`NewsAPI HTTP ${res.status}`);
+                        return res.json();
+                    })
                     .then(data => {
                         if (data.status === 'error') {
                             console.warn('[NewsAPI] Error:', data.message);
@@ -91,7 +98,7 @@ const getEntertainmentNews = async (req, res) => {
                         return (data.articles || []).map(a => ({
                             title: a.title || 'Untitled',
                             description: a.description || a.content || '',
-                            imageUrl: a.urlToImage || 'https://via.placeholder.com/600x337?text=No+Image',
+                            imageUrl: a.urlToImage || null,
                             source: a.source?.name || 'Unknown',
                             publishedAt: a.publishedAt || new Date().toISOString(),
                             url: a.url || '#',
@@ -104,20 +111,24 @@ const getEntertainmentNews = async (req, res) => {
                         return [];
                     })
             );
+        } else {
+            console.warn('[News] NEWSAPI_KEY not set');
         }
 
         // ----- 3. Wait for all promises -----
-        let results = [];
         if (promises.length > 0) {
             const allResults = await Promise.all(promises);
             results = allResults.flat();
-        } else {
-            // No API keys – use fallback
-            console.warn('[News] No API keys provided, using fallback data');
+            console.log(`[News] Fetched ${results.length} articles from APIs`);
+        }
+
+        // ----- 4. If no results from APIs, use fallback -----
+        if (results.length === 0) {
+            console.log('[News] No results from APIs, using fallback');
             results = getFallbackNews();
         }
 
-        // ----- 4. Deduplicate by title (case-insensitive) -----
+        // ----- 5. Deduplicate by title (case-insensitive) -----
         const seen = new Set();
         const deduped = results.filter(a => {
             const key = (a.title || '').toLowerCase().trim();
@@ -126,16 +137,16 @@ const getEntertainmentNews = async (req, res) => {
             return true;
         });
 
-        // ----- 5. Sort by date (newest first) -----
+        // ----- 6. Sort by date (newest first) -----
         deduped.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
 
-        // ----- 6. Limit results -----
+        // ----- 7. Limit results -----
         const finalResults = deduped.slice(0, parseInt(limit) || 30);
 
+        console.log(`[News] Returning ${finalResults.length} articles`);
         res.json(finalResults);
     } catch (error) {
         console.error('[News] Combined error:', error);
-        // Always return fallback on error
         res.status(200).json(getFallbackNews());
     }
 };
@@ -173,7 +184,7 @@ function getFallbackNews() {
         {
             title: 'Avengers: Doomsday – First Look Revealed',
             description: 'Marvel Studios has released the first official images from the highly anticipated Avengers: Doomsday.',
-            imageUrl: 'https://via.placeholder.com/600x337?text=Avengers+Doomsday',
+            imageUrl: 'https://picsum.photos/600/337?random=1',
             source: 'Marvel Entertainment',
             publishedAt: now,
             url: '#',
@@ -182,7 +193,7 @@ function getFallbackNews() {
         {
             title: 'Hans Zimmer to Score Christopher Nolan\'s Next Film',
             description: 'The legendary composer is reuniting with director Christopher Nolan for his upcoming untitled project.',
-            imageUrl: 'https://via.placeholder.com/600x337?text=Hans+Zimmer',
+            imageUrl: 'https://picsum.photos/600/337?random=2',
             source: 'Film Music Magazine',
             publishedAt: now,
             url: '#',
@@ -191,7 +202,7 @@ function getFallbackNews() {
         {
             title: 'Beyoncé Announces World Tour 2026',
             description: 'Global superstar Beyoncé has announced a massive world tour for 2026.',
-            imageUrl: 'https://via.placeholder.com/600x337?text=Beyonce+Tour',
+            imageUrl: 'https://picsum.photos/600/337?random=3',
             source: 'Music Today',
             publishedAt: now,
             url: '#',
@@ -200,7 +211,7 @@ function getFallbackNews() {
         {
             title: 'The Last of Us Season 3 Gets Early Renewal',
             description: 'HBO has renewed the critically acclaimed series The Last of Us for a third season.',
-            imageUrl: 'https://via.placeholder.com/600x337?text=The+Last+of+Us',
+            imageUrl: 'https://picsum.photos/600/337?random=4',
             source: 'TV Insider',
             publishedAt: now,
             url: '#',
@@ -209,7 +220,7 @@ function getFallbackNews() {
         {
             title: 'Tom Holland and Zendaya Engaged – Reports',
             description: 'Spider-Man co-stars Tom Holland and Zendaya are engaged after nearly five years of dating.',
-            imageUrl: 'https://via.placeholder.com/600x337?text=Tom+Zendaya',
+            imageUrl: 'https://picsum.photos/600/337?random=5',
             source: 'Celebrity Buzz',
             publishedAt: now,
             url: '#',

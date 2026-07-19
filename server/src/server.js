@@ -9,15 +9,14 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
-const newsRoutes = require('./routes/newsRoutes');
-
 
 // ✅ Routes
 const videoRoutes = require('./routes/videoRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const youtubeRoutes = require('./routes/youtubeRoutes'); // ✅ import here
+const youtubeRoutes = require('./routes/youtubeRoutes');
+const newsRoutes = require('./routes/newsRoutes');   // ✅ import
 
 dotenv.config();
 connectDB();
@@ -46,7 +45,6 @@ const CLIENT_PUBLIC_DIR = path.join(PROJECT_ROOT, 'client', 'public');
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// ✅ EXPLICIT CORS – guaranteed to work
 app.use((req, res, next) => {
     const allowedOrigins = [
         'https://soldout-murex.vercel.app',
@@ -219,10 +217,16 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/interactions', interactionRoutes);
 
 // ============================================================
-//  YOUTUBE API (placed BEFORE catch‑all)
+//  YOUTUBE API
 // ============================================================
 app.use('/api/youtube', youtubeRoutes);
 console.log('✅ YouTube routes mounted.');
+
+// ============================================================
+//  NEWS API  <-- MOVED HERE (BEFORE CATCH-ALL)
+// ============================================================
+app.use('/api/news', newsRoutes);
+console.log('✅ News routes mounted.');
 
 // ============================================================
 //  USER ROUTES (profile, update, picture)
@@ -383,10 +387,6 @@ app.use((err, req, res, next) => {
     console.error('Server error:', err.stack);
     res.status(500).json({ error: 'Internal Server Error' });
 });
-
-//News thru
-app.use('/api/news', newsRoutes);
-console.log('✅ News routes mounted.');
 
 // ============================================================
 //  START SERVER
