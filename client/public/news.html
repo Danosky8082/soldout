@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entertainment News - Soldout.com</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/global.css" />
+    <link rel="icon" type="image/png" href="/soldout.png" />
+    <script src="header.js" defer></script>
+    <style>
+        /* ===== GLOBAL ===== */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0f0f0f;
+            color: #f1f1f1;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .logo img {
+            height: 32px;
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .logo span {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header {
+            padding: 20px 0 16px;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .page-header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin: 0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-header h1 i {
+            color: #f59e0b;
+        }
+
+        .page-header .badge-news {
+            background: #f59e0b;
+            color: #000;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 12px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+
+        .page-header .subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .filter-bar .search-wrap {
+            flex: 1;
+            min-width: 180px;
+            display: flex;
+            align-items: center;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 30px;
+            padding: 0 14px;
+            transition: 0.2s;
+        }
+
+        .filter-bar .search-wrap:focus-within {
+            border-color: #f59e0b;
+        }
+
+        .filter-bar .search-wrap input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 8px 8px 8px 0;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .filter-bar .search-wrap input::placeholder {
+            color: #555;
+        }
+
+        .filter-bar .search-wrap i {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .filter-bar select {
+            background: #0f0f0f;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 30px;
+            padding: 8px 16px 8px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            transition: 0.2s;
+            min-width: 130px;
+        }
+
+        .filter-bar select:focus {
+            border-color: #f59e0b;
+        }
+
+        .filter-bar .filter-results {
+            color: #888;
+            font-size: 13px;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .filter-bar .filter-results span {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .filter-bar .clear-filter {
+            background: transparent;
+            color: #888;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 16px;
+            transition: 0.2s;
+        }
+
+        .filter-bar .clear-filter:hover {
+            color: #fff;
+            background: #2a2a2a;
+        }
+
+        /* ===== NEWS GRID ===== */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .news-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card:hover {
+            transform: translateY(-4px);
+            border-color: #333;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .news-card .thumb-wrap {
+            position: relative;
+            padding-top: 56.25%;
+            background: #0a0a0a;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .news-card .thumb-wrap img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .news-card:hover .thumb-wrap img {
+            transform: scale(1.03);
+        }
+
+        .news-card .thumb-wrap .category-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 12px;
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .cat-movies {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .cat-music {
+            background: #8b5cf6;
+            color: #fff;
+        }
+
+        .cat-soundtracks {
+            background: #06b6d4;
+            color: #fff;
+        }
+
+        .cat-tv {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .cat-celebrity {
+            background: #ec4899;
+            color: #fff;
+        }
+
+        .cat-general {
+            background: #6b7280;
+            color: #fff;
+        }
+
+        .news-card .info {
+            padding: 14px 16px 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card .info .title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #fff;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .news-card .info .description {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            line-clamp: 3;
+            overflow: hidden;
+            flex: 1;
+            margin-bottom: 10px;
+        }
+
+        .news-card .info .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: auto;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 10px;
+        }
+
+        .news-card .info .meta .source {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .news-card .info .meta .source i {
+            font-size: 12px;
+        }
+
+        .news-card .info .meta .date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== LOADING ===== */
+        .loading-state {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 0;
+            gap: 12px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .loading-state i {
+            font-size: 28px;
+            color: #f59e0b;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            grid-column: 1 / -1;
+        }
+
+        .no-results i {
+            font-size: 48px;
+            color: #2a2a2a;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .no-results p {
+            font-size: 16px;
+        }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 1024px) {
+            .news-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 12px 0 12px;
+            }
+
+            .page-header h1 {
+                font-size: 20px;
+            }
+
+            .page-header .subtitle {
+                font-size: 13px;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                padding: 12px 14px;
+            }
+
+            .filter-bar .search-wrap {
+                width: 100%;
+            }
+
+            .filter-bar .filter-results {
+                margin-left: 0;
+                text-align: center;
+                font-size: 12px;
+            }
+
+            .filter-bar select {
+                width: 100%;
+                padding: 8px 14px;
+            }
+
+            .filter-bar .clear-filter {
+                align-self: flex-end;
+            }
+
+            .news-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 14px;
+            }
+
+            .news-card .info .title {
+                font-size: 14px;
+            }
+
+            .news-card .info .description {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 8px;
+            }
+
+            .news-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .news-card .info {
+                padding: 10px 12px 12px;
+            }
+
+            .news-card .info .title {
+                font-size: 14px;
+            }
+
+            .page-header h1 {
+                font-size: 18px;
+            }
+
+            .filter-bar {
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- ===== HEADER (same as other pages) ===== -->
+        <header>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle sidebar">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="logo" id="homeLink">
+                <img src="/soldout.png" alt="Soldout.com" />
+                <span>Soldout.com</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="gallery.html">Movies</a>
+                <a href="series.html">TV Shows</a>
+                <a href="new.html">New Releases</a>
+                <a href="soundtracks.html">Soundtracks</a>
+                <a href="news.html" class="active">News</a>
+            </div>
+            <div class="user-actions">
+                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-info" id="userInfo" style="position: relative; cursor: pointer;">
+                    <div class="user-avatar-container" id="userAvatar">
+                        <i class="fas fa-user-circle user-icon"></i>
+                    </div>
+                    <span class="user-name" id="userNameDisplay"></span>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="profile.html"><i class="fas fa-user"></i> Account</a>
+                        <a href="upload.html" id="uploadLink"><i class="fas fa-upload"></i> Upload</a>
+                        <a href="wishlist.html"><i class="fas fa-heart"></i> My Wishlist</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== SIDEBAR CONTAINER (loaded dynamically) ===== -->
+        <div id="sidebar-container"></div>
+
+        <!-- ===== PAGE CONTENT ===== -->
+        <div class="page-header">
+            <div>
+                <h1>
+                    <i class="fas fa-newspaper"></i> Entertainment News
+                    <span class="badge-news">Latest</span>
+                </h1>
+                <div class="subtitle">Stay updated with the latest movies, music, soundtracks, and celebrity news</div>
+            </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="filter-bar" id="filterBar">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search news..." />
+            </div>
+
+            <select id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="movies">Movies</option>
+                <option value="music">Music</option>
+                <option value="soundtracks">Soundtracks</option>
+                <option value="tv">TV Shows</option>
+                <option value="celebrity">Celebrity</option>
+            </select>
+
+            <select id="sortFilter">
+                <option value="date">Sort by Date</option>
+                <option value="relevance">Sort by Relevance</option>
+            </select>
+
+            <button class="clear-filter" id="clearFilters">
+                <i class="fas fa-times"></i> Clear
+            </button>
+
+            <div class="filter-results" id="filterResults">
+                Showing <span id="resultCount">0</span> articles
+            </div>
+        </div>
+
+        <!-- NEWS GRID -->
+        <div class="news-grid" id="newsGrid">
+            <div class="loading-state">
+                <i class="fas fa-spinner"></i>
+                Loading latest entertainment news...
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="footer-links">
+                <a href="admin.html">
+                    <font color="green">Admin</font>
+                </a> |
+                <a href="#">About Us</a> |
+                <a href="#">Contact</a> |
+                <a href="#">Privacy Policy</a> |
+                <a href="#">Terms of Service</a> |
+                <a href="#">Help Center</a>
+            </div>
+            <p class="copyright">&copy; 2026 Soldout.com. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================================
+        // SIDEBAR LOAD (same as other pages)
+        // ============================================================
+        async function loadSidebar() {
+            try {
+                const res = await fetch('sidebar.html');
+                const html = await res.text();
+                document.getElementById('sidebar-container').innerHTML = html;
+                const ham = document.getElementById('hamburgerBtn');
+                const sb = document.getElementById('sidebarMobile');
+                const ov = document.getElementById('sidebarOverlay');
+                if (ham && sb && ov) {
+                    function toggle(open) {
+                        const isOpen = open !== undefined ? open : !sb.classList.contains('open');
+                        sb.classList.toggle('open', isOpen);
+                        ov.classList.toggle('active', isOpen);
+                        ham.classList.toggle('active', isOpen);
+                        document.body.style.overflow = isOpen ? 'hidden' : '';
+                    }
+                    ham.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggle();
+                    });
+                    ov.addEventListener('click', function () { toggle(false); });
+                    sb.querySelectorAll('a').forEach(function (a) {
+                        a.addEventListener('click', function () { toggle(false); });
+                    });
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && sb.classList.contains('open')) toggle(false);
+                    });
+                    window.addEventListener('resize', function () {
+                        if (window.innerWidth > 992 && sb.classList.contains('open')) toggle(false);
+                    });
+                }
+            } catch (err) {
+                console.error('Sidebar error:', err);
+            }
+        }
+
+        // ============================================================
+        // NEWS LOGIC
+        // ============================================================
+        const API_BASE = 'https://soldout-c6ij.onrender.com/api';
+        const STATIC_BASE = 'https://soldout-c6ij.onrender.com';
+
+        function getAbsoluteUrl(url) {
+            if (!url) return null;
+            if (url.startsWith('http://') || url.startsWith('https://')) return url;
+            const clean = url.startsWith('/') ? url.slice(1) : url;
+            return `${STATIC_BASE}/${clean}`;
+        }
+
+        function getCurrentUser() {
+            return window.getCurrentUser ? window.getCurrentUser() : JSON.parse(localStorage.getItem('currentUser') || 'null');
+        }
+
+        let allArticles = [];
+        let filteredArticles = [];
+        let currentCategory = 'all';
+        let currentSort = 'date';
+        let searchQuery = '';
+        let searchTimeout = null;
+
+        // ===== CATEGORY KEYWORDS FOR AUTO-DETECTION =====
+        function detectCategory(title, description) {
+            const text = (title + ' ' + description).toLowerCase();
+
+            if (text.includes('soundtrack') || text.includes('score') || text.includes('album') || text.includes('song') &&
+                text.includes('movie')) {
+                return 'soundtracks';
+            }
+            if (text.includes('music') || text.includes('song') || text.includes('album') || text.includes('concert') || text
+                .includes('band') || text.includes('singer')) {
+                return 'music';
+            }
+            if (text.includes('tv') || text.includes('series') || text.includes('episode') || text.includes('netflix') || text
+                .includes('hbo') || text.includes('streaming')) {
+                return 'tv';
+            }
+            if (text.includes('celebrity') || text.includes('star') || text.includes('actor') || text.includes('actress') ||
+                text.includes('rumor') || text.includes('dating') || text.includes('scandal')) {
+                return 'celebrity';
+            }
+            if (text.includes('movie') || text.includes('film') || text.includes('director') || text.includes('cinema')) {
+                return 'movies';
+            }
+            return 'general';
+        }
+
+        function getCategoryBadgeClass(category) {
+            const map = {
+                movies: 'cat-movies',
+                music: 'cat-music',
+                soundtracks: 'cat-soundtracks',
+                tv: 'cat-tv',
+                celebrity: 'cat-celebrity',
+                general: 'cat-general'
+            };
+            return map[category] || 'cat-general';
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function getTimeAgo(dateStr) {
+            const now = Date.now();
+            const then = new Date(dateStr).getTime();
+            const diff = now - then;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return formatDate(dateStr);
+        }
+
+        // ===== FALLBACK NEWS DATA =====
+        function getFallbackNews() {
+            const now = new Date().toISOString();
+            return [{
+                title: 'Avengers: Doomsday – First Look Revealed',
+                description: 'Marvel Studios has released the first official images from the highly anticipated Avengers: Doomsday, featuring Robert Downey Jr. as Doctor Doom.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=Avengers+Doomsday',
+                source: 'Marvel Entertainment',
+                publishedAt: now,
+                url: '#',
+                category: 'movies'
+            }, {
+                title: 'Hans Zimmer to Score Christopher Nolan\'s Next Film',
+                description: 'The legendary composer Hans Zimmer is reuniting with director Christopher Nolan for his upcoming untitled project, set for release in 2026.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=Hans+Zimmer',
+                source: 'Film Music Magazine',
+                publishedAt: now,
+                url: '#',
+                category: 'soundtracks'
+            }, {
+                title: 'Beyoncé Announces World Tour 2026',
+                description: 'Global superstar Beyoncé has announced a massive world tour for 2026, with stops in over 30 cities across North America, Europe, and Asia.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=Beyonce+Tour',
+                source: 'Music Today',
+                publishedAt: now,
+                url: '#',
+                category: 'music'
+            }, {
+                title: 'The Last of Us Season 3 Gets Early Renewal',
+                description: 'HBO has renewed the critically acclaimed series The Last of Us for a third season, even before the premiere of Season 2.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=The+Last+of+Us',
+                source: 'TV Insider',
+                publishedAt: now,
+                url: '#',
+                category: 'tv'
+            }, {
+                title: 'Tom Holland and Zendaya Engaged – Reports',
+                description: 'Sources confirm that Spider-Man co-stars Tom Holland and Zendaya are engaged after nearly five years of dating.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=Tom+Zendaya',
+                source: 'Celebrity Buzz',
+                publishedAt: now,
+                url: '#',
+                category: 'celebrity'
+            }, {
+                title: 'Oppenheimer 2? Christopher Nolan Teases Sequel',
+                description: 'In a recent interview, Christopher Nolan hinted at the possibility of a sequel to the Oscar-winning film Oppenheimer.',
+                imageUrl: 'https://via.placeholder.com/600x337?text=Oppenheimer+Sequel',
+                source: 'Film Insider',
+                publishedAt: now,
+                url: '#',
+                category: 'movies'
+            }];
+        }
+
+        // ===== FETCH NEWS FROM BACKEND PROXY =====
+        async function fetchNews() {
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner"></i>
+                    Loading entertainment news...
+                </div>
+            `;
+
+            try {
+                // Try to fetch from backend proxy
+                const res = await fetch(`${API_BASE}/news/entertainment?limit=30`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        allArticles = data;
+                        applyFiltersAndRender();
+                        return;
+                    }
+                }
+                // Fallback to mock data
+                console.warn('Using fallback news data');
+                allArticles = getFallbackNews();
+                applyFiltersAndRender();
+            } catch (e) {
+                console.error('News fetch error:', e);
+                // Use fallback
+                allArticles = getFallbackNews();
+                applyFiltersAndRender();
+            }
+        }
+
+        // ===== APPLY FILTERS =====
+        function applyFiltersAndRender() {
+            let filtered = [...allArticles];
+
+            // Category filter
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(a =>
+                    a.category && a.category.toLowerCase() === currentCategory.toLowerCase()
+                );
+            }
+
+            // Search filter
+            if (searchQuery.trim()) {
+                const q = searchQuery.trim().toLowerCase();
+                filtered = filtered.filter(a =>
+                    (a.title || '').toLowerCase().includes(q) ||
+                    (a.description || '').toLowerCase().includes(q) ||
+                    (a.source || '').toLowerCase().includes(q)
+                );
+            }
+
+            // Sort
+            if (currentSort === 'date') {
+                filtered.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+            } else {
+                // Relevance: keep as is (from API order)
+                // For fallback, we'll keep date order
+                filtered.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+            }
+
+            filteredArticles = filtered;
+            renderArticles(filteredArticles);
+            updateResultCount(filteredArticles.length);
+        }
+
+        // ===== RENDER ARTICLES =====
+        function renderArticles(articles) {
+            const grid = document.getElementById('newsGrid');
+
+            if (!articles || articles.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-newspaper"></i>
+                        <p>No news articles found matching your filters.</p>
+                        <button class="clear-filter" onclick="resetFilters()" style="background:#2a2a2a;color:#fff;border:none;padding:8px 20px;border-radius:30px;cursor:pointer;font-size:14px;margin-top:8px;">
+                            <i class="fas fa-undo"></i> Reset Filters
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = articles.map(article => {
+                const category = article.category || 'general';
+                const badgeClass = getCategoryBadgeClass(category);
+                const displayCategory = category.charAt(0).toUpperCase() + category.slice(1);
+                const thumb = article.imageUrl || 'https://via.placeholder.com/600x337?text=No+Image';
+                const timeAgo = getTimeAgo(article.publishedAt);
+
+                return `
+                    <div class="news-card" data-url="${article.url || '#'}">
+                        <div class="thumb-wrap">
+                            <img src="${thumb}" alt="${article.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/600x337?text=No+Image'" />
+                            <span class="category-badge ${badgeClass}">${displayCategory}</span>
+                        </div>
+                        <div class="info">
+                            <div class="title">${article.title || 'Untitled'}</div>
+                            <div class="description">${article.description || 'No description available.'}</div>
+                            <div class="meta">
+                                <span class="source"><i class="fas fa-globe"></i> ${article.source || 'Unknown'}</span>
+                                <span class="date"><i class="fas fa-clock"></i> ${timeAgo}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Click handler - open article in new tab
+            grid.querySelectorAll('.news-card').forEach(card => {
+                card.addEventListener('click', function () {
+                    const url = this.dataset.url;
+                    if (url && url !== '#') {
+                        window.open(url, '_blank');
+                    } else {
+                        // If no URL, just show a message
+                        alert('Full article link not available.');
+                    }
+                });
+            });
+        }
+
+        // ===== UPDATE RESULT COUNT =====
+        function updateResultCount(count) {
+            document.getElementById('resultCount').textContent = count;
+        }
+
+        // ===== RESET FILTERS =====
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = 'all';
+            document.getElementById('sortFilter').value = 'date';
+            currentCategory = 'all';
+            currentSort = 'date';
+            searchQuery = '';
+            applyFiltersAndRender();
+        }
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadSidebar();
+            if (typeof window.initHeader === 'function') window.initHeader();
+
+            // Set avatar if logged in
+            const user = getCurrentUser();
+            if (user && typeof window.setAvatar === 'function') {
+                window.setAvatar(user);
+            }
+
+            // Load news
+            await fetchNews();
+
+            // --- Search with debounce ---
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function () {
+                searchQuery = this.value.trim();
+                if (searchTimeout) clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    applyFiltersAndRender();
+                }, 400);
+            });
+
+            // --- Category filter ---
+            document.getElementById('categoryFilter').addEventListener('change', function () {
+                currentCategory = this.value;
+                applyFiltersAndRender();
+            });
+
+            // --- Sort filter ---
+            document.getElementById('sortFilter').addEventListener('change', function () {
+                currentSort = this.value;
+                applyFiltersAndRender();
+            });
+
+            // --- Clear filters ---
+            document.getElementById('clearFilters').addEventListener('click', resetFilters);
+
+            // --- Home link ---
+            document.getElementById('homeLink').addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+
+</html>

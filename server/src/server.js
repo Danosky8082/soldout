@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
+const newsRoutes = require('./routes/newsRoutes');
+
 
 // ✅ Routes
 const videoRoutes = require('./routes/videoRoutes');
@@ -381,6 +383,10 @@ app.use((err, req, res, next) => {
     console.error('Server error:', err.stack);
     res.status(500).json({ error: 'Internal Server Error' });
 });
+
+//News thru
+app.use('/api/news', newsRoutes);
+console.log('✅ News routes mounted.');
 
 // ============================================================
 //  START SERVER
