@@ -30,6 +30,12 @@ const adminLogin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    });
+
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
@@ -286,7 +292,12 @@ const unbanUser = async (req, res) => {
 const getAdmins = async (req, res) => {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+      where: { 
+        OR: [
+          { role: 'ADMIN' },
+          { role: 'SUPER_ADMIN' }
+        ]
+      },
       select: {
         id: true,
         firstName: true,
@@ -330,17 +341,96 @@ const getAdminById = async (req, res) => {
   }
 };
 
+// ===== UPDATE ADMIN (NEW) =====
+const updateAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, role } = req.body;
+    
+    // Validate required fields
+    if (!firstName || !lastName || !email || !role) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Validate role
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be ADMIN or SUPER_ADMIN' });
+    }
+
+    // Check if admin exists
+    const existingAdmin = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+      select: { role: true, email: true }
+    });
+    
+    if (!existingAdmin) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    
+    // Check if email is already taken by another user
+    if (email !== existingAdmin.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email: email }
+      });
+      if (emailExists) {
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+    }
+    
+    // Prevent changing SUPER_ADMIN role if current user is not SUPER_ADMIN
+    if (existingAdmin.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Cannot modify super admin' });
+    }
+    
+    // Update admin
+    const updatedAdmin = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { 
+        firstName, 
+        lastName, 
+        email, 
+        role 
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        profilePicture: true,
+        createdAt: true,
+        lastLogin: true
+      }
+    });
+    
+    res.json(updatedAdmin);
+  } catch (error) {
+    console.error('Update admin error:', error);
+    res.status(500).json({ error: 'Failed to update admin' });
+  }
+};
+
 const deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Cannot delete self
+    if (parseInt(id) === req.user.id) {
+      return res.status(403).json({ error: 'Cannot delete your own account' });
+    }
+    
     const admin = await prisma.user.findUnique({
       where: { id: parseInt(id) },
       select: { role: true }
     });
+    
     if (!admin) return res.status(404).json({ error: 'Admin not found' });
-    if (admin.role === 'SUPER_ADMIN') {
+    
+    // Prevent deleting SUPER_ADMIN unless the deleter is also SUPER_ADMIN
+    if (admin.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Cannot delete super admin' });
     }
+    
     await prisma.user.delete({ where: { id: parseInt(id) } });
     res.json({ message: 'Admin removed successfully' });
   } catch (error) {
@@ -352,14 +442,25 @@ const deleteAdmin = async (req, res) => {
 const registerAdmin = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role } = req.body;
+    
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password || !role) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    // Validate role
     if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) {
       return res.status(400).json({ error: 'Invalid role. Must be ADMIN or SUPER_ADMIN' });
     }
 
+    // Check if email already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ error: 'Email already in use' });
 
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
+    
+    // Create admin user
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -374,10 +475,16 @@ const registerAdmin = async (req, res) => {
         firstName: true,
         lastName: true,
         email: true,
-        role: true
+        role: true,
+        profilePicture: true,
+        createdAt: true
       }
     });
-    res.status(201).json({ message: 'Admin registered successfully', user });
+    
+    res.status(201).json({ 
+      message: 'Admin registered successfully', 
+      user 
+    });
   } catch (error) {
     console.error('Register admin error:', error);
     res.status(500).json({ error: 'Failed to register admin' });
@@ -388,6 +495,10 @@ const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const adminId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
 
     const admin = await prisma.user.findUnique({
       where: { id: adminId },
@@ -446,7 +557,7 @@ const updateVideo = async (req, res) => {
 // EXPORTS
 // ============================================================
 module.exports = {
-  adminLogin,          // ✅ added for admin authentication
+  adminLogin,
   getAdminDashboard,
   getPendingVideos,
   getApprovedVideos,
@@ -463,8 +574,9 @@ module.exports = {
   unbanUser,
   getAdmins,
   getAdminById,
+  updateAdmin,      // ✅ Added
   deleteAdmin,
-  changePassword,
   registerAdmin,
+  changePassword,
   updateVideo
 };

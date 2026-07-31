@@ -35,10 +35,20 @@ router.put('/users/:id', adminController.updateUser);
 router.post('/users/:id/ban', adminController.banUser);
 router.post('/users/:id/unban', adminController.unbanUser);
 
-// Admins
+// ===== ADMINS =====
+// Get all admins
 router.get('/admins', adminController.getAdmins);
+
+// Get admin by ID
 router.get('/admins/:id', adminController.getAdminById);
+
+// Update admin (requires super admin)
+router.put('/admins/:id', verifySuperAdmin, adminController.updateAdmin);
+
+// Delete admin (requires super admin)
 router.delete('/admins/:id', verifySuperAdmin, adminController.deleteAdmin);
+
+// Register new admin (requires super admin)
 router.post('/register', verifySuperAdmin, adminController.registerAdmin);
 
 // Profile picture upload (for admin)
@@ -60,7 +70,7 @@ router.post('/profile-picture', upload.single('profilePicture'), async (req, res
 // Change password
 router.post('/change-password', adminController.changePassword);
 
-//Admin video edit
+// Admin video edit
 router.put('/videos/:id', adminController.updateVideo);
 
 module.exports = router;
