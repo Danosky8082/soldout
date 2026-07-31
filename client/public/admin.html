@@ -850,12 +850,10 @@
                 --sidebar-width: 280px;
             }
 
-            /* Mobile menu button */
             .mobile-menu-toggle {
                 display: flex !important;
             }
 
-            /* Sidebar becomes slide-out menu */
             .admin-sidebar {
                 position: fixed;
                 top: 0;
@@ -876,7 +874,6 @@
                 display: block;
             }
 
-            /* Main container takes full width */
             .admin-container {
                 grid-template-columns: 1fr;
             }
@@ -885,7 +882,6 @@
                 padding-top: 0;
             }
 
-            /* Header adjustments */
             .admin-header {
                 padding: 0.8rem 1rem;
                 flex-wrap: wrap;
@@ -910,7 +906,6 @@
                 font-size: 0.8rem;
             }
 
-            /* Dashboard cards - 2 columns */
             .dashboard-cards {
                 grid-template-columns: 1fr 1fr;
                 gap: 0.8rem;
@@ -935,7 +930,6 @@
                 right: 0.8rem;
             }
 
-            /* Tables */
             .admin-table-container {
                 margin: 0 0.5rem 1rem;
                 padding: 0.5rem;
@@ -962,7 +956,6 @@
                 height: 1.8rem;
             }
 
-            /* Buttons in tables */
             .action-btn {
                 font-size: 0.65rem;
                 padding: 0.2rem 0.4rem;
@@ -977,7 +970,6 @@
                 padding: 0.4rem 0.8rem;
             }
 
-            /* Modal */
             .modal-content {
                 max-width: 100%;
                 margin: 10px;
@@ -1002,13 +994,11 @@
                 padding: 0.6rem 0.8rem;
             }
 
-            /* Login modal */
             .login-modal {
                 padding: 1.5rem;
                 margin: 0 1rem;
             }
 
-            /* Alerts */
             .alert {
                 max-width: calc(100% - 2rem);
                 top: 0.8rem;
@@ -1128,7 +1118,6 @@
                 padding: 0.15rem 0.4rem;
             }
 
-            /* Login modal on small phones */
             .login-modal {
                 padding: 1.2rem;
             }
@@ -1577,6 +1566,7 @@
                     <option value="USER">User</option>
                     <option value="MODERATOR">Moderator</option>
                     <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
                 </select>
             </div>
             <div class="modal-actions">
@@ -1643,7 +1633,7 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script>
         // ============================================================
-        //  ADMIN DASHBOARD – WITH ABSOLUTE URL SUPPORT & EDIT VIDEO
+        //  ADMIN DASHBOARD – COMPLETE VERSION
         // ============================================================
 
         const API_BASE_URL = 'https://soldout-c6ij.onrender.com/api';
@@ -1706,6 +1696,39 @@
         }
 
         // ============================================================
+        //  TOGGLE BAN USER - FIXED
+        // ============================================================
+        async function toggleBanUser(userId, isBanned) {
+            const action = isBanned ? 'unban' : 'ban';
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                try {
+                    const endpoint = isBanned ?
+                        `${API_BASE_URL}/admin/users/${userId}/unban` :
+                        `${API_BASE_URL}/admin/users/${userId}/ban`;
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Failed to ${action} user`);
+                    }
+
+                    showAlert(`User ${action}ned successfully!`);
+                    refreshTables();
+                } catch (error) {
+                    console.error('Ban toggle error:', error);
+                    showAlert(error.message || `Failed to ${action} user`, 'danger');
+                }
+            }
+        }
+
+        // ============================================================
         //  MOBILE MENU TOGGLE
         // ============================================================
         function initMobileMenu() {
@@ -1728,7 +1751,6 @@
                 menuToggle.addEventListener('click', toggleMenu);
                 overlay.addEventListener('click', toggleMenu);
 
-                // Close menu when clicking a menu item (on mobile)
                 document.querySelectorAll('.admin-menu-item').forEach(item => {
                     item.addEventListener('click', function () {
                         if (window.innerWidth <= 768) {
@@ -1740,7 +1762,6 @@
                     });
                 });
 
-                // Close menu on window resize to desktop
                 window.addEventListener('resize', function () {
                     if (window.innerWidth > 768) {
                         sidebar.classList.remove('open');
@@ -2131,23 +2152,38 @@
                 initComplete: function () { hideLoading(); }
             });
 
-            // Users Table
+            // Users Table - Updated with toggleBanUser
             safeInitDataTable('#usersTable', {
                 ajax: {
                     url: `${API_BASE_URL}/admin/users`,
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
                     dataSrc: '',
                     error: function (xhr, status, error) {
-                        console.error('Users API Error:', { status: xhr.status, statusText: xhr.statusText, responseText: xhr.responseText });
+                        console.error('Users API Error:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            responseText: xhr.responseText
+                        });
+
                         let errorMessage = 'Failed to load users data';
-                        try {
-                            const errorData = JSON.parse(xhr.responseText);
-                            if (errorData.message) {
-                                errorMessage += `: ${errorData.message}`;
+
+                        if (xhr.status === 0) {
+                            errorMessage = 'Cannot connect to server. Please check if the server is running.';
+                        } else if (xhr.status === 401) {
+                            errorMessage = 'Session expired. Please login again.';
+                            localStorage.removeItem('adminToken');
+                            location.reload();
+                        } else {
+                            try {
+                                const errorData = JSON.parse(xhr.responseText);
+                                if (errorData.message) {
+                                    errorMessage += `: ${errorData.message}`;
+                                }
+                            } catch (e) {
+                                errorMessage += '. Please try again later.';
                             }
-                        } catch (e) {
-                            errorMessage += '. Please try again later.';
                         }
+
                         $('#usersTable').DataTable().clear().draw();
                         $('#usersTable').DataTable().row.add([
                             '',
@@ -2169,7 +2205,7 @@
                         data: 'profilePicture',
                         render: function (data) {
                             const img = getAdminAbsoluteUrl(data);
-                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`;
                         }
                     },
                     {
@@ -2182,6 +2218,7 @@
                     {
                         data: 'role',
                         render: function (data) {
+                            if (data === 'SUPER_ADMIN') return `<span class="badge badge-admin">Super Admin</span>`;
                             if (data === 'ADMIN') return `<span class="badge badge-admin">Admin</span>`;
                             if (data === 'MODERATOR') return `<span class="badge badge-moderator">Moderator</span>`;
                             return `<span class="badge badge-user">User</span>`;
@@ -2190,7 +2227,7 @@
                     {
                         data: 'createdAt',
                         render: function (data) {
-                            return new Date(data).toLocaleDateString();
+                            return data ? new Date(data).toLocaleDateString() : 'N/A';
                         }
                     },
                     {
@@ -2202,20 +2239,31 @@
                     {
                         data: 'id',
                         render: function (data, type, row) {
-                            return `
+                            let buttons = `
                                 <button class="action-btn btn-edit" onclick="editUser('${data}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                ${row.role !== 'ADMIN' ? `
-                                <button class="action-btn btn-delete" onclick="toggleBanUser('${data}', ${row.isBanned})">
-                                    <i class="fas fa-${row.isBanned ? 'undo' : 'ban'}"></i> ${row.isBanned ? 'Unban' : 'Ban'}
-                                </button>
-                                ` : ''}
                             `;
+
+                            if (row.role !== 'ADMIN' && row.role !== 'SUPER_ADMIN') {
+                                buttons += `
+                                    <button class="action-btn ${row.isBanned ? 'btn-approve' : 'btn-delete'}" 
+                                            onclick="toggleBanUser('${data}', ${row.isBanned})">
+                                        <i class="fas fa-${row.isBanned ? 'undo' : 'ban'}"></i> 
+                                        ${row.isBanned ? 'Unban' : 'Ban'}
+                                    </button>
+                                `;
+                            }
+
+                            return buttons;
                         }
                     }
                 ],
-                language: { emptyTable: 'No users found', zeroRecords: 'No matching users found' },
+                language: {
+                    emptyTable: 'No users found',
+                    zeroRecords: 'No matching users found',
+                    loadingRecords: 'Loading users...'
+                },
                 initComplete: function () { hideLoading(); }
             });
 
@@ -2236,7 +2284,7 @@
                         data: 'profilePicture',
                         render: function (data) {
                             const img = getAdminAbsoluteUrl(data);
-                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                            return `<img src="${img || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`;
                         }
                     },
                     {
@@ -2268,18 +2316,25 @@
                     {
                         data: 'id',
                         render: function (data, type, row) {
-                            return `
-                                ${row.role !== 'SUPER_ADMIN' || currentAdmin.id === row.id ? `
-                                <button class="action-btn btn-edit" onclick="editAdmin('${data}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                ` : ''}
-                                ${row.role !== 'SUPER_ADMIN' && currentAdmin.role === 'SUPER_ADMIN' ? `
-                                <button class="action-btn btn-delete" onclick="deleteAdmin('${data}')">
-                                    <i class="fas fa-trash"></i> Remove
-                                </button>
-                                ` : ''}
-                            `;
+                            let buttons = '';
+
+                            if (row.role !== 'SUPER_ADMIN' || currentAdmin?.id === row.id) {
+                                buttons += `
+                                    <button class="action-btn btn-edit" onclick="editAdmin('${data}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                `;
+                            }
+
+                            if (row.role !== 'SUPER_ADMIN' && currentAdmin?.role === 'SUPER_ADMIN') {
+                                buttons += `
+                                    <button class="action-btn btn-delete" onclick="deleteAdmin('${data}')">
+                                        <i class="fas fa-trash"></i> Remove
+                                    </button>
+                                `;
+                            }
+
+                            return buttons || '<span class="text-muted">No actions</span>';
                         }
                     }
                 ],
@@ -2428,7 +2483,6 @@
             }
         });
 
-        // Close edit modal with close button or overlay
         document.querySelector('#editVideoModal .modal-close').addEventListener('click', closeEditVideoModal);
         document.getElementById('editVideoModal').addEventListener('click', function (e) {
             if (e.target === this) closeEditVideoModal();
@@ -2567,7 +2621,12 @@
                 document.getElementById('editUserRole').value = user.role;
 
                 const banBtn = document.getElementById('banUserBtn');
-                banBtn.innerHTML = `<i class="fas fa-${user.isBanned ? 'undo' : 'ban'}"></i> ${user.isBanned ? 'Unban' : 'Ban'}`;
+                if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+                    banBtn.style.display = 'none';
+                } else {
+                    banBtn.style.display = 'inline-block';
+                    banBtn.innerHTML = `<i class="fas fa-${user.isBanned ? 'undo' : 'ban'}"></i> ${user.isBanned ? 'Unban' : 'Ban'}`;
+                }
 
                 document.getElementById('userEditModal').style.display = 'flex';
             } catch (error) {
@@ -2611,7 +2670,7 @@
             }
         });
 
-        // ----- Ban/Unban User -----
+        // ----- Ban/Unban User from Modal -----
         document.getElementById('banUserBtn').addEventListener('click', async function () {
             if (!currentUserBeingEdited) return;
             const action = currentUserBeingEdited.isBanned ? 'unban' : 'ban';
@@ -2737,10 +2796,8 @@
 
         // ----- Initialize -----
         document.addEventListener('DOMContentLoaded', async function () {
-            // Initialize mobile menu
             initMobileMenu();
 
-            // Check login session
             const isLoggedIn = await checkAdminSession();
             if (!isLoggedIn) {
                 document.getElementById('adminLoginOverlay').style.display = 'flex';
