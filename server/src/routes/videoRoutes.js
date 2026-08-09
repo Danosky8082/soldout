@@ -255,10 +255,11 @@ router.get('/:id', async (req, res) => {
       where: { creatorId: video.userId }
     });
 
-    // 5. Check if current user liked/disliked/subscribed
+    // 5. Check if current user liked/disliked/subscribed/saved
     let isLiked = false;
     let isDisliked = false;
     let isSubscribed = false;
+    let isSaved = false;
 
     if (userId) {
       const userLike = await prisma.like.findFirst({
@@ -280,6 +281,14 @@ router.get('/:id', async (req, res) => {
         }
       });
       if (subscription) isSubscribed = true;
+
+      const saved = await prisma.savedVideo.findFirst({
+        where: {
+          userId,
+          videoId: parseInt(id)
+        }
+      });
+      if (saved) isSaved = true;
     }
 
     // 6. Fetch comments with replies and likes
@@ -326,26 +335,29 @@ router.get('/:id', async (req, res) => {
     });
 
     // Format comments to match frontend expectations
+    const formatReplies = (replies) => {
+      return replies.map(reply => ({
+        id: reply.id,
+        text: reply.text,
+        createdAt: reply.createdAt,
+        user: reply.user,
+        videoId: reply.videoId,
+        parentReplyId: reply.parentReplyId,
+        _count: {
+          likes: reply.likes.filter(l => l.type === 'LIKE').length
+        },
+        replies: reply.replies ? formatReplies(reply.replies) : []
+      }));
+    };
+
     const formattedComments = comments.map(comment => {
       const commentLikes = comment.likes.filter(l => l.type === 'LIKE').length;
-      const formatReplies = (replies) => {
-        return replies.map(reply => ({
-          id: reply.id,
-          text: reply.text,
-          createdAt: reply.createdAt,
-          user: reply.user,
-          _count: {
-            likes: reply.likes.filter(l => l.type === 'LIKE').length
-          },
-          replies: reply.replies ? formatReplies(reply.replies) : []
-        }));
-      };
-
       return {
         id: comment.id,
         text: comment.text,
         createdAt: comment.createdAt,
         user: comment.user,
+        videoId: comment.videoId,
         _count: {
           likes: commentLikes
         },
@@ -365,6 +377,7 @@ router.get('/:id', async (req, res) => {
       isLiked,
       isDisliked,
       isSubscribed,
+      isSaved,
       comments: formattedComments,
       user: {
         ...video.user,
@@ -381,6 +394,30 @@ router.get('/:id', async (req, res) => {
       message: 'Failed to fetch video',
       error: error.message
     });
+  }
+});
+
+// ===== GET TRIVIA FOR VIDEO (via video routes) =====
+router.get('/:id/trivia', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const trivia = await prisma.trivia.findMany({
+      where: { videoId: parseInt(id) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(trivia);
+  } catch (error) {
+    console.error('Trivia fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch trivia' });
   }
 });
 
@@ -428,6 +465,7 @@ router.delete('/:id', async (req, res) => {
       await prisma.like.deleteMany({ where: { videoId } });
       await prisma.rating.deleteMany({ where: { videoId } });
       await prisma.trivia.deleteMany({ where: { videoId } });
+      await prisma.savedVideo.deleteMany({ where: { videoId } });
       await prisma.subscription.deleteMany({ where: { videoId } });
       await prisma.video.delete({ where: { id: videoId } });
     });
@@ -439,21 +477,6 @@ router.delete('/:id', async (req, res) => {
       message: 'Failed to delete video',
       error: error.message
     });
-  }
-});
-
-router.get('/:id/trivia', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const trivia = await prisma.trivia.findMany({
-      where: { videoId: parseInt(id) },
-      include: { user: { select: { id: true, firstName: true, lastName: true } } },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(trivia);
-  } catch (error) {
-    console.error('Trivia fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch trivia' });
   }
 });
 

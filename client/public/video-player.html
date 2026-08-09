@@ -607,16 +607,16 @@
         }
 
         .related-title {
-    font-weight: 500;
-    color: #fff;
-    font-size: 14px;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;          /* ✅ Standard property for modern browsers */
-    overflow: hidden;
-}
+            font-weight: 500;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+        }
 
         .related-channel {
             color: #888;
@@ -1281,16 +1281,19 @@
             const raw = sessionStorage.getItem('currentVideo');
             if (!raw) {
                 alert('No video selected');
-                window.location.href = 'index.html'; return;
+                window.location.href = 'index.html';
+                return;
             }
             let data;
             try { data = JSON.parse(raw); } catch (e) {
                 alert('Invalid video data');
-                window.location.href = 'index.html'; return;
+                window.location.href = 'index.html';
+                return;
             }
             if (!data.id) {
                 alert('Invalid video ID');
-                window.location.href = 'index.html'; return;
+                window.location.href = 'index.html';
+                return;
             }
             await loadVideo(data.id);
         }
@@ -1308,7 +1311,8 @@
                 if (!res.ok) {
                     if (res.status === 404) {
                         alert('Video not found.');
-                        window.location.href = 'index.html'; return;
+                        window.location.href = 'index.html';
+                        return;
                     }
                     throw new Error(`HTTP ${res.status}`);
                 }
@@ -1356,7 +1360,8 @@
 
             // Views & date
             document.getElementById('videoViews').textContent = (v.views || 0) + ' views';
-            document.getElementById('videoDate').textContent = v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'Just now';
+            document.getElementById('videoDate').textContent = v.createdAt ? new Date(v.createdAt).toLocaleDateString() :
+                'Just now';
 
             // Likes
             document.getElementById('likeCount').textContent = v.likeCount || 0;
@@ -1483,6 +1488,7 @@
                 const user = getUser();
                 if (!user) { alert('Please log in to add trivia'); return; }
                 document.getElementById('triviaFormWrap').style.display = 'block';
+                document.getElementById('triviaInput').focus();
             });
             document.getElementById('triviaCancelBtn').addEventListener('click', function () {
                 document.getElementById('triviaFormWrap').style.display = 'none';
@@ -1618,7 +1624,7 @@
             }
         }
 
-        // ===== REPLY (FIXED) =====
+        // ===== REPLY =====
         function addReply(commentId, parentReplyId = null) {
             return async function (e) {
                 e.preventDefault();
@@ -1635,13 +1641,11 @@
                 const token = getToken();
                 if (!token) { alert('Please log in again.'); return; }
 
-                // Get the videoId from the comment item's dataset (which we set in createCommentEl)
                 const commentItem = form.closest('.comment-item');
-                let videoId = video.id; // fallback
+                let videoId = video.id;
                 if (commentItem && commentItem.dataset.videoId) {
                     videoId = parseInt(commentItem.dataset.videoId);
                 }
-                // Ensure it's a number
                 if (isNaN(videoId)) videoId = video.id;
 
                 const payload = {
@@ -1651,8 +1655,6 @@
                     videoId: videoId
                 };
                 if (parentReplyId) payload.parentReplyId = parseInt(parentReplyId);
-
-                console.log('[Reply] Sending payload:', payload);
 
                 const submit = form.querySelector('.reply-submit');
                 if (submit) submit.disabled = true;
@@ -1708,7 +1710,7 @@
             }
         }
 
-        // ----- Trivia -----
+        // ----- Trivia (FIXED) -----
         async function addTrivia() {
             const user = getUser();
             if (!user) { alert('Please log in to add trivia'); return; }
@@ -1717,15 +1719,35 @@
             const input = document.getElementById('triviaInput');
             const text = input.value.trim();
             if (!text) { alert('Please enter trivia text'); return; }
+
+            // FIX: Ensure we have a valid video ID
+            const videoId = video?.id;
+            if (!videoId) {
+                console.error('No video ID available. video object:', video);
+                alert('Error: Video not loaded properly. Please refresh and try again.');
+                return;
+            }
+
             const saveBtn = document.getElementById('triviaSaveBtn');
             saveBtn.disabled = true;
             try {
                 const res = await fetch(`${API_BASE}/interactions/trivia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ text, userId: user.id, videoId: video.id })
+                    body: JSON.stringify({
+                        text,
+                        userId: user.id,
+                        videoId: videoId
+                    })
                 });
-                if (!res.ok) throw new Error('Failed to add trivia');
+                if (!res.ok) {
+                    let errMsg = 'Failed to add trivia';
+                    try {
+                        const errData = await res.json();
+                        errMsg = errData.message || errData.error || errMsg;
+                    } catch (_) { }
+                    throw new Error(errMsg);
+                }
                 const newTrivia = await res.json();
                 // Append to trivia list
                 const list = document.getElementById('triviaList');
@@ -1736,15 +1758,15 @@
                 div.className = 'trivia-item';
                 div.dataset.id = newTrivia.id;
                 div.innerHTML = `
-                    <p>${newTrivia.text}</p>
-                    <div class="trivia-meta">
-                        <span class="trivia-user">Added by ${user.firstName} ${user.lastName}</span>
-                        <div class="trivia-actions">
-                            <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                            <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                        <p>${newTrivia.text}</p>
+                        <div class="trivia-meta">
+                            <span class="trivia-user">Added by ${user.firstName} ${user.lastName}</span>
+                            <div class="trivia-actions">
+                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
                 list.appendChild(div);
                 // Bind edit/delete
                 div.querySelector('.edit-trivia').addEventListener('click', function () {
@@ -1789,7 +1811,7 @@
         }
 
         // ============================================================
-        // RENDER COMMENTS (with videoId in dataset)
+        // RENDER COMMENTS
         // ============================================================
         function renderComments(comments) {
             const list = document.getElementById('commentList');
@@ -1830,7 +1852,6 @@
         function createCommentEl(item, isReply = false) {
             const div = document.createElement('div');
             div.className = isReply ? 'comment-item reply' : 'comment-item';
-            // Store videoId in dataset (use current video.id; if item has videoId, use that)
             div.dataset.videoId = item.videoId || video.id;
 
             let avatarHtml = `<i class="fas fa-user"></i>`;
@@ -1840,29 +1861,29 @@
             }
 
             div.innerHTML = `
-                <div class="comment-avatar">${avatarHtml}</div>
-                <div class="comment-body">
-                    <div class="comment-author">${item.user?.firstName || 'Unknown'} ${item.user?.lastName || ''}
-                        <span class="comment-date">${formatDate(item.createdAt)}</span>
+                    <div class="comment-avatar">${avatarHtml}</div>
+                    <div class="comment-body">
+                        <div class="comment-author">${item.user?.firstName || 'Unknown'} ${item.user?.lastName || ''}
+                            <span class="comment-date">${formatDate(item.createdAt)}</span>
+                        </div>
+                        <div class="comment-text">${item.text}</div>
+                        <div class="comment-actions">
+                            <span class="comment-action like-comment" data-id="${item.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
+                                <i class="fas fa-thumbs-up"></i> <span class="like-count">${item._count?.likes || 0}</span>
+                            </span>
+                            <span class="comment-action reply-comment" data-id="${item.id}">
+                                <i class="fas fa-reply"></i> Reply
+                            </span>
+                        </div>
+                        <div class="reply-form-wrap" style="display:none;">
+                            <form class="reply-form">
+                                <input type="text" class="reply-input" placeholder="Write a reply..." required />
+                                <button type="submit" class="reply-submit">Reply</button>
+                                <button type="button" class="cancel-reply">Cancel</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="comment-text">${item.text}</div>
-                    <div class="comment-actions">
-                        <span class="comment-action like-comment" data-id="${item.id}" data-type="${isReply ? 'REPLY' : 'COMMENT'}">
-                            <i class="fas fa-thumbs-up"></i> <span class="like-count">${item._count?.likes || 0}</span>
-                        </span>
-                        <span class="comment-action reply-comment" data-id="${item.id}">
-                            <i class="fas fa-reply"></i> Reply
-                        </span>
-                    </div>
-                    <div class="reply-form-wrap" style="display:none;">
-                        <form class="reply-form">
-                            <input type="text" class="reply-input" placeholder="Write a reply..." required />
-                            <button type="submit" class="reply-submit">Reply</button>
-                            <button type="button" class="cancel-reply">Cancel</button>
-                        </form>
-                    </div>
-                </div>
-            `;
+                `;
 
             // Like
             const likeBtn = div.querySelector('.like-comment');
@@ -1936,7 +1957,7 @@
                 input.value = '';
             });
 
-            // Submit reply (attach the handler)
+            // Submit reply
             form.removeEventListener('submit', form._handler);
             const handler = addReply(item.id, item.parentReplyId || null);
             form._handler = handler;
@@ -1951,7 +1972,7 @@
         }
 
         // ============================================================
-        // RELATED VIDEOS (with hover preview)
+        // RELATED VIDEOS
         // ============================================================
         async function loadRelated(v) {
             const list = document.getElementById('relatedList');
@@ -1975,17 +1996,16 @@
                         videoHtml = `<video src="${vidSrc}" muted loop playsinline></video>`;
                     }
                     el.innerHTML = `
-                        <div class="related-thumb">
-                            <img src="${thumb}" alt="${r.title}" loading="lazy" />
-                            ${videoHtml}
-                        </div>
-                        <div class="related-info">
-                            <div class="related-title">${r.title || 'Untitled'}</div>
-                            <div class="related-channel">${r.user?.firstName || 'Unknown'}</div>
-                            <div class="related-meta">${r.views || 0} views</div>
-                        </div>
-                    `;
-                    // Hover play/pause
+                            <div class="related-thumb">
+                                <img src="${thumb}" alt="${r.title}" loading="lazy" />
+                                ${videoHtml}
+                            </div>
+                            <div class="related-info">
+                                <div class="related-title">${r.title || 'Untitled'}</div>
+                                <div class="related-channel">${r.user?.firstName || 'Unknown'}</div>
+                                <div class="related-meta">${r.views || 0} views</div>
+                            </div>
+                        `;
                     const vidEl = el.querySelector('video');
                     if (vidEl) {
                         el.addEventListener('mouseenter', function () {
@@ -2009,15 +2029,19 @@
         }
 
         // ============================================================
-        // TRIVIA LOAD
+        // TRIVIA LOAD (FIXED)
         // ============================================================
         async function loadTrivia(v) {
             const list = document.getElementById('triviaList');
+            if (!v || !v.id) {
+                list.innerHTML = '<div class="no-trivia">No trivia added yet.</div>';
+                return;
+            }
             try {
-                const res = await fetch(`${API_BASE}/interactions/trivia/${v.id}`, {
+                const res = await fetch(`${API_BASE}/videos/${v.id}/trivia`, {
                     headers: getToken() ? { 'Authorization': `Bearer ${getToken()}` } : {}
                 });
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) throw new Error('Failed to fetch trivia');
                 const data = await res.json();
                 list.innerHTML = '';
                 if (!data || data.length === 0) {
@@ -2030,17 +2054,17 @@
                     div.className = 'trivia-item';
                     div.dataset.id = item.id;
                     div.innerHTML = `
-                        <p>${item.text}</p>
-                        <div class="trivia-meta">
-                            <span class="trivia-user">Added by ${item.user.firstName} ${item.user.lastName}</span>
-                            ${item.user.id === user?.id ? `
-                            <div class="trivia-actions">
-                                <button class="edit-trivia"><i class="fas fa-edit"></i></button>
-                                <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                            <p>${item.text}</p>
+                            <div class="trivia-meta">
+                                <span class="trivia-user">Added by ${item.user.firstName} ${item.user.lastName}</span>
+                                ${item.user.id === user?.id ? `
+                                <div class="trivia-actions">
+                                    <button class="edit-trivia"><i class="fas fa-edit"></i></button>
+                                    <button class="delete-trivia"><i class="fas fa-trash"></i></button>
+                                </div>
+                                ` : ''}
                             </div>
-                            ` : ''}
-                        </div>
-                    `;
+                        `;
                     list.appendChild(div);
                     if (item.user.id === user?.id) {
                         div.querySelector('.edit-trivia').addEventListener('click', function () {
